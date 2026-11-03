@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101c33" />
+    <meta name="description" content="PayTakt — ваш графік, ваші правила, ваша зарплата. Універсальний робочий простір для працівників і команд." />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <title>PayTakt — твій графік, твої правила</title>
+    <script>
+      (function () {
+        try {
+          var selected = localStorage.getItem('paytakt-theme') || 'system';
+          var dark = selected === 'dark' || (selected === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        } catch (e) { document.documentElement.dataset.theme = 'light'; }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
