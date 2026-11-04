@@ -912,3 +912,218 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
   details[open] > :not(summary),.workspace-popover,.zmina-primary-nav.expanded,#cycle-config{animation:none!important}
   details::details-content,.v2-extra-chevron{transition:none!important}
 }
+/* PayTakt: match "Plan and bonuses" with other salary accordions. This editor
+   lives outside .salary-form, so the form-scoped styles do not reach it. */
+.salary-page > .performance-editor{
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  padding:0;
+  overflow:hidden;
+  background:var(--panel);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
+}
+.salary-page > .performance-editor > .pay-collapse-summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:23px 25px;
+  cursor:pointer;
+  list-style:none;
+  color:var(--text);
+  min-width:0;
+}
+.salary-page > .performance-editor > .pay-collapse-summary::-webkit-details-marker{display:none}
+.salary-page > .performance-editor > .pay-collapse-summary::marker{content:""}
+.salary-page > .performance-editor > .pay-collapse-summary .pay-block-heading{
+  display:flex;
+  flex:1;
+  min-width:0;
+  align-items:center;
+  gap:12px;
+  margin:0;
+}
+.salary-page > .performance-editor > .pay-collapse-summary .pay-block-heading > svg{
+  flex-shrink:0;
+}
+.salary-page > .performance-editor > .pay-collapse-summary .pay-block-heading > div{min-width:0}
+.salary-page > .performance-editor > .pay-collapse-summary h3{
+  margin:0 0 6px;
+  font-size:16px;
+  line-height:1.35;
+}
+.salary-page > .performance-editor > .pay-collapse-summary p{
+  margin:0;
+  font-size:11px;
+  line-height:1.6;
+  color:var(--muted);
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.salary-page > .performance-editor > .pay-collapse-summary .pay-collapse-chevron{
+  flex:0 0 19px;
+  color:var(--muted);
+  transition:transform .2s ease;
+}
+.salary-page > .performance-editor[open] > .pay-collapse-summary{
+  border-bottom:1px solid var(--border);
+}
+.salary-page > .performance-editor[open] > .pay-collapse-summary .pay-collapse-chevron{
+  transform:rotate(180deg);
+}
+.salary-page > .performance-editor > .pay-collapse-body{
+  display:grid;
+  gap:16px;
+  padding:19px 25px 25px;
+  min-width:0;
+}
+.salary-page > .performance-editor:hover{border-color:color-mix(in srgb,var(--mint) 40%,var(--border))}
+.performance-editor .performance-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:14px;
+  min-width:0;
+  background:var(--panel-soft);
+  border:1px solid var(--border);
+  border-radius:13px;
+  padding:15px;
+}
+.performance-editor .performance-toolbar > div{flex:1 1 240px;min-width:0}
+.performance-editor .performance-toolbar strong,
+.performance-editor .performance-tier-head strong{font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.performance-editor .performance-toolbar p,
+.performance-editor .performance-tier-head p{
+  font-size:12px;
+  line-height:1.65;
+  color:var(--muted-deep);
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+.performance-editor .performance-toolbar .btn{
+  flex-shrink:0;
+  max-width:100%;
+  white-space:normal;
+}
+.performance-editor .pay-toggle{
+  display:flex;
+  align-items:flex-start;
+  gap:11px;
+  margin:0;
+  line-height:1.5;
+  white-space:normal;
+}
+.performance-editor .pay-toggle > input{flex:0 0 18px;margin-top:3px}
+.performance-editor .pay-toggle > span{display:grid;gap:4px;min-width:0}
+.performance-editor .pay-toggle strong{font-size:13px;overflow-wrap:anywhere}
+.performance-editor .pay-toggle small{
+  font-size:11px;
+  line-height:1.6;
+  font-weight:400;
+  color:var(--muted-deep);
+  overflow-wrap:anywhere;
+}
+.performance-editor .performance-fields{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  min-width:0;
+}
+.performance-editor .performance-fields > .pay-field{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  gap:10px;
+  min-width:0;
+  padding:15px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--panel-soft);
+}
+.performance-editor .performance-fields > .pay-field > span{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-width:0;
+}
+.performance-editor .performance-fields > .pay-field strong{font-size:12px}
+.performance-editor .performance-fields > .pay-field small{
+  font-size:11px;
+  line-height:1.55;
+  color:var(--muted-deep);
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.performance-editor .performance-fields > .pay-field > select,
+.performance-editor .performance-fields > .pay-field > input{
+  box-sizing:border-box;
+  flex:none;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  min-height:42px;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--input);
+  color:var(--text);
+  font:inherit;
+}
+.performance-editor .performance-tier-head,
+.performance-editor .performance-bottom{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+.performance-editor .performance-tier-head > div,
+.performance-editor .performance-bottom > span{flex:1 1 200px;min-width:0;overflow-wrap:anywhere}
+.performance-editor .performance-tier-row{
+  min-width:0;
+  background:var(--panel-soft);
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px;
+}
+.performance-editor .performance-tier-row label,
+.performance-editor .performance-tier-row label > span{min-width:0;overflow-wrap:anywhere;white-space:normal}
+.performance-editor .performance-tier-row input{
+  box-sizing:border-box;
+  background:var(--input);
+  color:var(--text);
+  font:inherit;
+}
+.performance-editor .performance-tier-row .icon-button{
+  min-width:40px;
+  min-height:40px;
+}
+.performance-editor .performance-note{
+  margin:0;
+  font-size:12px;
+  line-height:1.65;
+  color:var(--muted-deep);
+  overflow-wrap:anywhere;
+}
+.performance-editor .performance-bottom .btn{min-height:44px;white-space:normal;text-align:center}
+@media(max-width:850px){
+  .performance-editor .performance-fields{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .salary-page > .performance-editor > .pay-collapse-summary{padding:17px 16px}
+  .salary-page > .performance-editor > .pay-collapse-body{padding:16px}
+  .performance-editor .performance-toolbar{align-items:stretch;flex-direction:column}
+  .performance-editor .performance-toolbar .btn{width:100%;justify-content:center}
+  .performance-editor .performance-bottom .btn{width:100%;justify-content:center}
+  .performance-editor .performance-tier-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .performance-editor .performance-tier-row .icon-button{grid-column:1/-1;justify-self:end}
+}
+@media(max-width:390px){
+  .performance-editor .performance-tier-row{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  .salary-page > .performance-editor .pay-collapse-chevron{transition:none!important}
+}

@@ -26,9 +26,9 @@ export function PerformanceRulesEditor({settings,onSave,onApplyZmina,demo}:Props
     finally{setBusy(false)}
   }
   return <details className="panel pay-collapse performance-editor">
-    <summary className="pay-collapse-summary"><div className="pay-block-heading"><Target size={21}/><div><h3>План і премії</h3><p>Необов'язково · ціль за касою, заробітком або виконаними роботами</p></div></div><ChevronDown size={19}/></summary>
+    <summary className="pay-collapse-summary"><div className="pay-block-heading"><Target size={21}/><div><h3>План і премії</h3><p>Ціль за касою, заробітком або кількістю виконаних робіт</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary>
     <div className="pay-collapse-body">
-      <div className="performance-toolbar"><div><strong>Готовий шаблон «Система Зміна»</strong><p>План каси, 2 000 ₴ при 100%, виплати 25-го / 10-го / 15-го наступного місяця для премії. Поточні ставки зберігаються.</p></div><button type="button" className="btn btn-outline" disabled={busy} onClick={()=>void apply()}><Sparkles size={17}/> Застосувати</button></div>
+      <div className="performance-toolbar"><div><strong>Готовий шаблон «Система Зміна»</strong><p>План за касою: премія 2 000 ₴ при 100%. Зарплата — 25-го та 10-го, премія — 15-го наступного місяця. Твої ставки не зміняться.</p></div><button type="button" className="btn btn-outline" disabled={busy} onClick={()=>void apply()}><Sparkles size={17}/> Застосувати</button></div>
       <label className="pay-toggle"><input type="checkbox" checked={draft.enabled} onChange={e=>change({enabled:e.target.checked})}/><span><strong>Увімкнути мій план і премії</strong><small>Без цього налаштування не впливають на зарплату.</small></span></label>
       <label className="pay-toggle"><input type="checkbox" checked={draft.manualDailyPay} onChange={e=>change({manualDailyPay:e.target.checked})}/><span><strong>Ручний заробіток за кожен день</strong><small>Додасть компактне поле «Мій заробіток» у календарі. Введена сума замінює автоматичну базову оплату, але не доплати. Дні без суми отримують 0 базової оплати.</small></span></label>
     <div className="performance-fields">
@@ -41,7 +41,7 @@ export function PerformanceRulesEditor({settings,onSave,onApplyZmina,demo}:Props
         <label><span>Премія, ₴</span><input type="number" min="0" step="0.01" value={tier.bonus/100} onChange={e=>change({tiers:draft.tiers.map((v,j)=>j===i?{...v,bonus:Math.round(Number(e.target.value)*100)}:v)})}/></label>
         <button type="button" className="icon-button" aria-label="Видалити поріг" disabled={draft.tiers.length<=1} onClick={()=>change({tiers:draft.tiers.filter((_,j)=>j!==i)})}><Trash2 size={17}/></button>
       </div>)}</div>
-      <p className="stats-small-note">Премія за план з'явиться в загальних нарахуваннях і виплатиться за подією «Премії» з календаря виплат. Каса вводиться в робочі дні календаря; кількість робіт — у «Нарахуваннях». Стандартні бонуси за плани виручки/робіт не дублюються, коли цей модуль увімкнений.</p>
+      <p className="stats-small-note performance-note">Премія додається до нарахувань один раз і виплачується за календарем виплат. Касу внось у календарі, кількість виконаних робіт — у «Нарахуваннях».</p>
       <div className="performance-bottom"><span>При {draft.tiers[0]?.thresholdBasisPoints/100}% плану: {moneyUA(draft.tiers[0]?.bonus??0)} · джерело — {name(draft.metric)}</span><button type="button" className="btn btn-primary" disabled={busy} onClick={()=>void save()}><Save size={17}/>{busy?'Зберігаємо…':'Зберегти план'}</button></div>
       {error&&<p className="form-error" role="alert">{error}</p>}{message&&<p className="form-success" role="status">{message}</p>}
     </div>
