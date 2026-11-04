@@ -8,7 +8,7 @@ const rules = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 
 test('PayTakt 2 onboarding beta package has prerelease semver', () => {
-  assert.equal(pkg.version, '2.0.0-beta.3')
+  assert.equal(pkg.version, '2.0.0-beta.4')
 })
 
 test('site navigation is in the top header, not a fixed app sidebar', () => {
@@ -35,7 +35,7 @@ test('the original Zmina visual tokens are present in the new theme', () => {
 test('user-facing success and daily help copy avoid Firebase jargon', () => {
   assert.doesNotMatch(ui, /День збережено у Firebase|Зберігаємо зміни у Firebase|Кнопки вище одразу зберігають дані у Firebase/)
   assert.match(ui, /День збережено\./)
-  assert.match(ui, /Зміни зберігаються автоматично/)
+  assert.match(ui, /Дані дня збережено\./)
 })
 
 test('Firebase workspace owner restriction is kept for payroll settings', () => {

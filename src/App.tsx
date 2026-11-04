@@ -3,7 +3,7 @@ import {
   ArrowRight, ArrowUpRight, BriefcaseBusiness, Building2, CalendarDays,
   Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clock3,
   LayoutDashboard, LockKeyhole, LogOut, Mail, Menu, Monitor, Moon, Plus, Save, TrendingUp,
-  Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Trash2, UserRound,
+  Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Target, Trash2, UserRound,
   UsersRound, Wallet, X, ReceiptText,
 } from 'lucide-react'
 import {
@@ -27,7 +27,8 @@ import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
 import {buildMonthAnalytics,payoutsInMonth} from './lib/analytics'
 import {effectiveRevenue,cashTotalsByMonth,parseCashHryvnia,defaultCashPreferences,type DailyCash,type CashPreferences} from './lib/dailyCash'
-import {defaultPerformanceSettings,planTarget,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
+import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
+import {defaultCalendarLayout,readCalendarLayout,writeCalendarLayout,moveCalendarBlock,type CalendarBlockId,type CalendarLayout} from './lib/calendarLayout'
 import {StatisticsPage} from './components/StatisticsPage'
 import {OnboardingWizard} from './components/OnboardingWizard'
 import {calendarFeatures} from './lib/featureVisibility'
@@ -209,16 +210,16 @@ function Dashboard({ workspace, shifts, paySettings, salesByMonth, unitsByMonth,
   </>
 }
 
-function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overtimePreset, paySettings, salesByMonth, unitsByMonth, cashRecords, cashPrefs, performance, monthlyTargets, cashByMonth, dailyWages, onSaveDailyWage, onRemoveDailyWage, onChangeCashPrefs, onSaveCash, onDeleteCash, onGoStatistics, onSaveOvertimePreset, onSave, onApplyPattern, onDelete, onSaveTemplate, onDeleteTemplate }: {
+function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overtimePreset, paySettings, salesByMonth, unitsByMonth, cashRecords, cashPrefs, performance, monthlyTargets, cashByMonth, dailyWages, onSaveDailyWage, onRemoveDailyWage, onSaveCash, onDeleteCash, onGoStatistics, onSaveOvertimePreset, onSave, onApplyPattern, onDelete, onSaveTemplate, onDeleteTemplate, scheduleOnly=false }: {
   shifts: Shift[]; workspace: Workspace; demo: boolean; templates: ScheduleTemplate[]; initialPreset: TemplatePreset;
   overtimePreset:OvertimePreset; paySettings:PaySettings|null; salesByMonth:Record<string,number>; unitsByMonth:Record<string,number>;
-  cashRecords:DailyCash[]; cashPrefs:CashPreferences; performance:PerformanceSettings; monthlyTargets:Record<string,number>;cashByMonth:Record<string,number>;dailyWages:Record<string,number>;onSaveDailyWage:(date:string,amount:number)=>Promise<void>;onRemoveDailyWage:(date:string)=>Promise<void>;onChangeCashPrefs:(p:CashPreferences)=>Promise<void>;
+  cashRecords:DailyCash[]; cashPrefs:CashPreferences; performance:PerformanceSettings; monthlyTargets:Record<string,number>;cashByMonth:Record<string,number>;dailyWages:Record<string,number>;onSaveDailyWage:(date:string,amount:number)=>Promise<void>;onRemoveDailyWage:(date:string)=>Promise<void>;
   onSaveCash:(record:DailyCash)=>Promise<void>;onDeleteCash:(date:string)=>Promise<void>;
   onGoStatistics:()=>void; onSaveOvertimePreset:(preset:OvertimePreset)=>Promise<void>;
   onSave: (s: Shift)=>Promise<void>; onApplyPattern: (s: GeneratedCalendarDay[], mode: PatternApplyMode)=>Promise<PatternApplySummary>;
   onDelete: (date: string)=>Promise<void>;
   onSaveTemplate: (t:ScheduleTemplate)=>Promise<void>;
-  onDeleteTemplate: (id:string)=>Promise<void>;
+  onDeleteTemplate: (id:string)=>Promise<void>; scheduleOnly?:boolean;
 }) {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
@@ -249,6 +250,10 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
   const [cycleOpen, setCycleOpen] = useState(false)
   const visible=calendarFeatures(paySettings,cashPrefs,performance)
   const historicalOvertime=shifts.some(s=>(s.overtimeMinutes??0)>0||!!s.overtimeExtra)
+  const [layout,setLayout]=useState<CalendarLayout>(()=>readCalendarLayout(workspace.id))
+  const [layoutOpen,setLayoutOpen]=useState(false)
+  const changeLayout=(next:CalendarLayout)=>{setLayout(next);writeCalendarLayout(workspace.id,next)}
+  const blockOrder=(id:CalendarBlockId)=>layout.order.indexOf(id)
   const [calendarFilter,setCalendarFilter] = useState<'all'|'worked'|'overtime'> ('all')
   const [showPayouts,setShowPayouts] = useState(true)
   const [applyMode, setApplyMode] = useState<PatternApplyMode>('update-planned')
@@ -256,40 +261,44 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
   const [overtimeMessage,setOvertimeMessage]=useState('')
   const [overtimeBusy,setOvertimeBusy]=useState(false)
   const [wageDraft,setWageDraft]=useState('')
-  const [wageBusy,setWageBusy]=useState(false)
-  const [wageMessage,setWageMessage]=useState('')
+  const [moneyBusy,setMoneyBusy]=useState(false)
+  const [moneyNotice,setMoneyNotice]=useState('')
   const [cashDraft,setCashDraft]=useState('')
-  const [cashBusy,setCashBusy]=useState(false)
-  const [cashSettingsBusy,setCashSettingsBusy]=useState(false)
+
   const [cashNotice,setCashNotice]=useState('')
   const wageEntry=dailyWages[selected]
-  useEffect(()=>{setWageDraft(wageEntry===undefined?'':String(wageEntry/100));setWageMessage('')},[selected,wageEntry])
-  const saveWage=async(e:FormEvent<HTMLFormElement>)=>{
-    e.preventDefault()
-    if(!activeShift||(draft.dayType??'work')!=='work'){setWageMessage('Спочатку збережи робочий день.');return}
-    setWageBusy(true);setWageMessage('')
-    try{await onSaveDailyWage(selected,parseCashHryvnia(wageDraft));setWageMessage('Заробіток за день збережено.')}catch(e){setWageMessage(friendlyError(e))}finally{setWageBusy(false)}
-  }
-  const clearWage=async()=>{setWageBusy(true);setWageMessage('');try{await onRemoveDailyWage(selected);setWageMessage('Ручний заробіток прибрано.')}catch(e){setWageMessage(friendlyError(e))}finally{setWageBusy(false)}}
+  useEffect(()=>{setWageDraft(wageEntry===undefined?'':String(wageEntry/100));setMoneyNotice('')},[selected,wageEntry])
   const cashEntry=cashRecords.find(r=>r.date===selected)
   useEffect(()=>{setCashDraft(cashEntry?String(cashEntry.amount/100):'');setCashNotice('')},[selected,cashEntry?.amount])
-  const changeCashPrefs=async(p:CashPreferences)=>{
-    setCashSettingsBusy(true);setCashNotice('')
-    try{await onChangeCashPrefs(p)}catch(e){setCashNotice(friendlyError(e))}
-    finally{setCashSettingsBusy(false)}
-  }
-  const saveCash=async(e:FormEvent<HTMLFormElement>)=>{
+  // A single Zmina-style form; empty removes the record, zero is explicitly saved.
+  const saveDayMoney=async(e:FormEvent<HTMLFormElement>)=>{
     e.preventDefault()
-    if(!activeShift || (draft.dayType??'work')!=='work'){setCashNotice('Спочатку збережи робочий день.');return}
-    setCashBusy(true);setCashNotice('')
-    try{await onSaveCash({date:selected,amount:parseCashHryvnia(cashDraft)});setCashNotice('Касу за день збережено.')}
-    catch(e){setCashNotice(friendlyError(e))}finally{setCashBusy(false)}
+    const date=selected
+    if(!activeShift||(draft.dayType??'work')!=='work'){
+      setMoneyNotice('Познач день робочим і збережи зміну.');return
+    }
+    setMoneyBusy(true);setMoneyNotice('')
+    try{
+      const wage=performance.manualDailyPay&&wageDraft.trim()!==''?parseCashHryvnia(wageDraft):null
+      const cash=cashPrefs.enabled&&cashDraft.trim()!==''?parseCashHryvnia(cashDraft):null
+      if(performance.manualDailyPay){
+        if(wage!==null)await onSaveDailyWage(date,wage)
+        else if(dailyWages[date]!==undefined)await onRemoveDailyWage(date)
+      }
+      if(cashPrefs.enabled){
+        if(cash!==null)await onSaveCash({date,amount:cash})
+        else if(cashRecords.some(r=>r.date===date))await onDeleteCash(date)
+      }
+      if(selectedRef.current===date)setMoneyNotice('Дані дня збережено.')
+    }catch(error){if(selectedRef.current===date)setMoneyNotice(friendlyError(error))}
+    finally{setMoneyBusy(false)}
   }
   const clearCash=async()=>{
     if(!cashEntry)return
-    setCashBusy(true);setCashNotice('')
-    try{await onDeleteCash(selected);setCashDraft('');setCashNotice('Запис каси видалено.')}
-    catch(e){setCashNotice(friendlyError(e))}finally{setCashBusy(false)}
+    const date=selected
+    setMoneyBusy(true);setCashNotice('')
+    try{await onDeleteCash(date);if(selectedRef.current===date){setCashDraft('');setCashNotice('Касу видалено.')}}
+    catch(e){if(selectedRef.current===date)setCashNotice(friendlyError(e))}finally{setMoneyBusy(false)}
   }
   useEffect(()=>setOvertimeDraft({...overtimePreset}),[overtimePreset.start,overtimePreset.end,overtimePreset.breakMinutes,overtimePreset.basisPoints])
   const saveOvertime=async()=>{
@@ -360,6 +369,9 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
   const monthKey = `${year}-${String(month+1).padStart(2,'0')}`
   const monthShifts = shifts.filter(s=>s.date.startsWith(monthKey))
   const calendarMetrics = useMemo(()=>buildMonthAnalytics(shifts,monthKey,paySettings,salesByMonth[monthKey]??0,unitsByMonth[monthKey]??0,performance,planTarget(monthKey,performance,monthlyTargets),cashByMonth[monthKey]??0,dailyWages),[shifts,monthKey,paySettings,salesByMonth,unitsByMonth,performance,monthlyTargets,cashByMonth,dailyWages])
+  const target=planTarget(monthKey,performance,monthlyTargets)
+  const progress=performance.enabled&&calendarMetrics.result?performanceProgress(calendarMetrics.result,performance,target,cashByMonth[monthKey]??0):null
+  const measure=(amount:number)=>performance.metric==='units'?amount.toLocaleString('uk-UA'):moneyUA(amount)
   const paymentMarkers = useMemo(()=>payoutsInMonth(shifts,monthKey,paySettings,salesByMonth,unitsByMonth,performance,monthlyTargets,cashByMonth,dailyWages),[shifts,monthKey,paySettings,salesByMonth,unitsByMonth,performance,monthlyTargets,cashByMonth,dailyWages])
   const paymentsByDay = useMemo(()=>{
     const map=new Map<string,typeof paymentMarkers>()
@@ -474,10 +486,11 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
     setDraft(old=>({...old,additionalShifts:(old.additionalShifts||[]).map(x=>x.id===id?{...x,...patch}:x)}))
   }
   return <>
-    <SectionHeading eyebrow="ПЛАНУВАННЯ ЧАСУ" title="Конструктор графіків" detail="Створюй цикли із власними денними й нічними змінами, зберігай шаблони та редагуй кожен день окремо.">
+    {scheduleOnly&&<>
+    <SectionHeading eyebrow="НАЛАШТУВАННЯ РОБОТИ" title="Графік під твої правила" detail="Вибери графік, налаштуй час та застосуй до календаря.">
       <span className="pill mint-pill"><CalendarDays size={15}/> {working} змін у місяці</span>
     </SectionHeading>
-    <section className="panel cycle-panel" aria-label="Конструктор графіків">
+    <section id="schedule-settings" className="panel cycle-panel" aria-label="Конструктор графіків">
       <div className="cycle-top"><div><div className="eyebrow">ШАБЛОН РОБОЧОГО РИТМУ</div><h3>Графік під твої правила</h3><p>{cycleOpen?'Налаштуй цикл і застосуй його до календаря.':'Шаблон застосовано або згорнуто. Календар нижче доступний для редагування.'}</p></div>
         <div className="cycle-head-actions"><span className="pill mint-pill"><Clock3 size={15}/> {pattern.length} днів у циклі</span><button className="btn btn-outline" type="button" aria-expanded={cycleOpen} aria-controls="cycle-config" onClick={()=>setCycleOpen(v=>!v)}><ChevronDown size={16} className={cycleOpen?'rotate-icon':''}/>{cycleOpen?'Згорнути':'Налаштувати графік'}</button></div></div>
       {!cycleOpen&&<p className="cycle-collapsed-summary">{preset===WEEKDAY_FIVE_TWO_PRESET?'5/2 · Пн–Пт, Сб–Нд вихідні':preset==='custom'?'Власний цикл':preset} · {pattern.filter(p=>p.type==='work').length} робочих днів у циклі. {cycleMessage||'Натисни «Налаштувати графік», щоб внести зміни.'}</p>}
@@ -557,21 +570,35 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
       <div className="cycle-footer"><span className="cycle-info" role="status">{cycleError||cycleMessage||`Місяць: нових ${preview.summary.created}, на оновлення ${preview.summary.updated}, захищених ${preview.summary.protected}, без змін ${preview.summary.unchanged}.`}</span>
         <button type="button" className="btn btn-primary" disabled={cycleBusy||!!cycleError||preview.write.length===0} onClick={applyCycle}><Check size={16}/>{cycleBusy?'Зберігаємо…':'Оновити календар і згорнути'}</button></div></div>}
     </section>
-    <div className="calendar-month-highlights" key={monthKey} aria-label="Показники вибраного місяця">
-      <div><span>Відпрацьовано</span><strong>{calendarMetrics.workedHours.toLocaleString('uk-UA',{maximumFractionDigits:2})} год</strong><small>{calendarMetrics.workedDays} днів</small></div>
-      {(visible.overtimeSettings||calendarMetrics.overtimeHours>0)&&<div><span>Понаднормові</span><strong>{calendarMetrics.overtimeHours.toLocaleString('uk-UA',{maximumFractionDigits:2})} год</strong><small>За підтвердженими змінами</small></div>}
-      <div><span>Нараховано</span><strong>{calendarMetrics.result?moneyUA(calendarMetrics.result.gross):'—'}</strong><small>Прогноз до податків</small></div>
-      <button type="button" onClick={onGoStatistics} className="calendar-stats-action"><TrendingUp size={19}/> Статистика <ArrowUpRight size={16}/></button>
+    </>}
+    {!scheduleOnly&&<>
+    <div className="calendar-layout-options">
+      <button type="button" className="btn btn-outline" aria-expanded={layoutOpen} onClick={()=>setLayoutOpen(v=>!v)}><SlidersHorizontal size={19}/> {layoutOpen?'Готово':'Налаштувати блоки'}</button>
+      {layoutOpen&&<div className="panel calendar-layout-editor" role="group" aria-label="Налаштування блоків календаря">
+        <div className="calendar-layout-editor-head"><strong>Мій екран</strong><button type="button" className="link-button" onClick={()=>changeLayout(defaultCalendarLayout)}>За замовчуванням</button></div>
+        {layout.order.map((id,i)=>{
+          const titles:Record<CalendarBlockId,string>={calendar:'Календар',plan:'План і прогрес',metrics:'Показники місяця'}
+          const available=id!=='plan'||performance.enabled
+          return <div className="calendar-layout-editor-row" key={id}>
+            <span>{titles[id]}</span>
+            {id!=='calendar'&&<label><input type="checkbox" checked={layout.visible[id]} disabled={!available} onChange={e=>changeLayout({...layout,visible:{...layout.visible,[id]:e.target.checked}})}/> Показувати</label>}
+            <div className="calendar-layout-movers"><button type="button" disabled={i===0} aria-label={`Підняти ${titles[id]}`} onClick={()=>changeLayout({...layout,order:moveCalendarBlock(layout.order,id,-1)})}><ChevronLeft size={17}/></button><button type="button" disabled={i===layout.order.length-1} aria-label={`Опустити ${titles[id]}`} onClick={()=>changeLayout({...layout,order:moveCalendarBlock(layout.order,id,1)})}><ChevronRight size={17}/></button></div>
+          </div>
+        })}
+        <label className="calendar-layout-editor-row"><span>Редактор дня</span><input type="checkbox" checked={layout.visible.editor} onChange={e=>changeLayout({...layout,visible:{...layout.visible,editor:e.target.checked}})}/> Показувати</label>
+        <label className="calendar-layout-editor-row"><span>Редактор зверху на комп’ютері</span><input type="checkbox" checked={layout.dayTop} onChange={e=>changeLayout({...layout,dayTop:e.target.checked})}/></label>
+        <small>Зберігається на цьому пристрої окремо для кожного робочого простору.</small>
+      </div>}
     </div>
-    <div className="calendar-layout">
-      <section className="panel calendar-panel"><div className="calendar-toolbar"><div><h3 aria-live="polite" aria-atomic="true">{monthFormat.format(new Date(year,month,1))}</h3><p>Обери день для відпустки, лікарняного, заміни або додаткової зміни</p></div>
+    <div className={`calendar-layout calendar-custom-layout ${layout.dayTop?'day-top':''}`}>
+      <div className="calendar-primary-stack">
+        <div className="calendar-custom-block" style={{order:blockOrder('calendar')}}>
+      <section className="panel calendar-panel"><div className="calendar-toolbar"><div><h3 aria-live="polite" aria-atomic="true">{monthFormat.format(new Date(year,month,1))}</h3></div>
         <div className="cal-arrows"><button type="button" aria-label="Попередній місяць" onClick={()=>moveMonth(-1)}><ChevronLeft size={20}/></button><button type="button" aria-label="Поточний місяць" className="cal-today" onClick={jumpToToday}>Сьогодні</button><button type="button" aria-label="Наступний місяць" onClick={()=>moveMonth(1)}><ChevronRight size={20}/></button></div></div>
         <div className="calendar-view-options" role="group" aria-label="Фільтр днів календаря">
           {([['all','Усі дні'],['worked','Відпрацьовані'],...(visible.overtimeSettings||historicalOvertime?[['overtime','Понаднормові'] as const]:[])] as const).map(([id,label])=><button type="button" key={id} className={calendarFilter===id?'active':''} onClick={()=>setCalendarFilter(id)} aria-pressed={calendarFilter===id}>{label}</button>)}
           <label className="calendar-payout-switch"><input type="checkbox" checked={showPayouts} onChange={e=>setShowPayouts(e.target.checked)}/> Дати виплат</label>
-          {visible.cashToggle&&<button type="button" disabled={cashSettingsBusy} className={cashPrefs.enabled?'active':''} aria-pressed={cashPrefs.enabled} onClick={()=>void changeCashPrefs({enabled:!cashPrefs.enabled,useForSales:false})}><ReceiptText size={15}/>{cashPrefs.enabled?'Каса увімкнена':'Увімкнути касу'}</button>}
         </div>
-        {cashPrefs.enabled&&<details className="cash-option-settings"><summary>Налаштування каси <ChevronDown size={15}/></summary><label><input type="checkbox" disabled={cashSettingsBusy} checked={cashPrefs.useForSales} onChange={e=>void changeCashPrefs({...cashPrefs,useForSales:e.target.checked})}/> Використовувати суму денної каси для % від виручки та плану продажів</label><p>Якщо увімкнено, щоденна каса <strong>замінює</strong> ручну місячну виручку в зарплатних формулах. Не додається до окладу сама по собі. Якщо вимкнено, каса — лише окремий журнал.</p></details>}
         <div className="calendar-grid-viewport">
         <div key={monthKey} className={`cal-grid ${monthDirection===1?'month-slide-next':monthDirection===-1?'month-slide-prev':''}`} role="group" aria-label={`Календар за ${monthFormat.format(new Date(year,month,1))}`}>{weekdayLabels.map(d=><div className="cal-weekday" key={d}>{d}</div>)}{cells.map((day,i)=>{
           if(!day)return <div key={`blank-${i}`} className="cal-blank"/>
@@ -583,14 +610,32 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
           const payouts=showPayouts?(paymentsByDay.get(date)??[]):[]
           const workedDay=shift&&(shift.status==='worked'||shift.additionalShifts?.some(e=>e.status==='worked'))
           const subdued=calendarFilter==='worked'?!workedDay:calendarFilter==='overtime'?overtime===0:false
-          return <button type="button" key={date} className={`cal-day ${selected===date?'selected':''} ${date===toDateKey(today)?'today':''} ${shift?'has-shift':''} ${workedDay?'is-worked':''} ${off?'has-leave':''} ${subdued?'cal-day-muted':''} ${payouts.length?'cal-has-payout':''}`} onClick={()=>select(day)} aria-pressed={selected===date} aria-label={`${date}${label?' — '+label:''}${payouts.length?' · запланована виплата':''}`}><span className="day-number">{day}</span>{shift&&<span key={`${date}-${shift.status}-${shift.dayType??'work'}`} className={`shift-indicator ${off?'leave':shift.status==='worked'?'worked':''}`}>{label}</span>}{overtime>0&&<span key={`${date}-overtime-${overtime}`} className="calendar-overtime">+{(overtime/60).toLocaleString('uk-UA',{maximumFractionDigits:2})} год понадн.</span> }{cashPrefs.enabled&&cashRecords.some(r=>r.date===date)&&!off&&<span key={`${date}-cash`} className="calendar-cash-marker" title="Каса за день"><ReceiptText size={12}/> Каса</span>}{payouts.length>0&&<span key={`${date}-payout-${payouts.length}`} className="calendar-payout-marker"><Wallet size={12}/>{payouts.length>1?`${payouts.length} виплати`:'Виплата'}</span>}</button>
+          return <button type="button" key={date} className={`cal-day ${selected===date?'selected':''} ${date===toDateKey(today)?'today':''} ${shift?'has-shift':''} ${workedDay?'is-worked':''} ${off?'has-leave':''} ${subdued?'cal-day-muted':''} ${payouts.length?'cal-has-payout':''}`} onClick={()=>select(day)} aria-pressed={selected===date} aria-label={`${date}${label?' — '+label:''}${payouts.length?' · запланована виплата':''}`}><span className="day-number">{day}</span>{shift&&<span key={`${date}-${shift.status}-${shift.dayType??'work'}`} className={`shift-indicator ${off?'leave':shift.status==='worked'?'worked':''}`}>{label}</span>}{overtime>0&&<span key={`${date}-overtime-${overtime}`} className="calendar-overtime">+{(overtime/60).toLocaleString('uk-UA',{maximumFractionDigits:2})} год понадн.</span> }{performance.manualDailyPay&&dailyWages[date]!==undefined&&!off&&<span className="calendar-wage-marker" title={`Заробіток: ${moneyUA(dailyWages[date])}`}><Wallet size={14}/></span>}{cashPrefs.enabled&&cashRecords.some(r=>r.date===date)&&!off&&<span key={`${date}-cash`} className="calendar-cash-marker" title="Каса за день"><ReceiptText size={14}/></span>}{payouts.length>0&&<span key={`${date}-payout-${payouts.length}`} className="calendar-payout-marker"><Wallet size={12}/>{payouts.length>1?`${payouts.length} виплати`:'Виплата'}</span>}</button>
         })}</div>
         </div>
         <div className="cal-legend"><span><i className="legend-dot planned"/> Заплановано</span><span><i className="legend-dot worked"/> Відпрацьовано</span><span><i className="legend-dot leave"/> Вихідний / відсутність</span><span><i className="legend-border"/> Обрано</span><span><i className="legend-dot payout"/> Дата виплати</span></div>
       </section>
-      <section className="panel editor-panel day-editor-v2" aria-label="Редактор дня">
+        </div>
+        {performance.enabled&&layout.visible.plan&&<div className="calendar-custom-block" style={{order:blockOrder('plan')}}>
+          <section className="panel calendar-plan-panel" aria-label="План і прогрес місяця">
+            <div className="calendar-plan-heading"><span><Target size={21}/> <strong>Мій план</strong></span><b>{progress&&target>0?`${progress.percent.toLocaleString('uk-UA',{maximumFractionDigits:1})}%`:'—'}</b></div>
+            <div className="calendar-plan-bar" role="progressbar" aria-label="Виконання плану" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,Math.max(0,progress?.percent??0))}><span style={{width:`${Math.min(100,Math.max(0,progress?.percent??0))}%`}}/></div>
+            <div className="calendar-plan-values"><strong>{progress?measure(progress.actual):'—'}</strong><span>із {measure(target)}</span>{progress&&progress.bonus>0&&<b>+{moneyUA(progress.bonus)} премії</b>}</div>
+            {target===0&&<button type="button" className="link-button" onClick={onGoStatistics}>Встановити план</button>}
+          </section>
+        </div>}
+        {layout.visible.metrics&&<div className="calendar-custom-block" style={{order:blockOrder('metrics')}}>
+          <div className="calendar-month-highlights" key={monthKey} aria-label="Показники вибраного місяця">
+            <div><span>Відпрацьовано</span><strong>{calendarMetrics.workedHours.toLocaleString('uk-UA',{maximumFractionDigits:2})} год</strong></div>
+            {(visible.overtimeSettings||calendarMetrics.overtimeHours>0)&&<div><span>Понаднормові</span><strong>{calendarMetrics.overtimeHours.toLocaleString('uk-UA',{maximumFractionDigits:2})} год</strong></div>}
+            <div><span>Нараховано</span><strong>{calendarMetrics.result?moneyUA(calendarMetrics.result.gross):'—'}</strong></div>
+            <button type="button" onClick={onGoStatistics} className="calendar-stats-action"><TrendingUp size={19}/> Статистика <ArrowUpRight size={16}/></button>
+          </div>
+        </div>}
+      </div>
+      {layout.visible.editor&&<div className="calendar-day-slot"><section className="panel editor-panel day-editor-v2" aria-label="Редактор дня">
         <div className="panel-title day-editor-header">
-          <div><div className="eyebrow">ОБРАНИЙ ДЕНЬ</div><h3 key={selected}>{dateFormat.format(new Date(selected+'T12:00'))}</h3><p>{workspace.name}</p></div>
+          <div><div className="eyebrow">ОБРАНИЙ ДЕНЬ</div><h3 key={selected}>{dateFormat.format(new Date(selected+'T12:00'))}</h3></div>
           <div className="editor-icon"><CalendarDays size={22}/></div>
         </div>
         {selectedPayments.length>0&&showPayouts&&<div className="editor-payouts"><strong><Wallet size={16}/> Заплановані виплати</strong>{selectedPayments.map(item=><div key={item.id}><span>{item.title}<small>За {item.sourceMonth}</small></span><b>{item.amount===null?'Ще без суми':moneyUA(item.amount)}</b></div>)}<small>Прогноз, а не підтверджена виплата.</small></div>}
@@ -611,7 +656,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
                 disabled={quickBusy||busy} aria-pressed={draft.status==='worked'} onClick={quickStatus}>
                 {draft.status==='worked'?<CheckCircle2 size={22}/>:<Check size={22}/>}
                 <span><strong>{draft.status==='worked'?'Відпрацьовано':'Позначити як відпрацьовано'}</strong>
-                  <small>{draft.status==='worked'?'Натисни, щоб повернути статус «Заплановано»':'Одне натискання — і день збережеться у календарі'}</small></span>
+                  </span>
               </button>
             </div>
             {visible.overtimeButton&&<div className="day-action-section">
@@ -624,28 +669,20 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
                     `${draft.overtimeExtra.start}–${draft.overtimeExtra.end} · ${draft.overtimeExtra.basisPoints/100}% · Натисни, щоб прибрати`:
                     `${overtimePreset.start}–${overtimePreset.end} · ${overtimePreset.basisPoints/100}% · Збереження одним натисканням`}</small></span>
               </button>
-              <p className="day-action-hint">Години та тариф беруться з шаблону «Графік під твої правила». Якщо день запланований, доплата з’явиться у зарплаті після підтвердження зміни.</p>
+              
             </div>}
           </>}
-          {performance.manualDailyPay&&(draft.dayType??'work')==='work'&&<details key={`wage-${selected}`} className="day-cash-entry">
-            <summary><Wallet size={18}/><span><strong>Мій заробіток за день</strong><small>{wageEntry===undefined?'Ще не введено':moneyUA(wageEntry)}</small></span><ChevronDown size={17}/></summary>
-            <form className="day-cash-form" onSubmit={saveWage}>
-              <label>Особиста оплата, грн<input inputMode="decimal" type="text" value={wageDraft} placeholder="Наприклад, 1500 або 0" onChange={e=>setWageDraft(e.target.value)} disabled={wageBusy||!activeShift}/></label>
-              <div className="day-cash-actions"><button type="submit" className="btn btn-primary" disabled={wageBusy||!activeShift}><Save size={15}/> Зберегти</button>{wageEntry!==undefined&&<button type="button" className="btn btn-outline" disabled={wageBusy} onClick={()=>void clearWage()}>Очистити</button>}</div>
-              <small>Замінює автоматичну базову оплату цього дня, але не додаткові нарахування. 0 грн вважається внесеним записом. День має бути відпрацьованим для нарахування.</small>
-              {wageMessage&&<p role="status">{wageMessage}</p>}
-            </form>
-          </details>}
-          {cashPrefs.enabled&&(draft.dayType??'work')==='work'&&<details key={selected} className="day-cash-entry">
-            <summary><ReceiptText size={18}/><span><strong>Каса за день</strong><small>{cashEntry?moneyUA(cashEntry.amount):'Додати за бажанням'}</small></span><ChevronDown size={17}/></summary>
-            <form onSubmit={saveCash} className="day-cash-form">
-              <label>Каса, грн<input inputMode="decimal" type="text" value={cashDraft} placeholder="Наприклад, 12500,50" onChange={e=>setCashDraft(e.target.value)} disabled={cashBusy||!activeShift} aria-label="Сума каси за день у гривнях"/></label>
-              <div className="day-cash-actions"><button type="submit" className="btn btn-primary" disabled={cashBusy||!activeShift}><Save size={15}/>{cashBusy?'Зберігаємо…':'Зберегти касу'}</button>{cashEntry&&<button type="button" className="btn btn-outline" onClick={()=>void clearCash()} disabled={cashBusy}>Очистити</button>}</div>
-              {!activeShift&&<small>Спочатку познач день як робочий і збережи зміну.</small>}
-              <small>Каса не є твоєю зарплатою. Її облік і вплив на премії налаштовуються окремо.</small>
-            </form>
-          </details>}
-          {cashPrefs.enabled&&(draft.dayType??'work')!=='work'&&cashEntry&&<div className="cash-source-note">Для цього дня збережено касу {moneyUA(cashEntry.amount)}, але після позначення вихідного чи відсутності вона <strong>не входить у місячні підсумки</strong>. <button type="button" className="link-button" disabled={cashBusy} onClick={()=>void clearCash()}>Видалити запис каси</button></div>}
+          {(performance.manualDailyPay||cashPrefs.enabled)&&(draft.dayType??'work')==='work'&&<form className="day-money-entry" onSubmit={saveDayMoney}>
+            <div className="day-money-heading"><Wallet size={19}/><strong>Заробіток і каса</strong></div>
+            <div className="day-money-fields">
+              {performance.manualDailyPay&&<label><span>Мій заробіток, ₴</span><input inputMode="decimal" type="text" value={wageDraft} placeholder="0,00" onChange={e=>setWageDraft(e.target.value)} disabled={moneyBusy||!activeShift}/></label>}
+              {cashPrefs.enabled&&<label><span>Каса за день, ₴</span><input inputMode="decimal" type="text" value={cashDraft} placeholder="0,00" onChange={e=>setCashDraft(e.target.value)} disabled={moneyBusy||!activeShift}/></label>}
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={moneyBusy||!activeShift}><Save size={18}/>{moneyBusy?'Зберігаємо…':'Зберегти суми'}</button>
+            {!activeShift&&<small>Спочатку відміть робочий день.</small>}
+            {moneyNotice&&<p role="status" className="save-notice">{moneyNotice}</p>}
+          </form>}
+          {cashPrefs.enabled&&(draft.dayType??'work')!=='work'&&cashEntry&&<div className="cash-source-note">Для цього дня збережено касу {moneyUA(cashEntry.amount)}, але після позначення вихідного чи відсутності вона <strong>не входить у місячні підсумки</strong>. <button type="button" className="link-button" disabled={moneyBusy} onClick={()=>void clearCash()}>Видалити запис каси</button></div>}
           {cashNotice&&<p className="save-notice" role="status">{cashNotice}</p>}
           {quickBusy&&<p className="day-save-pending" role="status">Зберігаємо зміни…</p>}
           {status&&<p className="save-notice" role="status">{status}</p>}
@@ -683,9 +720,10 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
             {activeShift&&<button type="button" disabled={busy||quickBusy} className="btn btn-danger full" onClick={remove}><Trash2 size={16}/> Видалити запис дня</button>}
           </form>
         </details>
-        <p className="editor-footnote">{demo?'Деморежим: дані не зберігаються після оновлення сторінки.':'Зміни зберігаються автоматично.'}</p>
-      </section>
+
+      </section></div>}
     </div>
+    </>}
   </>
 }
 
@@ -1123,7 +1161,7 @@ export default function App(){
         <div className="page-motion" key={`${workspace.id}:${page}`}>
         {page==='setup'&&<SetupPage key={workspace.id} settings={paySettings} loaded={payLoaded} onChoose={chooseSetup}/>}
         {page==='dashboard'&&<Dashboard workspace={workspace} shifts={shifts} paySettings={payLoaded?paySettings:null} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoCalendar={()=>navigate('calendar')} onCreateCompany={()=>setCreateOpen(true)} onGoPay={()=>navigate('pay')} onGoStatistics={()=>navigate('statistics')}/>}
-        {page==='calendar'&&<CalendarPage key={`${workspace.id}-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onChangeCashPrefs={onChangeCashPrefs} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
+        {page==='calendar'&&<CalendarPage key={`${workspace.id}-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
         {page==='statistics'&&<StatisticsPage key={workspace.id} workspaceName={workspace.name} shifts={shifts} settings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} onSaveTarget={onSaveTarget} onResetTarget={onResetTarget} dailyWages={dailyWages} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onCalendar={()=>navigate('calendar')} onRules={()=>navigate('rules')} onPay={()=>navigate('pay')}/>}
         {performanceError&&<div className="alert-banner" role="alert">{performanceError}</div>}
         {page==='pay'&&unitsError&&<p className="form-error" role="alert">{unitsError}</p>}
@@ -1135,7 +1173,7 @@ export default function App(){
           <div className="v2-settings-links">
             <button type="button" className="btn btn-primary" onClick={()=>setForceWizard(true)}><Sparkles size={17}/> Пройти майстер</button>
             <button type="button" className="btn btn-outline" onClick={()=>navigate('rules')}><SlidersHorizontal size={17}/> Правила оплати</button>
-            <button type="button" className="btn btn-outline" onClick={()=>navigate('setup')}>Редактор графіків</button>
+            <a className="btn btn-outline" href="#schedule-settings"><CalendarDays size={17}/> Графік роботи</a>
             <button type="button" className="btn btn-outline" onClick={()=>navigate('pay')}>Деталі нарахувань</button>
           </div>
           <details className="v2-extra-features"><summary><span className="v2-extra-heading"><strong>Інші можливості, якщо вони потрібні</strong><small>Додаткові інструменти та поточні налаштування</small></span><ChevronDown size={19} className="v2-extra-chevron"/></summary>
@@ -1146,14 +1184,16 @@ export default function App(){
                 <span><strong>План і премії</strong><small>{performance.enabled?'Увімкнено':'Вимкнено'}</small></span>
                 <span><strong>Оплата за день</strong><small>{performance.manualDailyPay?'Вводжу вручну':'Рахується автоматично'}</small></span>
               </div>
-              <label className="onboard-toggle"><span><strong>Каса за день</strong><small>Доступна лише коли потрібна. Не змінює твій оклад.</small></span><input type="checkbox" checked={cashPrefs.enabled} onChange={e=>void onChangeCashPrefs({enabled:e.target.checked,useForSales:e.target.checked?cashPrefs.useForSales:false})}/></label>
+              <label className="onboard-toggle"><span><strong>Каса за день</strong></span><input type="checkbox" checked={cashPrefs.enabled} onChange={e=>void onChangeCashPrefs({enabled:e.target.checked,useForSales:e.target.checked?cashPrefs.useForSales:false})}/></label>
+              {cashPrefs.enabled&&<label className="onboard-toggle"><span><strong>Каса впливає на % від виручки</strong></span><input type="checkbox" checked={cashPrefs.useForSales} onChange={e=>void onChangeCashPrefs({...cashPrefs,useForSales:e.target.checked})}/></label>
               <button className="onboard-link" type="button" onClick={()=>navigate('rules')}>Змінити доплати, план і зарплату в правилах оплати</button>
             </div>
           </details>
         </section>}
+        {page==='settings'&&<CalendarPage scheduleOnly key={`${workspace.id}-schedule-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
         {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification}/>}
         </div>
-        <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>Версія 2.0.0 beta 3</span></footer>
+        <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>Версія 2.0.0 beta 4</span></footer>
       </main>
     </div>
     {createOpen&&<CreateWorkspaceDialog onClose={()=>setCreateOpen(false)} onCreate={createCompany}/>}

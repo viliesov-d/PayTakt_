@@ -70,7 +70,7 @@ test('wizard and main calendar keep context-specific UI and a dedicated overtime
  assert.match(ui,/Вводжу заробіток сам/)
  assert.match(ui,/Як рахувати понаднормові години/)
  assert.match(ui,/canUseCash&&<label/)
- assert.match(app,/visible\.cashToggle&&<button/)
+ assert.match(app,/cashPrefs\.enabled&&<label/)
  assert.match(app,/visible\.overtimeButton&&<div/)
 })
 
