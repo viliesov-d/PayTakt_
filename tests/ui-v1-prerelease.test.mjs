@@ -8,7 +8,7 @@ const rules = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 
 test('prerelease package uses semver RC identifier', () => {
-  assert.equal(pkg.version, '1.0.0-rc.2')
+  assert.equal(pkg.version, '2.0.0-beta.3')
 })
 
 test('site navigation is in the top header, not a fixed app sidebar', () => {
