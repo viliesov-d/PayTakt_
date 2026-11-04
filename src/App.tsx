@@ -1185,7 +1185,7 @@ export default function App(){
                 <span><strong>Оплата за день</strong><small>{performance.manualDailyPay?'Вводжу вручну':'Рахується автоматично'}</small></span>
               </div>
               <label className="onboard-toggle"><span><strong>Каса за день</strong></span><input type="checkbox" checked={cashPrefs.enabled} onChange={e=>void onChangeCashPrefs({enabled:e.target.checked,useForSales:e.target.checked?cashPrefs.useForSales:false})}/></label>
-              {cashPrefs.enabled&&<label className="onboard-toggle"><span><strong>Каса впливає на % від виручки</strong></span><input type="checkbox" checked={cashPrefs.useForSales} onChange={e=>void onChangeCashPrefs({...cashPrefs,useForSales:e.target.checked})}/></label>
+              {cashPrefs.enabled&&<label className="onboard-toggle"><span><strong>Каса впливає на % від виручки</strong></span><input type="checkbox" checked={cashPrefs.useForSales} onChange={e=>void onChangeCashPrefs({...cashPrefs,useForSales:e.target.checked})}/></label>}
               <button className="onboard-link" type="button" onClick={()=>navigate('rules')}>Змінити доплати, план і зарплату в правилах оплати</button>
             </div>
           </details>
