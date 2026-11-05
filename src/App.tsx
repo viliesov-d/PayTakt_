@@ -1667,7 +1667,7 @@ export default function App(){
                 offlineSyncing?'Синхронізуємо…':
                 syncTotals.pending?'Очікує синхронізації':
                 navigator.onLine?'Збережено у Firebase':'Офлайн · збережені дані')}</strong>
-              <small>{tr(`Локальні записи: ${offlineQueue.length}`)}{offlineQueue.length>0?
+              <small>{tr('Локальні записи')}: {offlineQueue.length}{offlineQueue.length>0?
                 ` · ${syncTotals.pending} ${tr('в черзі')}, ${syncTotals.conflicts} ${tr('конфліктів')}`:''}</small>
             </div>
             {(syncTotals.errors>0||syncTotals.pending>0)&&<button className="btn btn-outline" type="button" onClick={retrySync}
