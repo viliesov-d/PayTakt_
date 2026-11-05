@@ -13,8 +13,8 @@ import {
 import { doc, setDoc } from 'firebase/firestore'
 import { auth, db, firebaseReady } from './lib/firebase'
 import {
-  createWorkspace, deleteWorkspace, deleteShift, demoShifts, ensureProfile, loadWorkspaces, subscribeTemplates, saveTemplate, deleteTemplate,
-  saveShift, applyMonthlyPattern, shiftHours, shiftCount, validateDay, subscribeShifts, toDateKey, updateProfileTheme,
+  createWorkspace, deleteWorkspace, demoShifts, ensureProfile, loadWorkspaces, subscribeTemplates, saveTemplate, deleteTemplate,
+  applyMonthlyPattern, shiftHours, shiftCount, validateDay, subscribeShifts, toDateKey, updateProfileTheme,
   type Shift, type DayType, type ShiftKind, type AdditionalShift, type ThemeChoice, type Workspace, type WorkspaceKind, type AccountingCurrency, accountingCurrencies,
   subscribeOvertimePreset, saveOvertimePreset,
 } from './lib/data'
@@ -37,7 +37,7 @@ import {StatisticsPage} from './components/StatisticsPage'
 import {OnboardingWizard} from './components/OnboardingWizard'
 import {calendarFeatures} from './lib/featureVisibility'
 import {onboardingMonthKeys,schedulePattern,onboardingCalendarDays,onboardingOvertimePreset,makeOnboardingPaySettings,makeOnboardingPerformance,validateOnboardingDraft,type OnboardingDraft} from './lib/onboarding'
-import { savePaySettings, subscribePaySettings, saveMonthlySales, subscribeMonthlySales, saveMonthlyUnits, subscribeMonthlyUnits, subscribeDailyCash, saveDailyCash, removeDailyCash, subscribeCashPreferences, saveCashPreferences,subscribePerformanceSettings,savePerformanceSettings,subscribeMonthlyTargets,saveMonthlyTarget,removeMonthlyTarget,subscribeDailyWages,saveDailyWage,removeDailyWage } from './lib/data'
+import { savePaySettings, subscribePaySettings, saveMonthlySales, subscribeMonthlySales, saveMonthlyUnits, subscribeMonthlyUnits, subscribeDailyCash, subscribeCashPreferences, saveCashPreferences,subscribePerformanceSettings,savePerformanceSettings,subscribeMonthlyTargets,saveMonthlyTarget,removeMonthlyTarget,subscribeDailyWages } from './lib/data'
 
 type Page = 'setup' | 'dashboard' | 'calendar' | 'statistics' | 'pay' | 'rules' | 'team' | 'settings'
 type Session = { uid: string; email: string; name: string; demo: boolean }
