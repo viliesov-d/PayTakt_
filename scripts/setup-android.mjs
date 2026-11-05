@@ -30,7 +30,9 @@ if (
 }
 
 // npm updates package.json and package-lock.json together, keeping them consistent.
-run('npm', ['install', '--save', '@capacitor/core@^8', '@capacitor/android@^8'])
+// Pin the v8 local-notifications plugin to Capacitor 8 to prevent a future
+// npm latest upgrade from pulling a different incompatible major version.
+run('npm', ['install', '--save', '@capacitor/core@^8', '@capacitor/android@^8', '@capacitor/local-notifications@8.3.1'])
 run('npm', ['install', '--save-dev', '@capacitor/cli@^8'])
 run('npm', ['run', 'build'])
 
