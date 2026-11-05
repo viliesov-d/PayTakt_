@@ -35,7 +35,8 @@ test('the original Zmina visual tokens are present in the new theme', () => {
 test('user-facing success and daily help copy avoid Firebase jargon', () => {
   assert.doesNotMatch(ui, /День збережено у Firebase|Зберігаємо зміни у Firebase|Кнопки вище одразу зберігають дані у Firebase/)
   assert.match(ui, /День збережено\./)
-  assert.match(ui, /Дані дня збережено\./)
+  assert.match(ui, /Зміни збережено\./)
+  assert.match(ui, /День відпрацьовано\. Суми збережено\./)
 })
 
 test('Firebase workspace owner restriction is kept for payroll settings', () => {
