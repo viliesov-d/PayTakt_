@@ -194,7 +194,11 @@ function Dashboard({ workspace, shifts, paySettings, salesByMonth, unitsByMonth,
         <div className="zmina-floating-coin coin-primary">₴</div><div className="zmina-floating-coin coin-secondary">✦</div>
       </div>
     </div>
-    <SectionHeading eyebrow="КОРОТКИЙ ОГЛЯД" title="Підсумок місяця" detail={`${monthFormat.format(today)} · ${workspace.name}`}><button type="button" className="btn btn-outline" onClick={onGoStatistics}>Моя статистика <TrendingUp size={17}/></button></SectionHeading>
+    <div className="dashboard-summary-heading">
+      <SectionHeading eyebrow="КОРОТКИЙ ОГЛЯД" title="Підсумок місяця" detail={`${monthFormat.format(today)} · ${workspace.name}`}>
+        <button type="button" className="btn btn-outline" onClick={onGoStatistics}>Моя статистика <TrendingUp size={17}/></button>
+      </SectionHeading>
+    </div>
     <div className="stats-grid">
       <div className="stat-card"><div className="stat-top"><span>Заплановано змін</span><CalendarDays size={20}/></div><div className="stat-value">{summary.plannedShifts} <span>змін</span></div><div className="stat-hint">У поточному місяці</div></div>
       <div className="stat-card"><div className="stat-top"><span>Відпрацьовано</span><Clock3 size={20}/></div><div className="stat-value">{summary.workedHours.toLocaleString('uk-UA',{maximumFractionDigits:1})} <span>год</span></div><div className="stat-hint">З підтверджених вами змін</div></div>

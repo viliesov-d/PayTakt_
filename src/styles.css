@@ -1426,3 +1426,26 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
   .zmina-header-tools .zmina-calendar-return{transition:none}
   .zmina-header-tools .zmina-calendar-return:hover{transform:none}
 }
+
+/* Dashboard summary: its mobile heading and statistics button align with cards.
+   A later global .section-head rule otherwise overrides mobile align-items. */
+@media(max-width:700px){
+  .dashboard-summary-heading{width:100%;min-width:0}
+  .dashboard-summary-heading .section-head{
+    width:100%;display:flex;flex-direction:column;
+    align-items:flex-start;justify-content:flex-start;
+    gap:14px;text-align:left;
+  }
+  .dashboard-summary-heading .section-head>div{width:100%;min-width:0;text-align:left}
+  .dashboard-summary-heading .section-head .eyebrow,
+  .dashboard-summary-heading .section-head h2,
+  .dashboard-summary-heading .section-head .subtitle{
+    text-align:left;max-width:100%;overflow-wrap:anywhere;
+  }
+  .dashboard-summary-heading .section-head>.btn{
+    align-self:flex-start;
+    margin:0;
+    width:auto;max-width:100%;
+    min-height:44px;
+  }
+}
