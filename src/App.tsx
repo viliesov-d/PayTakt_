@@ -965,7 +965,7 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
 
 function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(kind:WorkspaceKind,name:string,currency:AccountingCurrency)=>Promise<void>}){
   const [name,setName]=useState('')
-  const [kind,setKind]=useState<WorkspaceKind>('personal')
+  const [kind,setKind]=useState<WorkspaceKind>('company')
   const [currency,setCurrency]=useState<AccountingCurrency>('UAH')
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
@@ -1239,6 +1239,7 @@ export default function App(){
   }
   const onApplyZmina=async()=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
+    if((workspace.currency??'UAH')!=='UAH')throw Error('Шаблон «Система Зміна» розрахований на гривні. Для іншої валюти налаштуй премії вручну.')
     // Preserve personal salary rates. Only replace payday dates and activate the optional module.
     const pay={...(paySettings??defaultPaySettings),paymentRules:defaultPaymentRules.map(rule=>({...rule}))}
     await onSavePay(pay)
