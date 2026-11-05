@@ -916,6 +916,9 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
         <div className="setting-info"><span>{tr('Ім’я')}</span><strong>{session.name}</strong></div>
         <div className="setting-info"><span>{tr('Електронна пошта')}</span><strong>{session.email || tr('Деморежим')}</strong></div>
         <div className="setting-info"><span>{tr('Тип входу')}</span><strong>{session.demo?tr('Демонстрація'):tr('Електронна пошта')}</strong></div>
+        <button type="button" className="btn btn-outline paytakt-signout-button" onClick={onSignOut}>
+          <LogOut size={18}/>{tr('Вийти з акаунта')}
+        </button>
       </section>
       <section className="panel settings-panel settings-wide paytakt-locale-settings">
         <div className="settings-heading"><Monitor size={22}/><div><h3>{tr('Мова застосунку')}</h3><p>Українська · English · Русский</p></div></div>
@@ -978,10 +981,21 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
       </>}
       <section className="panel settings-panel settings-wide">
         <div className="settings-heading"><BriefcaseBusiness size={22}/><div><h3>{tr('Робочі простори')}</h3><p>{tr('Особисті записи та компанії не змішуються.')}</p></div></div>
-        <div className="workspace-rows">{workspaces.map(w=><div className="workspace-row" key={w.id}><div className="workspace-symbol">{w.kind==='company'?<Building2 size={19}/>:<UserRound size={19}/>}</div>
-          <div><strong>{w.name}</strong><small>{tr(w.kind==='company'?'Компанія':'Особистий простір')}</small></div>
-          {w.id===workspace.id&&<span className="pill mint-pill">{tr('Активний')}</span>}
+        <div className="workspace-rows">{workspaces.map(w=><div className="workspace-row paytakt-workspace-row" key={w.id}>
+          <div className="workspace-symbol">{w.kind==='company'?<Building2 size={19}/>:<UserRound size={19}/>}</div>
+          <div className="paytakt-workspace-name"><strong>{w.name}</strong><small>{tr(w.kind==='company'?'Компанія':'Особистий простір')} · {w.currency??'UAH'}</small></div>
+          <div className="paytakt-workspace-buttons">
+            {w.id===workspace.id&&<span className="pill mint-pill">{tr('Активний')}</span>}
+            <button type="button" className="btn btn-outline paytakt-delete-workspace"
+              disabled={workspaces.length<2}
+              title={workspaces.length<2?tr('Спочатку створи другий робочий простір.'):tr('Видалити робочий простір')}
+              onClick={()=>onDeleteRequest(w)}
+              aria-label={`${tr('Видалити робочий простір')}: ${w.name}`}>
+              <Trash2 size={16}/><span>{tr('Видалити')}</span>
+            </button>
+          </div>
         </div>)}</div>
+        {workspaces.length===1&&<p className="paytakt-only-workspace-note">{tr('Не можна видалити єдиний простір. Спочатку створи інший.')}</p>}
         <button type="button" className="btn btn-outline" onClick={onCreate}><Plus size={17}/>{tr('Додати робочий простір')}</button>
       </section>
     </div>
@@ -1023,6 +1037,44 @@ function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(ki
         {error&&<p role="alert" className="form-error">{error}</p>}
         <button type="submit" disabled={busy||name.trim().length<2} className="btn btn-primary full">
           {busy?tr('Створюємо…'):tr('Створити простір')}<ArrowRight size={17}/></button>
+      </form>
+    </div>
+  </div>
+}
+
+function DeleteWorkspaceDialog({workspace,onClose,onDelete}:{
+  workspace:Workspace;onClose:()=>void;onDelete:(value:Workspace)=>Promise<void>
+}){
+  const [typed,setTyped]=useState('')
+  const [busy,setBusy]=useState(false)
+  const [error,setError]=useState('')
+  const submit=async(e:FormEvent)=>{
+    e.preventDefault()
+    if(typed.trim()!==workspace.name)return
+    setBusy(true);setError('')
+    try{await onDelete(workspace);onClose()}
+    catch(err){setError(friendlyError(err))}
+    finally{setBusy(false)}
+  }
+  return <div className="modal-backdrop" onMouseDown={e=>{if(!busy&&e.target===e.currentTarget)onClose()}}>
+    <div className="modal paytakt-delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-workspace-title">
+      <div className="modal-head"><div className="modal-icon paytakt-danger-icon"><Trash2 size={22}/></div>
+        <button type="button" className="icon-button" aria-label={tr('Скасувати')} disabled={busy} onClick={onClose}><X size={20}/></button>
+      </div>
+      <h2 id="delete-workspace-title">{tr('Видалити робочий простір')}</h2>
+      <p>{tr('Усі записи календаря, каса, нарахування, плани, шаблони та налаштування цього простору будуть видалені назавжди. Інші робочі простори не постраждають.')}</p>
+      <p className="paytakt-delete-name">{workspace.name} · {workspace.currency??'UAH'}</p>
+      <form onSubmit={submit} className="paytakt-delete-form">
+        <label>{tr('Для підтвердження введи точну назву простору')}
+          <input autoFocus autoComplete="off" value={typed} disabled={busy} onChange={e=>setTyped(e.target.value)}/>
+        </label>
+        {error&&<p className="form-error" role="alert">{error}<br/>{tr('Якщо видалення перервалося, повтори спробу, щоб завершити очищення.')}</p>}
+        <div className="paytakt-delete-actions">
+          <button type="button" className="btn btn-outline" disabled={busy} onClick={onClose}>{tr('Скасувати')}</button>
+          <button type="submit" className="btn paytakt-danger-button" disabled={busy||typed.trim()!==workspace.name}>
+            <Trash2 size={17}/>{busy?tr('Видаляємо…'):tr('Видалити назавжди')}
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -1113,6 +1165,7 @@ export default function App(){
   const [mobileMenu,setMobileMenu]=useState(false)
   const [workspaceMenu,setWorkspaceMenu]=useState(false)
   const [createOpen,setCreateOpen]=useState(false)
+  const [deleteTarget,setDeleteTarget]=useState<Workspace|null>(null)
   const [shiftsError,setShiftsError]=useState('')
   const [emailVerified,setEmailVerified]=useState(false)
   const [verificationMessage,setVerificationMessage]=useState('')
@@ -1345,6 +1398,17 @@ export default function App(){
     if(auth){try{await signOut(auth)}catch(e){setError(friendlyError(e))}}
   }
   const selectWorkspace=(w:Workspace)=>{setAccountingCurrency(w.currency??'UAH');setPayLoaded(false);setShiftsLoaded(false);setSetupPayDraft(null);setWorkspace(w);setWorkspaceMenu(false);setMobileMenu(false);setForceWizard(false);setPage('calendar');try{localStorage.setItem(`paytakt-workspace:${session?.uid}`,w.id)}catch{/* optional */}}
+  const removeWorkspace=async(target:Workspace)=>{
+    if(!session)throw Error('Увійди в акаунт')
+    if(workspaces.length<2)throw Error('Спочатку створи інший робочий простір.')
+    if(!workspaces.some(item=>item.id===target.id))throw Error('Простір не знайдено.')
+    if(!session.demo)await deleteWorkspace(session.uid,target.id)
+    const remaining=workspaces.filter(item=>item.id!==target.id)
+    setWorkspaces(remaining)
+    try{localStorage.removeItem(`paytakt-wizard-v2:${session.uid}:${target.id}`)}catch{/* optional */}
+    if(workspace?.id===target.id)selectWorkspace(remaining[0])
+    setDeleteTarget(null)
+  }
   const createCompany=async(kind:WorkspaceKind,name:string,currency:AccountingCurrency)=>{
     if(!session)throw Error('Увійди в акаунт')
     let created:Workspace
@@ -1498,7 +1562,7 @@ export default function App(){
         {page==='pay'&&<PayPageV5 key={workspace.id} workspaceName={workspace.name} shifts={shifts} settings={paySettings} performance={performance} targets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} loaded={payLoaded&&salesLoaded&&unitsLoaded&&cashLoaded&&performanceLoaded&&targetsLoaded&&wagesLoaded} salesFromCash={cashPrefs.enabled&&cashPrefs.useForSales} salesByMonth={effectiveSales} onSaveMonthlySales={onSaveMonthlySales} unitsByMonth={unitsByMonth} onSaveMonthlyUnits={onSaveMonthlyUnits} demo={session.demo} goToRules={()=>navigate('rules')}/>}
         {page==='rules'&&<RulesPageV5 key={workspace.id} shifts={shifts} workspaceName={workspace.name} settings={setupPayDraft??paySettings} loaded={payLoaded} demo={session.demo} onSave={onSavePay} performance={performance} onSavePerformance={onSavePerformance} onApplyZmina={onApplyZmina}/>}
         {page==='team'&&workspace.kind==='company'&&<TeamPage workspace={workspace}/>}
-        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange}/>}
+        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates}/>}
         {page==='settings'&&<section className="panel v2-settings-actions">
           <div className="v2-settings-head"><div><h3>{tr("Налаштування твоєї роботи")}</h3><p>Персональний майстер або точні правила — обирай зручний спосіб.</p></div></div>
           <div className="v2-settings-links">
@@ -1538,5 +1602,6 @@ export default function App(){
       })}
     </nav>}
     {createOpen&&<CreateWorkspaceDialog onClose={()=>setCreateOpen(false)} onCreate={createCompany}/>}
+    {deleteTarget&&<DeleteWorkspaceDialog workspace={deleteTarget} onClose={()=>setDeleteTarget(null)} onDelete={removeWorkspace}/>}
   </div>
 }
