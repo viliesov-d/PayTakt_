@@ -1,4 +1,4 @@
-/** Optional daily cash ledger. Amounts are integer kopeks; they are NOT wages.
+/** Optional daily cash ledger. Amounts are integer minor units of the workspace currency; they are NOT wages.
  * Zero can be stored; an absent record is different from recorded zero cash.
  */
 import {segmentHours,type Shift} from './calendar.ts'
@@ -11,7 +11,7 @@ export function validateDailyCash(record:DailyCash):void{
   if(!record || !DATE.test(record.date) || Number.isNaN(Date.parse(record.date+'T12:00:00')) ||
     new Date(record.date+'T12:00:00').toISOString().slice(0,10)!==record.date ||
     !Number.isSafeInteger(record.amount) || record.amount<0 || record.amount>100_000_000_000)
-    throw Error('Каса: введи коректну дату та суму від 0 до 1 млрд грн.')
+    throw Error('Каса: введи коректну дату та суму від 0 до 1 млрд одиниць валюти простору.')
 }
 export function validateCashPreferences(p:CashPreferences):void{
   if(typeof p.enabled!=='boolean'||typeof p.useForSales!=='boolean'||(p.useForSales&&!p.enabled))
@@ -37,10 +37,10 @@ export function effectiveRevenue(manual:Record<string,number>,records:readonly D
   if(!prefs.enabled||!prefs.useForSales)return manual
   return cashTotalsByMonth(records,shifts)
 }
-/** Parsing only UI-entered hryvnia; preserve integer kopeks for storage. */
+/** Legacy function name; parse user-entered major currency units into integer hundredths. */
 export function parseCashHryvnia(input:string):number{
   const normalized=input.trim().replace(',','.')
-  if(!/^(?:\d+)(?:\.\d{1,2})?$/.test(normalized))throw Error('Введи суму каси в гривнях, наприклад 12500,50.')
+  if(!/^(?:\d+)(?:\.\d{1,2})?$/.test(normalized))throw Error('Введи суму каси у валюті робочого простору, наприклад 12500,50.')
   const [whole,frac='']=normalized.split('.')
   const amount=Number(whole)*100+Number(frac.padEnd(2,'0'))
   if(!Number.isSafeInteger(amount)||amount>100_000_000_000)throw Error('Сума каси завелика.')
