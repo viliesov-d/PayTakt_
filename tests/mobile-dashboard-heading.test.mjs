@@ -15,3 +15,5 @@ test('mobile dashboard summary text and button align left with the cards',()=>{
   assert.match(css,/\.dashboard-summary-heading \.section-head>\.btn\{\s*align-self:flex-start/)
   assert.match(css,/\.dashboard-summary-heading \.section-head \.subtitle\{[\s\S]*?overflow-wrap:anywhere/)
 })
+
+// v0.4: heading alignment retains mobile safety rules.
