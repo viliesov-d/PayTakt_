@@ -28,7 +28,7 @@ export function toDateKey(date: Date): string {
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 }
-function dayPayload(s: Shift) {
+export function dayPayload(s: Shift) {
   validateDay(s)
   return {
     date:s.date, start:s.start, end:s.end, breakMinutes:s.breakMinutes,
