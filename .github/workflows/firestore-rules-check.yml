@@ -1,0 +1,38 @@
+name: Validate Firestore Rules
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+      - '.github/workflows/firestore-rules-check.yml'
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Java for Firestore emulator
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Write temporary emulator config
+        shell: bash
+        run: |
+          printf '%s\n' '{"firestore":{"rules":"firestore.rules"},"emulators":{"firestore":{"port":8080},"ui":{"enabled":false}}}' > firebase-rules-check.json
+      - name: Compile Rules with the official Firestore emulator
+        shell: bash
+        run: |
+          npx --yes firebase-tools@14.24.0 emulators:exec \
+            --config firebase-rules-check.json \
+            --project demo-paytakt \
+            --only firestore \
+            'node -e "console.log(\"Firestore rules emulator started successfully\")"'

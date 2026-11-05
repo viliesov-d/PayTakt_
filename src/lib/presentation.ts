@@ -1,4 +1,6 @@
-/** UI presentation settings only. Core payroll amounts are always stored in UAH cents. */
+/** Presentation preferences + active accounting currency.
+ * Stored payroll integers use 1/100 of the active workspace's own currency.
+ * UAH-only legacy workspaces retain their original semantics. */
 export type Language = 'uk' | 'en' | 'ru'
 export type DisplayCurrency = 'UAH' | 'USD' | 'EUR' | 'PLN' | 'GBP'
 export type PresentationSettings = { language: Language; currency: DisplayCurrency; uahPerUnit: number }
@@ -1881,6 +1883,50 @@ const translations: Record<string, { en: string; ru: string }> = {
   "Відповіді зберігаються як чернетка у цьому браузері. Усе можна буде змінити пізніше.": {
     "en": "Answers are saved as a draft in this browser and can be edited later.",
     "ru": "Ответы сохраняются как черновик в браузере. Позже их можно изменить."
+  },
+  "Новий робочий простір": {
+    "en": "New workspace",
+    "ru": "Новое рабочее пространство"
+  },
+  "Додати робочий простір": {
+    "en": "Add workspace",
+    "ru": "Добавить рабочее пространство"
+  },
+  "Назва робочого простору": {
+    "en": "Workspace name",
+    "ru": "Название рабочего пространства"
+  },
+  "Тип простору": {
+    "en": "Workspace type",
+    "ru": "Тип пространства"
+  },
+  "Валюта зарплати": {
+    "en": "Salary currency",
+    "ru": "Валюта зарплаты"
+  },
+  "Гроші в цьому робочому просторі зберігаються без перерахунку у вибраній валюті.": {
+    "en": "Money in this workspace is stored directly in the selected currency.",
+    "ru": "Деньги в этом пространстве хранятся в выбранной валюте без пересчёта."
+  },
+  "Валюта закріплена за простором. Для іншої валюти створи окремий робочий простір; старі суми залишаться без змін.": {
+    "en": "The currency is fixed for this workspace. Create a separate workspace to use another currency without altering previous amounts.",
+    "ru": "Валюта закреплена за этим пространством. Для другой валюты создайте отдельное пространство — старые суммы не изменятся."
+  },
+  "Створи окремий простір для власного графіка або компанії. Валюта зарплати фіксується під час створення, щоб уже збережені суми не змінювали зміст.": {
+    "en": "Create a personal or company workspace. Its salary currency is locked at creation to protect stored amounts.",
+    "ru": "Создайте личное пространство или компанию. Валюта фиксируется при создании, чтобы защитить сохранённые суммы."
+  },
+  "Вибрана валюта застосовуватиметься до всіх ставок, зарплати, каси, планів і премій цього нового простору. Після створення змінити її без перенесення фінансових даних не можна.": {
+    "en": "All rates, pay, cash, targets, and bonuses in this new workspace use its currency. Changing it later requires a controlled data migration.",
+    "ru": "Все ставки, зарплата, касса, планы и премии нового пространства будут в этой валюте. Для смены валюты позже потребуется перенос данных."
+  },
+  "Наприклад, Мій графік": {
+    "en": "For example, My schedule",
+    "ru": "Например, Мой график"
+  },
+  "Створюємо…": {
+    "en": "Creating…",
+    "ru": "Создаём…"
   }
 }
 
@@ -1908,6 +1954,16 @@ export function readPresentation(): PresentationSettings {
   return { language: 'uk', currency: 'UAH', uahPerUnit: 1 }
 }
 let current: PresentationSettings = readPresentation()
+let workspaceCurrency: DisplayCurrency = 'UAH'
+
+/** Currency is set when a workspace is selected, never by a global display option. */
+export function setAccountingCurrency(value: DisplayCurrency): void {
+  workspaceCurrency = validCurrency(value) ? value : 'UAH'
+}
+export function getAccountingCurrency(): DisplayCurrency { return workspaceCurrency }
+export function inputCurrencyLabel(): string {
+  return workspaceCurrency === 'UAH' ? '₴' : workspaceCurrency
+}
 export function getPresentation(): PresentationSettings { return current }
 export function savePresentation(value: PresentationSettings): PresentationSettings {
   const safe: PresentationSettings = {
@@ -1933,12 +1989,17 @@ export function formatDate(date: Date): string {
 export function formatMonth(date: Date): string {
   return new Intl.DateTimeFormat(locale(), { month: 'long', year: 'numeric' }).format(date)
 }
-export function formatMoney(kopeks: number): string {
-  const rate = current.currency === 'UAH' ? 1 : current.uahPerUnit
-  const amount = kopeks / 100 / rate
+export function formatMoney(minorUnits: number): string {
+  // A non-UAH workspace stores its money natively; it must NEVER be
+  // interpreted as hryvnias and converted using the saved UAH/USD rate.
+  const isNativeForeignCurrency = workspaceCurrency !== 'UAH'
+  const targetCurrency = isNativeForeignCurrency ? workspaceCurrency : current.currency
+  const approximate = !isNativeForeignCurrency && current.currency !== 'UAH'
+  const rate = approximate ? current.uahPerUnit : 1
+  const amount = minorUnits / 100 / rate
   const result = new Intl.NumberFormat(locale(), {
-    style: 'currency', currency: current.currency,
+    style: 'currency', currency: targetCurrency,
     minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(amount)
-  return current.currency === 'UAH' ? result : '≈ ' + result
+  return approximate ? '≈ ' + result : result
 }

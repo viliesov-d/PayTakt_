@@ -1,4 +1,4 @@
-import {tr} from '../lib/presentation'
+import {tr,inputCurrencyLabel} from '../lib/presentation'
 import {useEffect,useMemo,useState} from 'react'
 import {ArrowLeft,ArrowRight,Check,CheckCircle2,Clock3,CalendarDays,BriefcaseBusiness,Sparkles,ShieldCheck} from 'lucide-react'
 import {sectors,suggestions} from '../lib/professions'
@@ -153,7 +153,7 @@ export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComple
             <small>Після зміни введу суму в календарі. Кожен день може мати іншу оплату.</small>
           </button>
         </div>
-        {draft.manualDailyPay?<div className="onboard-subpanel"><strong>{tr("Оплату за день вноситимеш у календарі")}</strong><p className="onboard-hint">Після підтвердження робочого дня з’явиться поле «Мій заробіток». Якщо не введеш суму, базова оплата за цей день не нарахується. 0 грн — теж запис.</p></div>:<div className="onboard-subpanel"><div className="onboard-fields"><label>{tr(payLabels[draft.mode].unit)}<input inputMode="decimal" type="text" value={draft.rate} onChange={e=>update({rate:e.target.value})} placeholder="Наприклад, 31000"/></label>
+        {draft.manualDailyPay?<div className="onboard-subpanel"><strong>{tr("Оплату за день вноситимеш у календарі")}</strong><p className="onboard-hint">Після підтвердження робочого дня з’явиться поле «Мій заробіток». Якщо не введеш суму, базова оплата за цей день не нарахується. 0 {inputCurrencyLabel()} — теж запис.</p></div>:<div className="onboard-subpanel"><div className="onboard-fields"><label>{tr(payLabels[draft.mode].unit).replace('UAH',inputCurrencyLabel()).replace('грн',inputCurrencyLabel())}<input inputMode="decimal" type="text" value={draft.rate} onChange={e=>update({rate:e.target.value})} placeholder="Наприклад, 31000"/></label>
           {draft.mode==='per_unit'&&<label>{tr("Що саме ти виконуєш?")}<input value={draft.unitName} maxLength={40} onChange={e=>update({unitName:e.target.value})} placeholder="Доставка, виріб, послуга…"/></label>}
         </div><p className="onboard-hint"><ShieldCheck size={16}/> Ставка використовується для розрахунку, але без виконаної роботи зарплата не нараховується.</p></div>}
       </>}
@@ -171,7 +171,7 @@ export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComple
         {draft.overtimeMode!=='none'&&<div className="onboard-subpanel"><div className="onboard-fields">
           {draft.overtimeMode==='automatic'&&<label>{tr("Після скількох годин за день?")}<input type="number" min="1" max="23" value={draft.overtimeAfterHours} onChange={e=>update({overtimeAfterHours:Number(e.target.value)})}/></label>}
           <label>{tr("Оплата понаднормових, %")}<input type="number" min="100" max="1000" step="1" value={draft.overtimePercent} onChange={e=>update({overtimePercent:Number(e.target.value)})}/></label>
-          {draft.manualDailyPay&&<label>{tr("Базова ставка за годину для доплат, грн")}<input inputMode="decimal" value={draft.overtimeHourlyRate} placeholder="Наприклад, 150" onChange={e=>update({overtimeHourlyRate:e.target.value})}/></label>}
+          {draft.manualDailyPay&&<label>{tr("Базова ставка за годину для доплат, грн").replace('UAH',inputCurrencyLabel()).replace('грн',inputCurrencyLabel())}<input inputMode="decimal" value={draft.overtimeHourlyRate} placeholder="Наприклад, 150" onChange={e=>update({overtimeHourlyRate:e.target.value})}/></label>}
         </div><p className="onboard-hint">{draft.overtimeMode==='quick'?'Кнопка швидкого додавання з’явиться в календарі. Тривалість додаткових годин зможеш змінити у шаблоні.':'PayTakt застосує поріг і відсоток до підтверджених годин. Окремої кнопки не буде.'}</p></div>}
       </>}
       {currentStep==='Години понаднормових'&&<>
@@ -194,12 +194,12 @@ export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComple
           {canUseCash&&<label className="onboard-toggle"><span><strong>{tr("Каса за день")}</strong><small>{tr("Виручка магазину, ресторану або інших продажів")}</small></span><input type="checkbox" checked={draft.cash} onChange={e=>update({cash:e.target.checked,...(!e.target.checked&&draft.planMetric==='cash'?{planMetric:'earnings' as PlanMetric}:{})})}/></label>}
           <label className="onboard-toggle"><span><strong>{tr("План і премія")}</strong><small>За результат роботи, виручку чи виконані завдання</small></span><input type="checkbox" checked={draft.plan} onChange={e=>update({plan:e.target.checked})}/></label>
         </div>
-        {draft.manualDailyPay&&draft.night&&draft.overtimeMode==='none'&&<div className="onboard-subpanel"><label className="onboard-small-field">Базова ставка за годину для нічних доплат, грн<input inputMode="decimal" value={draft.overtimeHourlyRate} onChange={e=>update({overtimeHourlyRate:e.target.value})} placeholder="Наприклад, 150"/></label></div>}
+        {draft.manualDailyPay&&draft.night&&draft.overtimeMode==='none'&&<div className="onboard-subpanel"><label className="onboard-small-field">Базова ставка за годину для нічних доплат, {inputCurrencyLabel()}<input inputMode="decimal" value={draft.overtimeHourlyRate} onChange={e=>update({overtimeHourlyRate:e.target.value})} placeholder="Наприклад, 150"/></label></div>}
         {!canUseCash&&<button className="onboard-link onboard-extra-link" type="button" onClick={()=>setShowOtherFeatures(true)}>{tr("Потрібна каса, хоча вона нетипова для моєї роботи")}</button>}
         {draft.plan&&<div className="onboard-subpanel"><div className="onboard-fields">
           <label>{tr("За чим рахуємо план?")}<select value={draft.planMetric} onChange={e=>update({planMetric:e.target.value as PlanMetric,cash:e.target.value==='cash'?true:draft.cash})}>{canUseCash&&<option value="cash">{tr("Каса / виручка")}</option>}<option value="units">{tr("Кількість виконаних робіт")}</option><option value="earnings">{tr("Особистий заробіток")}</option></select></label>
-          <label>Місячний план {draft.planMetric==='units'?'(одиниць)':'(грн)'}<input inputMode="decimal" value={draft.planTarget} onChange={e=>update({planTarget:e.target.value})} placeholder="Наприклад, 100000"/></label>
-          <label>{tr("Премія при 100%, грн")}<input inputMode="decimal" value={draft.planBonus} onChange={e=>update({planBonus:e.target.value})} placeholder="Наприклад, 2000"/></label>
+          <label>Місячний план {draft.planMetric==='units'?'(одиниць)':`(${inputCurrencyLabel()})`}<input inputMode="decimal" value={draft.planTarget} onChange={e=>update({planTarget:e.target.value})} placeholder="Наприклад, 100000"/></label>
+          <label>{tr("Премія при 100%, грн").replace('UAH',inputCurrencyLabel()).replace('грн',inputCurrencyLabel())}<input inputMode="decimal" value={draft.planBonus} onChange={e=>update({planBonus:e.target.value})} placeholder="Наприклад, 2000"/></label>
         </div></div>}
       </>}
       {currentStep==='Виплати'&&<>
@@ -208,7 +208,7 @@ export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComple
           {([['split','Аванс за першу половину','За 1–15 число, решта наступного місяця'],['fixed','Фіксований аванс','Суму авансу задаєш вручну'],['all','Уся зарплата одним платежем','Один платіж у вибраний день']] as const).map(([id,title,sub])=><button key={id} className={`onboard-choice ${draft.payout===id?'selected':''}`} aria-pressed={draft.payout===id} onClick={()=>update({payout:id})} type="button"><span className="onboard-choice-top"><strong>{title}</strong>{draft.payout===id&&<CheckCircle2 size={20}/>}</span><small>{sub}</small></button>)}
         </div>
         <div className="onboard-subpanel"><div className="onboard-fields">
-          {draft.payout==='fixed'&&<label>{tr("Аванс, грн")}<input value={draft.advance} inputMode="decimal" placeholder="Наприклад, 10000" onChange={e=>update({advance:e.target.value})}/></label>}
+          {draft.payout==='fixed'&&<label>{tr("Аванс, грн").replace('UAH',inputCurrencyLabel()).replace('грн',inputCurrencyLabel())}<input value={draft.advance} inputMode="decimal" placeholder="Наприклад, 10000" onChange={e=>update({advance:e.target.value})}/></label>}
           {draft.payout!=='all'&&<label>{tr("Аванс — число місяця")}<input type="number" min="1" max="31" value={draft.advanceDay} onChange={e=>update({advanceDay:Number(e.target.value)})}/></label>}
           <label>{draft.payout==='all'?'Зарплата — число місяця':'Залишок зарплати — число'}<input type="number" min="1" max="31" value={draft.salaryDay} onChange={e=>update({salaryDay:Number(e.target.value)})}/></label>
           <label>{tr("Премія — число місяця")}<input type="number" min="1" max="31" value={draft.bonusDay} onChange={e=>update({bonusDay:Number(e.target.value)})}/></label>
@@ -219,7 +219,7 @@ export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComple
         <div className="onboard-review">
           <div><span>{tr("Сфера роботи")}</span><strong>{tr(sectors.find(s=>s.id===draft.sector)?.label??'')}</strong></div>
           <div><span>{tr("Графік")}</span><strong>{scheduleSummary(draft)} · {workDays} робочих днів цього місяця</strong></div>
-          <div><span>{tr("Основна оплата")}</span><strong>{draft.manualDailyPay?'Вношу заробіток сам за кожен день':`${tr(payLabels[draft.mode].title)} · ${cash(draft.rate)} ₴`}</strong></div>
+          <div><span>{tr("Основна оплата")}</span><strong>{draft.manualDailyPay?'Вношу заробіток сам за кожен день':`${tr(payLabels[draft.mode].title)} · ${cash(draft.rate)} ${inputCurrencyLabel()}`}</strong></div>
           <div><span>{tr("Понаднормові")}</span><strong>{draft.overtimeMode==='none'?'Не використовую':draft.overtimeMode==='quick'?`Кнопка +${draft.overtimeHoursPerDay} год · ${draft.overtimePercent}%`:`Після ${draft.overtimeAfterHours} год · +${draft.overtimeHoursPerDay} год/день · ${draft.overtimePercent}%`}</strong></div>
           <div><span>{tr("Інші можливості")}</span><strong>{draft.cash?'Каса': 'Без каси'} · {draft.plan?'План і премія':'Без плану'} · {draft.night?'Нічні':'Без нічних'}</strong></div>
           <div><span>{tr("Виплати")}</span><strong>{draft.payout==='all'?'Одним платежем':draft.payout==='fixed'?'Фіксований аванс':'Аванс за пів місяця'}</strong></div>

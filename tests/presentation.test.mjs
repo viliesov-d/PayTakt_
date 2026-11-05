@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
 import {
-  savePresentation, getPresentation, formatMoney, formatDate, tr,
+  savePresentation, getPresentation, formatMoney, formatDate, tr, setAccountingCurrency, getAccountingCurrency, inputCurrencyLabel,
 } from '../src/lib/presentation.ts'
 
 test('UAH remains unchanged when display settings are default', () => {
@@ -39,4 +40,39 @@ test('invalid or absent exchange rates are rejected', () => {
     assert.throws(()=>savePresentation({language:'en',currency:'USD',uahPerUnit:0}),/Exchange rate/)
     assert.throws(()=>savePresentation({language:'ru',currency:'PLN',uahPerUnit:NaN}),/Exchange rate/)
   } finally { savePresentation(prior) }
+})
+
+test('native USD workspace renders stored cents as dollars, not converted UAH',()=>{
+  const prior={...getPresentation()}
+  const priorNative=getAccountingCurrency()
+  try {
+    savePresentation({language:'en',currency:'EUR',uahPerUnit:100})
+    setAccountingCurrency('USD')
+    assert.equal(inputCurrencyLabel(),'USD')
+    assert.equal(formatMoney(123450),'$1,234.50')
+    assert.equal(formatMoney(0),'$0.00')
+    assert.ok(!formatMoney(123450).startsWith('≈'))
+    // Switching to a legacy workspace applies display conversion as before.
+    setAccountingCurrency('UAH')
+    assert.equal(formatMoney(123450),'≈ €12.35')
+  }finally{
+    setAccountingCurrency(priorNative)
+    savePresentation(prior)
+  }
+})
+
+test('invalid workspace currency cannot replace the safe UAH default',()=>{
+  const before=getAccountingCurrency()
+  try{
+    setAccountingCurrency('UNKNOWN')
+    assert.equal(getAccountingCurrency(),'UAH')
+  }finally{setAccountingCurrency(before)}
+})
+
+test('workspace currency metadata and Firestore rules remain immutable',()=>{
+  const data=readFileSync(new URL('../src/lib/data.ts',import.meta.url),'utf8')
+  const rules=readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')
+  assert.match(data,/currency: isAccountingCurrency\(d\.data\(\)\.currency\) \? d\.data\(\)\.currency : 'UAH'/)
+  assert.match(rules,/request\.resource\.data\.get\('currency','UAH'\) == resource\.data\.get\('currency','UAH'\)/)
+  assert.match(rules,/getAfter\([\s\S]*?\.data\.get\('currency', 'UAH'\) == request\.resource\.data\.get\('currency', 'UAH'\)/)
 })

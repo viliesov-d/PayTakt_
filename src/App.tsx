@@ -15,7 +15,7 @@ import { auth, db, firebaseReady } from './lib/firebase'
 import {
   createWorkspace, deleteShift, demoShifts, ensureProfile, loadWorkspaces, subscribeTemplates, saveTemplate, deleteTemplate,
   saveShift, applyMonthlyPattern, shiftHours, shiftCount, validateDay, subscribeShifts, toDateKey, updateProfileTheme,
-  type Shift, type DayType, type ShiftKind, type AdditionalShift, type ThemeChoice, type Workspace, type WorkspaceKind,
+  type Shift, type DayType, type ShiftKind, type AdditionalShift, type ThemeChoice, type Workspace, type WorkspaceKind, type AccountingCurrency, accountingCurrencies,
   subscribeOvertimePreset, saveOvertimePreset,
 } from './lib/data'
 import { generateMonthlyPattern, presetPattern, mondayOfWeek, WEEKDAY_FIVE_TWO_PRESET, workSlot, validatePattern, copyWorkdayToAll, planPatternApplication, type PatternApplyMode, type PatternApplySummary, type GeneratedCalendarDay, type ScheduleTemplate, type PatternDay, type TemplatePreset } from './lib/schedule'
@@ -25,7 +25,7 @@ import {defaultOvertimePreset,validateOvertimePreset,segmentHours,type OvertimeP
 import {changeDayType, markWorkedForDailyPay, toggleWorkedDay, togglePresetOvertime} from './lib/dayActions'
 import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
-import { tr, readPresentation, savePresentation, formatDate, formatMonth, locale as presentationLocale, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
+import { tr, readPresentation, savePresentation, formatDate, formatMonth, locale as presentationLocale, setAccountingCurrency, inputCurrencyLabel, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
 import {buildMonthAnalytics,payoutsInMonth} from './lib/analytics'
 import {effectiveRevenue,cashTotalsByMonth,parseCashHryvnia,defaultCashPreferences,type DailyCash,type CashPreferences} from './lib/dailyCash'
 import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
@@ -762,8 +762,8 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
           {(performance.manualDailyPay||cashPrefs.enabled)&&(draft.dayType??'work')==='work'&&<form className="day-money-entry" onSubmit={saveDayMoney}>
             <div className="day-money-heading"><Wallet size={19}/><strong>{tr("Заробіток і каса")}</strong></div>
             <div className="day-money-fields">
-              {performance.manualDailyPay&&<label><span>{tr("Мій заробіток, ₴")}</span><input inputMode="decimal" type="text" value={wageDraft} placeholder="0,00" onChange={e=>setWageDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
-              {cashPrefs.enabled&&<label><span>{tr("Каса за день, ₴")}</span><input inputMode="decimal" type="text" value={cashDraft} placeholder="0,00" onChange={e=>setCashDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
+              {performance.manualDailyPay&&<label><span>{tr("Мій заробіток, ₴").replace('₴',inputCurrencyLabel())}</span><input inputMode="decimal" type="text" value={wageDraft} placeholder="0,00" onChange={e=>setWageDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
+              {cashPrefs.enabled&&<label><span>{tr("Каса за день, ₴").replace('₴',inputCurrencyLabel())}</span><input inputMode="decimal" type="text" value={cashDraft} placeholder="0,00" onChange={e=>setCashDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
             </div>
             {draft.status==='worked'&&<span className="day-money-worked"><CheckCircle2 size={17}/> {tr("Відпрацьовано")}</span>}
             <button type="submit" className="btn btn-primary day-money-submit" disabled={moneyBusy||quickBusy||busy}>
@@ -872,6 +872,7 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
   onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>;
   presentation: PresentationSettings; onPresentationChange: (next:PresentationSettings)=>void;
 }) {
+  const nativeCurrency=workspace.currency??'UAH'
   const [currencyDraft,setCurrencyDraft]=useState<DisplayCurrency>(presentation.currency)
   const [rateDraft,setRateDraft]=useState(String(presentation.uahPerUnit))
   const [currencyError,setCurrencyError]=useState('')
@@ -918,6 +919,16 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
           )}
         </div>
       </section>
+      <section className="panel settings-panel settings-wide paytakt-accounting-currency">
+        <div className="settings-heading"><Wallet size={22}/><div>
+          <h3>{tr('Валюта зарплати')}</h3>
+          <p>{tr('Гроші в цьому робочому просторі зберігаються без перерахунку у вибраній валюті.')}</p>
+        </div></div>
+        <div className="paytakt-accounting-currency-value"><strong>{nativeCurrency}</strong>
+          <small>{tr('Валюта закріплена за простором. Для іншої валюти створи окремий робочий простір; старі суми залишаться без змін.')}</small>
+        </div>
+      </section>
+      {nativeCurrency==='UAH'&&<>
       <section className="panel settings-panel settings-wide paytakt-currency-settings">
         <div className="settings-heading"><Wallet size={22}/><div><h3>{tr('Валюта відображення')}</h3><p>{tr('Зарплата обліковується у гривнях. Інша валюта показує лише орієнтовний еквівалент за вказаним тобою курсом. Введення сум залишається у гривнях.')}</p></div></div>
         <form className="paytakt-currency-form" onSubmit={updateCurrency}>
@@ -939,22 +950,57 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
           </div>
         </form>
       </section>
+      </>}
       <section className="panel settings-panel settings-wide">
         <div className="settings-heading"><BriefcaseBusiness size={22}/><div><h3>{tr('Робочі простори')}</h3><p>{tr('Особисті записи та компанії не змішуються.')}</p></div></div>
         <div className="workspace-rows">{workspaces.map(w=><div className="workspace-row" key={w.id}><div className="workspace-symbol">{w.kind==='company'?<Building2 size={19}/>:<UserRound size={19}/>}</div>
           <div><strong>{w.name}</strong><small>{tr(w.kind==='company'?'Компанія':'Особистий простір')}</small></div>
           {w.id===workspace.id&&<span className="pill mint-pill">{tr('Активний')}</span>}
         </div>)}</div>
-        <button type="button" className="btn btn-outline" onClick={onCreate}><Plus size={17}/>{tr('Додати компанію')}</button>
+        <button type="button" className="btn btn-outline" onClick={onCreate}><Plus size={17}/>{tr('Додати робочий простір')}</button>
       </section>
     </div>
   </>
 }
 
-function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(kind:WorkspaceKind,name:string)=>Promise<void>}){
-  const [name,setName]=useState('');const [busy,setBusy]=useState(false);const [error,setError]=useState('')
-  const submit=async(e:FormEvent)=>{e.preventDefault();setBusy(true);setError('');try{await onCreate('company',name.trim());onClose()}catch(err){setError(friendlyError(err))}finally{setBusy(false)}}
-  return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div className="modal-head"><div className="modal-icon"><Building2 size={22}/></div><button className="icon-button" type="button" aria-label="Закрити" onClick={onClose}><X size={20}/></button></div><h2 id="modal-title">{tr("Нова компанія")}</h2><p>Створи окремий робочий простір для графіка команди. Запрошення працівників додамо пізніше.</p><form onSubmit={submit}><label>{tr("Назва компанії")}<input autoFocus required minLength={2} maxLength={80} value={name} onChange={e=>setName(e.target.value)} placeholder="Наприклад, Моя команда"/></label>{error&&<p role="alert" className="form-error">{error}</p>}<button type="submit" disabled={busy||name.trim().length<2} className="btn btn-primary full">{busy?'Створюємо…':'Створити простір'}<ArrowRight size={17}/></button></form></div></div>
+function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(kind:WorkspaceKind,name:string,currency:AccountingCurrency)=>Promise<void>}){
+  const [name,setName]=useState('')
+  const [kind,setKind]=useState<WorkspaceKind>('company')
+  const [currency,setCurrency]=useState<AccountingCurrency>('UAH')
+  const [busy,setBusy]=useState(false)
+  const [error,setError]=useState('')
+  const submit=async(e:FormEvent)=>{
+    e.preventDefault();setBusy(true);setError('')
+    try{await onCreate(kind,name.trim(),currency);onClose()}
+    catch(err){setError(friendlyError(err))}finally{setBusy(false)}
+  }
+  return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
+    <div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div className="modal-head"><div className="modal-icon"><Building2 size={22}/></div>
+        <button className="icon-button" type="button" aria-label="Закрити" onClick={onClose}><X size={20}/></button></div>
+      <h2 id="modal-title">{tr('Новий робочий простір')}</h2>
+      <p>{tr('Створи окремий простір для власного графіка або компанії. Валюта зарплати фіксується під час створення, щоб уже збережені суми не змінювали зміст.')}</p>
+      <form onSubmit={submit} className="paytakt-create-workspace">
+        <label>{tr('Тип простору')}
+          <select value={kind} onChange={e=>setKind(e.target.value as WorkspaceKind)}>
+            <option value="personal">{tr('Особистий простір')}</option><option value="company">{tr('Компанія')}</option>
+          </select>
+        </label>
+        <label>{tr('Назва робочого простору')}
+          <input autoFocus required minLength={2} maxLength={80} value={name} onChange={e=>setName(e.target.value)} placeholder={tr('Наприклад, Мій графік')}/>
+        </label>
+        <label>{tr('Валюта зарплати')}
+          <select value={currency} onChange={e=>setCurrency(e.target.value as AccountingCurrency)}>
+            {accountingCurrencies.map(code=><option value={code} key={code}>{code}</option>)}
+          </select>
+        </label>
+        <p className="paytakt-currency-integrity">{tr('Вибрана валюта застосовуватиметься до всіх ставок, зарплати, каси, планів і премій цього нового простору. Після створення змінити її без перенесення фінансових даних не можна.')}</p>
+        {error&&<p role="alert" className="form-error">{error}</p>}
+        <button type="submit" disabled={busy||name.trim().length<2} className="btn btn-primary full">
+          {busy?tr('Створюємо…'):tr('Створити простір')}<ArrowRight size={17}/></button>
+      </form>
+    </div>
+  </div>
 }
 
 export default function App(){
@@ -1038,7 +1084,7 @@ export default function App(){
     let live=true
     const unsubscribe=onAuthStateChanged(auth,async user=>{
       if(!live)return
-      if(!user){setSession(null);setWorkspace(null);setWorkspaces([]);setEmailVerified(false);setLoading(false);return}
+      if(!user){setAccountingCurrency('UAH');setSession(null);setWorkspace(null);setWorkspaces([]);setEmailVerified(false);setLoading(false);return}
       setLoading(true);setError('')
       try{
         setEmailVerified(user.emailVerified)
@@ -1057,6 +1103,7 @@ export default function App(){
         let wanted=''
         try{wanted=localStorage.getItem(`paytakt-workspace:${user.uid}`)||''}catch{/* optional */}
         const selectedWorkspace=list.find(x=>x.id===wanted)||list[0]
+        setAccountingCurrency(selectedWorkspace.currency??'UAH')
         setWorkspace(selectedWorkspace)
         // Persist initial selection as well as explicit menu choices. Without this,
         // a refreshed session may choose a different workspace from unordered reads.
@@ -1192,6 +1239,7 @@ export default function App(){
   }
   const onApplyZmina=async()=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
+    if((workspace.currency??'UAH')!=='UAH')throw Error('Шаблон «Система Зміна» розрахований на гривні. Для іншої валюти налаштуй премії вручну.')
     // Preserve personal salary rates. Only replace payday dates and activate the optional module.
     const pay={...(paySettings??defaultPaySettings),paymentRules:defaultPaymentRules.map(rule=>({...rule}))}
     await onSavePay(pay)
@@ -1235,20 +1283,21 @@ export default function App(){
   const enterDemo=()=>{
     const personal={id:'demo-personal',name:'Мій особистий простір',kind:'personal' as const,role:'owner' as const}
     const company={id:'demo-company',name:'Демо-компанія',kind:'company' as const,role:'owner' as const}
-    setDemo(true);setSession({uid:'demo',email:'',name:'Гість',demo:true});setWorkspaces([personal,company]);setWorkspace(personal);setPage('dashboard');setLoading(false)
+    setAccountingCurrency('UAH');setDemo(true);setSession({uid:'demo',email:'',name:'Гість',demo:true});setWorkspaces([personal,company]);setWorkspace(personal);setPage('dashboard');setLoading(false)
   }
   const logout=async()=>{
+    setAccountingCurrency('UAH')
     setSetupPayDraft(null)
     setMobileMenu(false);setWorkspaceMenu(false);setForceWizard(false);setPage('calendar')
     if(session?.demo){setDemo(false);setSession(null);setWorkspaces([]);setWorkspace(null);setShifts([]);setPaySettings(null);setSalesByMonth({});setUnitsByMonth({});return}
     if(auth){try{await signOut(auth)}catch(e){setError(friendlyError(e))}}
   }
-  const selectWorkspace=(w:Workspace)=>{setPayLoaded(false);setShiftsLoaded(false);setSetupPayDraft(null);setWorkspace(w);setWorkspaceMenu(false);setMobileMenu(false);setForceWizard(false);setPage('calendar');try{localStorage.setItem(`paytakt-workspace:${session?.uid}`,w.id)}catch{/* optional */}}
-  const createCompany=async(kind:WorkspaceKind,name:string)=>{
+  const selectWorkspace=(w:Workspace)=>{setAccountingCurrency(w.currency??'UAH');setPayLoaded(false);setShiftsLoaded(false);setSetupPayDraft(null);setWorkspace(w);setWorkspaceMenu(false);setMobileMenu(false);setForceWizard(false);setPage('calendar');try{localStorage.setItem(`paytakt-workspace:${session?.uid}`,w.id)}catch{/* optional */}}
+  const createCompany=async(kind:WorkspaceKind,name:string,currency:AccountingCurrency)=>{
     if(!session)throw Error('Увійди в акаунт')
     let created:Workspace
-    if(session.demo){created={id:`demo-company-${Date.now()}`,name,kind,role:'owner'}}
-    else created=await createWorkspace(session.uid,kind,name)
+    if(session.demo){created={id:`demo-${kind}-${Date.now()}`,name,kind,currency,role:'owner'}}
+    else created=await createWorkspace(session.uid,kind,name,currency)
     setWorkspaces(old=>[...old,created]);selectWorkspace(created)
   }
   const onSave=async(shift:Shift)=>{
@@ -1364,7 +1413,7 @@ export default function App(){
             <span className="workspace-name"><strong>{workspace.name}</strong><small>{workspace.kind==='company'?'Компанія':'Особистий простір'}</small></span>
             <ChevronDown size={15}/>
           </button>
-          {workspaceMenu&&<div className="workspace-popover">{workspaces.map(w=><button type="button" key={w.id} className={workspace.id===w.id?'current':''} onClick={()=>selectWorkspace(w)}>{w.kind==='company'?<Building2 size={16}/>:<UserRound size={16}/>}<span>{w.name}</span>{workspace.id===w.id&&<Check size={15}/>}</button>)}<button type="button" className="create-space" onClick={()=>{setWorkspaceMenu(false);setCreateOpen(true)}}><Plus size={16}/> {tr("Нова компанія")}</button></div>}
+          {workspaceMenu&&<div className="workspace-popover">{workspaces.map(w=><button type="button" key={w.id} className={workspace.id===w.id?'current':''} onClick={()=>selectWorkspace(w)}>{w.kind==='company'?<Building2 size={16}/>:<UserRound size={16}/>}<span>{w.name}</span>{workspace.id===w.id&&<Check size={15}/>}</button>)}<button type="button" className="create-space" onClick={()=>{setWorkspaceMenu(false);setCreateOpen(true)}}><Plus size={16}/> {tr("Новий робочий простір")}</button></div>}
         </div>
         <div className="zmina-header-tools">
           {page!=='calendar'&&<button

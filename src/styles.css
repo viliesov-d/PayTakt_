@@ -1720,3 +1720,38 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
   .calendar-overtime{animation:none!important}
   .cal-arrows button{transition:none!important}
 }
+
+/* PayTakt Mobile v0.5 — native workspace accounting currencies. */
+.paytakt-accounting-currency .settings-heading p{max-width:62ch}
+.paytakt-accounting-currency-value{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  margin-top:17px;padding:14px 16px;border-radius:13px;
+  background:var(--panel-soft);border:1px solid var(--border)
+}
+.paytakt-accounting-currency-value strong{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:76px;padding:10px 14px;border-radius:10px;
+  font-size:19px;letter-spacing:.02em;
+  color:var(--mint);background:var(--mint-soft)
+}
+.paytakt-accounting-currency-value small{
+  flex:1 1 230px;font-size:12px;line-height:1.5;color:var(--muted-deep)
+}
+.paytakt-create-workspace{display:flex;flex-direction:column;gap:14px}
+.paytakt-create-workspace label{display:flex;flex-direction:column;gap:7px;font-weight:750}
+.paytakt-create-workspace select,.paytakt-create-workspace input{
+  width:100%;font-size:16px;min-height:45px;min-width:0
+}
+.paytakt-currency-integrity{
+  margin:0;padding:12px 14px;
+  border-radius:11px;background:var(--panel-soft);border:1px solid var(--border);
+  font-size:12px;line-height:1.55;color:var(--muted-deep);
+}
+@media(max-width:700px){
+  .paytakt-accounting-currency-value{padding:12px;gap:10px}
+  .paytakt-accounting-currency-value small{flex-basis:100%}
+  /* Never hide fixed accounting-currency warnings via compact caption clamping. */
+  .paytakt-accounting-currency .settings-heading p{
+    display:block;overflow:visible;line-clamp:unset;-webkit-line-clamp:unset
+  }
+}

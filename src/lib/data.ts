@@ -11,7 +11,14 @@ export { segmentHours, shiftHours, shiftCount, workedHours, validateDay } from '
 export type { DayType, ShiftKind, AdditionalShift, Shift, OvertimeExtra, OvertimePreset } from './calendar'
 
 export type WorkspaceKind = 'personal' | 'company'
-export type Workspace = { id: string; name: string; kind: WorkspaceKind; role: 'owner' }
+/** Monetary values use the smallest unit of each workspace's accounting currency.
+ * Legacy workspaces missing the currency field always mean UAH. */
+export type AccountingCurrency = 'UAH' | 'USD' | 'EUR' | 'PLN' | 'GBP'
+export const accountingCurrencies: readonly AccountingCurrency[] = ['UAH','USD','EUR','PLN','GBP']
+export function isAccountingCurrency(value: unknown): value is AccountingCurrency {
+  return typeof value === 'string' && accountingCurrencies.some(code => code === value)
+}
+export type Workspace = { id: string; name: string; kind: WorkspaceKind; role: 'owner'; currency?: AccountingCurrency }
 export type ThemeChoice = 'light' | 'dark' | 'system'
 
 export function toDateKey(date: Date): string {
@@ -81,19 +88,25 @@ export async function loadWorkspaces(uid: string): Promise<Workspace[]> {
     id: d.id,
     name: String(d.data().name || 'Робочий простір'),
     kind: d.data().kind === 'company' ? 'company' : 'personal',
+    currency: isAccountingCurrency(d.data().currency) ? d.data().currency : 'UAH',
     role: 'owner',
   }))
 }
 
-export async function createWorkspace(uid: string, kind: WorkspaceKind, name: string): Promise<Workspace> {
+export async function createWorkspace(uid: string, kind: WorkspaceKind, name: string, currency: AccountingCurrency = 'UAH'): Promise<Workspace> {
   if (!db) throw Error('Firebase не налаштовано')
-  if (!navigator.onLine) throw Error('Для створення компанії потрібен інтернет.')
+  if (!navigator.onLine) throw Error('Для створення робочого простору потрібен інтернет.')
+  if (!isAccountingCurrency(currency)) throw Error('Непідтримувана валюта зарплати.')
+  if (name.trim().length < 2 || name.trim().length > 80) throw Error('Назва має містити від 2 до 80 символів.')
   const ws = doc(collection(db, 'workspaces'))
   const batch = writeBatch(db)
-  const workspace: Workspace = { id: ws.id, kind, role: 'owner', name: name.trim() }
-  batch.set(ws, { name: workspace.name, kind, ownerUid: uid, createdAt: serverTimestamp() })
+  const workspace: Workspace = { id: ws.id, kind, role: 'owner', name: name.trim(), currency }
+  // Keep UAH-only creation compatible with previously deployed Firestore rules.
+  // Other currencies require the reviewed currency-aware rules to be deployed.
+  const currencyField = currency === 'UAH' ? {} : {currency}
+  batch.set(ws, { name: workspace.name, kind, ...currencyField, ownerUid: uid, createdAt: serverTimestamp() })
   batch.set(doc(db, 'users', uid, 'workspaces', ws.id), {
-    name: workspace.name, kind, role: 'owner', createdAt: serverTimestamp(),
+    name: workspace.name, kind, ...currencyField, role: 'owner', createdAt: serverTimestamp(),
   })
   await batch.commit()
   return workspace
