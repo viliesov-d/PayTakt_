@@ -1,3 +1,4 @@
+import {inputCurrencyLabel,getAccountingCurrency} from '../lib/presentation'
 import {useEffect,useState} from 'react'
 import {ChevronDown,Target,Save,Sparkles,Plus,Trash2} from 'lucide-react'
 import {validatePerformanceSettings,type PerformanceSettings,type PlanMetric} from '../lib/performance'
@@ -28,7 +29,7 @@ export function PerformanceRulesEditor({settings,onSave,onApplyZmina,demo}:Props
   return <details className="panel pay-collapse performance-editor">
     <summary className="pay-collapse-summary"><div className="pay-block-heading"><Target size={21}/><div><h3>План і премії</h3><p>Ціль за касою, заробітком або кількістю виконаних робіт</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary>
     <div className="pay-collapse-body">
-      <div className="performance-toolbar"><div><strong>Готовий шаблон «Система Зміна»</strong><p>План за касою: премія 2 000 ₴ при 100%. Зарплата — 25-го та 10-го, премія — 15-го наступного місяця. Твої ставки не зміняться.</p></div><button type="button" className="btn btn-outline" disabled={busy} onClick={()=>void apply()}><Sparkles size={17}/> Застосувати</button></div>
+      <div className="performance-toolbar"><div><strong>Готовий шаблон «Система Зміна»</strong><p>План за касою: премія {getAccountingCurrency()==='UAH'?'2 000 ₴':`2 000 ${getAccountingCurrency()}`} при 100%. Зарплата — 25-го та 10-го, премія — 15-го наступного місяця. Твої ставки не зміняться.</p></div><button type="button" className="btn btn-outline" disabled={busy} onClick={()=>void apply()}><Sparkles size={17}/> Застосувати</button></div>
       <label className="pay-toggle"><input type="checkbox" checked={draft.enabled} onChange={e=>change({enabled:e.target.checked})}/><span><strong>Увімкнути мій план і премії</strong><small>Без цього налаштування не впливають на зарплату.</small></span></label>
       <label className="pay-toggle"><input type="checkbox" checked={draft.manualDailyPay} onChange={e=>change({manualDailyPay:e.target.checked})}/><span><strong>Ручний заробіток за кожен день</strong><small>Додасть компактне поле «Мій заробіток» у календарі. Введена сума замінює автоматичну базову оплату, але не доплати. Дні без суми отримують 0 базової оплати.</small></span></label>
     <div className="performance-fields">
@@ -38,7 +39,7 @@ export function PerformanceRulesEditor({settings,onSave,onApplyZmina,demo}:Props
       <div className="performance-tier-head"><div><strong>Преміальні пороги</strong><p>Виплачується лише найбільша досягнута премія, не всі одразу.</p></div><button type="button" className="btn btn-outline" disabled={draft.tiers.length>=4} onClick={()=>{const last=draft.tiers.at(-1);change({tiers:[...draft.tiers,{id:`tier_${Date.now()}`,thresholdBasisPoints:(last?.thresholdBasisPoints??9000)+1000,bonus:0}]})}}><Plus size={16}/> Поріг</button></div>
       <div className="performance-tier-list">{draft.tiers.map((tier,i)=><div className="performance-tier-row" key={tier.id}>
         <label><span>Виконання плану, %</span><input type="number" min="1" max="300" step="0.01" value={tier.thresholdBasisPoints/100} onChange={e=>change({tiers:draft.tiers.map((v,j)=>j===i?{...v,thresholdBasisPoints:Math.round(Number(e.target.value)*100)}:v)})}/></label>
-        <label><span>Премія, ₴</span><input type="number" min="0" step="0.01" value={tier.bonus/100} onChange={e=>change({tiers:draft.tiers.map((v,j)=>j===i?{...v,bonus:Math.round(Number(e.target.value)*100)}:v)})}/></label>
+        <label><span>Премія, {inputCurrencyLabel()}</span><input type="number" min="0" step="0.01" value={tier.bonus/100} onChange={e=>change({tiers:draft.tiers.map((v,j)=>j===i?{...v,bonus:Math.round(Number(e.target.value)*100)}:v)})}/></label>
         <button type="button" className="icon-button" aria-label="Видалити поріг" disabled={draft.tiers.length<=1} onClick={()=>change({tiers:draft.tiers.filter((_,j)=>j!==i)})}><Trash2 size={17}/></button>
       </div>)}</div>
       <p className="stats-small-note performance-note">Премія додається до нарахувань один раз і виплачується за календарем виплат. Касу внось у календарі, кількість виконаних робіт — у «Нарахуваннях».</p>
