@@ -1,4 +1,4 @@
-import {tr} from '../lib/presentation'
+import {tr,inputCurrencyLabel} from '../lib/presentation'
 import {useEffect,useMemo,useState,type FormEvent} from 'react'
 import {Clock3,Wallet,ShieldCheck,Save,CheckCircle2,Info,Sparkles,Moon,Timer,Target,TrendingUp,Plus,Trash2,ChevronDown} from 'lucide-react'
 import type {Shift} from '../lib/calendar'
@@ -34,7 +34,7 @@ const ruleTypes=[
   ['units_at_least','Виконаних одиниць роботи за місяць не менше'],
 ] as const
 function MoneyField({label,help,value,onChange}: {label:string;help?:string;value:number;onChange:(n:number)=>void}) {
-  return <label className="pay-field"><span><strong>{label}</strong>{help&&<small>{help}</small>}</span><div className="pay-money-input"><input type="number" aria-label={label} min="0" max="1000000000" step="0.01" required value={Number.isFinite(value)?amountValue(value):''} onChange={e=>onChange(readAmount(e.target.value))}/><span>₴</span></div></label>
+  return <label className="pay-field"><span><strong>{label}</strong>{help&&<small>{help}</small>}</span><div className="pay-money-input"><input type="number" aria-label={label} min="0" max="1000000000" step="0.01" required value={Number.isFinite(value)?amountValue(value):''} onChange={e=>onChange(readAmount(e.target.value))}/><span>{inputCurrencyLabel()}</span></div></label>
 }
 function PercentField({label,value,onChange}: {label:string;value:number;onChange:(n:number)=>void}) {
   return <label className="pay-field"><span><strong>{label}</strong><small>{tr("Від 0 до 1000%")}</small></span><div className="pay-money-input"><input type="number" min="0" max="1000" step="0.01" required value={Number.isFinite(value)?percentValue(value):''} onChange={e=>onChange(readPercent(e.target.value))}/><span>%</span></div></label>
