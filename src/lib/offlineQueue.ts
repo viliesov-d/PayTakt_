@@ -86,6 +86,21 @@ export function replaceOfflineEntry(
   else items[index]=updated
   return persist(uid,items)
 }
+/** Protect a newer local edit while an older version was syncing. */
+export function finalizeOfflineEdit(uid:string,committed:OfflineEdit):OfflineEdit[]{
+  const items=readOfflineQueue(uid)
+  const index=items.findIndex(e=>e.id===committed.id)
+  if(index<0)return items
+  if(items[index].revision===committed.revision)items.splice(index,1)
+  else if(items[index].revision>committed.revision){
+    // The earlier value was committed, so it becomes the new server baseline.
+    items[index]={...items[index],before:committed.next,revision:items[index].revision+1}
+  }
+  return persist(uid,items)
+}
+export function retryOfflineErrors(uid:string):OfflineEdit[]{
+  return persist(uid,readOfflineQueue(uid).map(e=>e.state==='error'?{...e,state:'pending' as const,revision:e.revision+1,error:undefined}:e))
+}
 export function discardOffline(uid:string,id:string):OfflineEdit[]{
   const items=readOfflineQueue(uid)
   return persist(uid,items.filter(item=>item.id!==id))
