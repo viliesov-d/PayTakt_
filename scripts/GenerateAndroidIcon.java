@@ -66,6 +66,10 @@ public class GenerateAndroidIcon {
     for (Map.Entry<String, Integer> entry : densities.entrySet()) {
       Path mipmap = root.resolve("mipmap-" + entry.getKey());
       int size = entry.getValue();
+      // Android templates may ship WebP icons; remove those to avoid duplicate resources.
+      Files.deleteIfExists(mipmap.resolve("ic_launcher.webp"));
+      Files.deleteIfExists(mipmap.resolve("ic_launcher_round.webp"));
+      Files.deleteIfExists(mipmap.resolve("ic_launcher_foreground.webp"));
       png(mipmap.resolve("ic_launcher.png"), size, false);
       png(mipmap.resolve("ic_launcher_round.png"), size, false);
       png(mipmap.resolve("ic_launcher_foreground.png"), size * 108 / 48, true);
