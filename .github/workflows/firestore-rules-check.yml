@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'firestore.rules'
+      - 'tests/firestore-rules-delete.spec.mjs'
       - '.github/workflows/firestore-rules-check.yml'
   workflow_dispatch:
 
@@ -24,6 +25,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install rules unit test SDK (Firebase 12 compatible)
+        run: npm install --no-audit --no-fund --no-save --no-package-lock @firebase/rules-unit-testing@5.0.2
       - name: Write temporary emulator config
         shell: bash
         run: |
@@ -35,4 +38,4 @@ jobs:
             --config firebase-rules-check.json \
             --project demo-paytakt \
             --only firestore \
-            'node -e "console.log(\"Firestore rules emulator started successfully\")"'
+            'node tests/firestore-rules-delete.spec.mjs'
