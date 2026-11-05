@@ -28,3 +28,14 @@ export function writeCalendarLayout(workspace:string,value:CalendarLayout):boole
  try{localStorage.setItem(key(workspace),JSON.stringify(sanitizeCalendarLayout(value)));return true}
  catch{return false}
 }
+export type CalendarLayoutPreset='full'|'compact'|'calendar'
+export function makeCalendarLayoutPreset(preset:CalendarLayoutPreset):CalendarLayout {
+ const original=sanitizeCalendarLayout(defaultCalendarLayout)
+ if(preset==='compact')return {...original,visible:{...original.visible,metrics:false}}
+ if(preset==='calendar')return {...original,visible:{plan:false,metrics:false,editor:false}}
+ return original
+}
+export function isCalendarLayoutPreset(current:CalendarLayout,preset:CalendarLayoutPreset):boolean{
+ const expected=makeCalendarLayoutPreset(preset)
+ return JSON.stringify(sanitizeCalendarLayout(current))===JSON.stringify(expected)
+}

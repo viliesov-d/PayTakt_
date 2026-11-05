@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import {
-  ArrowRight, ArrowUpRight, BriefcaseBusiness, Building2, CalendarDays,
+  ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, BriefcaseBusiness, Building2, CalendarDays,
   Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clock3,
   LayoutDashboard, LockKeyhole, LogOut, Mail, Menu, Monitor, Moon, Plus, Save, TrendingUp,
-  Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Target, Trash2, UserRound,
+  RotateCcw, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Target, Trash2, UserRound,
   UsersRound, Wallet, X, ReceiptText,
 } from 'lucide-react'
 import {
@@ -22,13 +22,13 @@ import { generateMonthlyPattern, presetPattern, mondayOfWeek, WEEKDAY_FIVE_TWO_P
 import { sectors, suggestions, allSuggestions, createSelfPreset, type Sector, type JobPreset } from './lib/professions'
 import { defaultPaySettings,defaultPaymentRules } from './lib/salary'
 import {defaultOvertimePreset,validateOvertimePreset,segmentHours,type OvertimePreset} from './lib/calendar'
-import {changeDayType, toggleWorkedDay, togglePresetOvertime} from './lib/dayActions'
+import {changeDayType, markWorkedForDailyPay, toggleWorkedDay, togglePresetOvertime} from './lib/dayActions'
 import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
 import {buildMonthAnalytics,payoutsInMonth} from './lib/analytics'
 import {effectiveRevenue,cashTotalsByMonth,parseCashHryvnia,defaultCashPreferences,type DailyCash,type CashPreferences} from './lib/dailyCash'
 import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
-import {defaultCalendarLayout,readCalendarLayout,writeCalendarLayout,moveCalendarBlock,type CalendarBlockId,type CalendarLayout} from './lib/calendarLayout'
+import {defaultCalendarLayout,readCalendarLayout,writeCalendarLayout,moveCalendarBlock,makeCalendarLayoutPreset,isCalendarLayoutPreset,type CalendarLayoutPreset,type CalendarBlockId,type CalendarLayout} from './lib/calendarLayout'
 import {StatisticsPage} from './components/StatisticsPage'
 import {OnboardingWizard} from './components/OnboardingWizard'
 import {calendarFeatures} from './lib/featureVisibility'
@@ -270,17 +270,30 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
   useEffect(()=>{setWageDraft(wageEntry===undefined?'':String(wageEntry/100));setMoneyNotice('')},[selected,wageEntry])
   const cashEntry=cashRecords.find(r=>r.date===selected)
   useEffect(()=>{setCashDraft(cashEntry?String(cashEntry.amount/100):'');setCashNotice('')},[selected,cashEntry?.amount])
-  // A single Zmina-style form; empty removes the record, zero is explicitly saved.
+  // One action validates both amounts, marks the day worked and persists money.
+  // Re-saving an already worked day must never reset it to planned.
   const saveDayMoney=async(e:FormEvent<HTMLFormElement>)=>{
     e.preventDefault()
+    if(quickLock.current||busy||moneyBusy)return
     const date=selected
-    if(!activeShift||(draft.dayType??'work')!=='work'){
-      setMoneyNotice('Познач день робочим і збережи зміну.');return
+    if((draft.dayType??'work')!=='work'){
+      setMoneyNotice('Спочатку обери робочий день.');return
     }
-    setMoneyBusy(true);setMoneyNotice('')
+    let wage:number|null=null
+    let cash:number|null=null
     try{
-      const wage=performance.manualDailyPay&&wageDraft.trim()!==''?parseCashHryvnia(wageDraft):null
-      const cash=cashPrefs.enabled&&cashDraft.trim()!==''?parseCashHryvnia(cashDraft):null
+      // Validate all supplied numbers before writing anything.
+      if(performance.manualDailyPay&&wageDraft.trim()!=='')wage=parseCashHryvnia(wageDraft)
+      if(cashPrefs.enabled&&cashDraft.trim()!=='')cash=parseCashHryvnia(cashDraft)
+    }catch(error){setMoneyNotice(friendlyError(error));return}
+    quickLock.current=true
+    setMoneyBusy(true);setQuickBusy(true);setMoneyNotice('')
+    let shiftSaved=false
+    try{
+      const wasWorked=draft.status==='worked'
+      const next=markWorkedForDailyPay({...draft,id:date,date,plannedMinutes:draft.plannedMinutes??0})
+      await onSave(next)
+      shiftSaved=true
       if(performance.manualDailyPay){
         if(wage!==null)await onSaveDailyWage(date,wage)
         else if(dailyWages[date]!==undefined)await onRemoveDailyWage(date)
@@ -289,9 +302,19 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
         if(cash!==null)await onSaveCash({date,amount:cash})
         else if(cashRecords.some(r=>r.date===date))await onDeleteCash(date)
       }
-      if(selectedRef.current===date)setMoneyNotice('Дані дня збережено.')
-    }catch(error){if(selectedRef.current===date)setMoneyNotice(friendlyError(error))}
-    finally{setMoneyBusy(false)}
+      if(selectedRef.current===date){
+        setDraft(next)
+        setMoneyNotice(wasWorked?'Зміни збережено.':'День відпрацьовано. Суми збережено.')
+      }
+    }catch(error){
+      if(selectedRef.current===date){
+        setMoneyNotice(`${shiftSaved?'День відмічено, але не всі суми збережені. ':''}${friendlyError(error)}`)
+      }
+    }finally{
+      quickLock.current=false
+      setQuickBusy(false)
+      setMoneyBusy(false)
+    }
   }
   const clearCash=async()=>{
     if(!cashEntry)return
@@ -573,22 +596,81 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
     </>}
     {!scheduleOnly&&<>
     <div className="calendar-layout-options">
-      <button type="button" className="btn btn-outline" aria-expanded={layoutOpen} onClick={()=>setLayoutOpen(v=>!v)}><SlidersHorizontal size={19}/> {layoutOpen?'Готово':'Налаштувати блоки'}</button>
-      {layoutOpen&&<div className="panel calendar-layout-editor" role="group" aria-label="Налаштування блоків календаря">
-        <div className="calendar-layout-editor-head"><strong>Мій екран</strong><button type="button" className="link-button" onClick={()=>changeLayout(defaultCalendarLayout)}>За замовчуванням</button></div>
-        {layout.order.map((id,i)=>{
-          const titles:Record<CalendarBlockId,string>={calendar:'Календар',plan:'План і прогрес',metrics:'Показники місяця'}
-          const available=id!=='plan'||performance.enabled
-          return <div className="calendar-layout-editor-row" key={id}>
-            <span>{titles[id]}</span>
-            {id!=='calendar'&&<label><input type="checkbox" checked={layout.visible[id]} disabled={!available} onChange={e=>changeLayout({...layout,visible:{...layout.visible,[id]:e.target.checked}})}/> Показувати</label>}
-            <div className="calendar-layout-movers"><button type="button" disabled={i===0} aria-label={`Підняти ${titles[id]}`} onClick={()=>changeLayout({...layout,order:moveCalendarBlock(layout.order,id,-1)})}><ChevronLeft size={17}/></button><button type="button" disabled={i===layout.order.length-1} aria-label={`Опустити ${titles[id]}`} onClick={()=>changeLayout({...layout,order:moveCalendarBlock(layout.order,id,1)})}><ChevronRight size={17}/></button></div>
+      <button type="button" className="btn btn-outline calendar-layout-launch" aria-expanded={layoutOpen}
+        aria-controls="calendar-layout-settings" onClick={()=>setLayoutOpen(v=>!v)}>
+        <SlidersHorizontal size={20}/> <span>{layoutOpen?'Закрити налаштування':'Налаштувати вигляд'}</span>
+        <ChevronDown className={layoutOpen?'rotate-icon':''} size={17}/>
+      </button>
+      {layoutOpen&&<section id="calendar-layout-settings" className="panel calendar-layout-editor" aria-label="Налаштування блоків календаря">
+        <div className="calendar-layout-editor-head">
+          <div>
+            <span className="calendar-layout-kicker">МІЙ ЕКРАН</span>
+            <h3>Налаштуй календар під себе</h3>
+            <p>Обирай потрібні блоки та їхній порядок. Дані не видаляються.</p>
           </div>
-        })}
-        <label className="calendar-layout-editor-row"><span>Редактор дня</span><input type="checkbox" checked={layout.visible.editor} onChange={e=>changeLayout({...layout,visible:{...layout.visible,editor:e.target.checked}})}/> Показувати</label>
-        <label className="calendar-layout-editor-row"><span>Редактор зверху на комп’ютері</span><input type="checkbox" checked={layout.dayTop} onChange={e=>changeLayout({...layout,dayTop:e.target.checked})}/></label>
-        <small>Зберігається на цьому пристрої окремо для кожного робочого простору.</small>
-      </div>}
+          <button type="button" className="calendar-layout-reset" onClick={()=>changeLayout(defaultCalendarLayout)}>
+            <RotateCcw size={17}/> Скинути
+          </button>
+        </div>
+        <div className="calendar-layout-presets" role="group" aria-label="Готові варіанти вигляду">
+          {([
+            ['full','Повний','Усе на одному екрані'],
+            ['compact','Компактний','Без підсумку місяця'],
+            ['calendar','Мінімальний','Лише календар'],
+          ] as const).map(([id,title,description])=>
+            <button key={id} type="button" className={isCalendarLayoutPreset(layout,id)?'active':''}
+              aria-pressed={isCalendarLayoutPreset(layout,id)}
+              onClick={()=>changeLayout(makeCalendarLayoutPreset(id as CalendarLayoutPreset))}>
+              <span className="calendar-preset-indicator">{isCalendarLayoutPreset(layout,id)?<Check size={16}/>:<LayoutDashboard size={16}/>}</span>
+              <span><strong>{title}</strong><small>{description}</small></span>
+            </button>
+          )}
+        </div>
+        <div className="calendar-layout-section-heading">
+          <h4>Блоки й порядок</h4>
+          <p>Стрілки переміщують блок. Перемикач приховує його з екрана.</p>
+        </div>
+        <div className="calendar-layout-list">
+          {layout.order.map((id,i)=>{
+            const titles:Record<CalendarBlockId,string>={calendar:'Календар',plan:'План і прогрес',metrics:'Показники місяця'}
+            const descriptions:Record<CalendarBlockId,string>={calendar:'Основний робочий екран',plan:'Ціль, прогрес і премія',metrics:'Години та нарахування'}
+            const available=id!=='plan'||performance.enabled
+            return <div className={`calendar-layout-editor-row ${!available?'is-unavailable':''}`} key={id}>
+              <span className="calendar-layout-position">{i+1}</span>
+              <span className="calendar-layout-block-icon">{id==='calendar'?<CalendarDays size={20}/>:id==='plan'?<Target size={20}/>:<TrendingUp size={20}/>}</span>
+              <span className="calendar-layout-row-label"><strong>{titles[id]}</strong><small>{!available?'Спочатку увімкни план у правилах оплати':descriptions[id]}</small></span>
+              {id==='calendar'?
+                <span className="calendar-layout-fixed">Завжди</span>:
+                <label className="calendar-layout-visibility">
+                  <input type="checkbox" checked={layout.visible[id]} disabled={!available}
+                    onChange={e=>changeLayout({...layout,visible:{...layout.visible,[id]:e.target.checked}})}
+                    aria-label={`Показувати ${titles[id]}`}/>
+                  <span aria-hidden="true" className="calendar-layout-switch-track"/>
+                </label>}
+              <div className="calendar-layout-movers">
+                <button type="button" disabled={i===0} aria-label={`Підняти ${titles[id]}`}
+                  onClick={()=>changeLayout({...layout,order:moveCalendarBlock(layout.order,id,-1)})}><ArrowUp size={18}/></button>
+                <button type="button" disabled={i===layout.order.length-1} aria-label={`Опустити ${titles[id]}`}
+                  onClick={()=>changeLayout({...layout,order:moveCalendarBlock(layout.order,id,1)})}><ArrowDown size={18}/></button>
+              </div>
+            </div>
+          })}
+        </div>
+        <div className="calendar-layout-section-heading"><h4>Редактор дня</h4><p>Швидкі дії з обраною датою.</p></div>
+        <div className="calendar-layout-editor-extras">
+          <label className="calendar-layout-extra-toggle">
+            <span><strong>Показувати редактор дня</strong><small>Можна сховати, коли потрібен тільки огляд.</small></span>
+            <input type="checkbox" checked={layout.visible.editor}
+              onChange={e=>changeLayout({...layout,visible:{...layout.visible,editor:e.target.checked}})}/>
+          </label>
+          <label className="calendar-layout-extra-toggle">
+            <span><strong>Редактор над календарем на комп’ютері</strong><small>На телефоні редактор і так знаходиться зверху.</small></span>
+            <input type="checkbox" checked={layout.dayTop}
+              onChange={e=>changeLayout({...layout,dayTop:e.target.checked})}/>
+          </label>
+        </div>
+        <p className="calendar-layout-footnote"><CheckCircle2 size={16}/> Зміни зберігаються автоматично на цьому пристрої.</p>
+      </section>}
     </div>
     <div className={`calendar-layout calendar-custom-layout ${layout.dayTop?'day-top':''}`}>
       <div className="calendar-primary-stack">
@@ -650,7 +732,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
             </div>
           </div>
           {(draft.dayType??'work')==='work'&&<>
-            <div className="day-action-section">
+            {!(performance.manualDailyPay||cashPrefs.enabled)&&<div className="day-action-section">
               <strong className="day-action-label">Відпрацював цю зміну?</strong>
               <button type="button" className={`day-worked-toggle ${draft.status==='worked'?'is-worked':''}`}
                 disabled={quickBusy||busy} aria-pressed={draft.status==='worked'} onClick={quickStatus}>
@@ -658,7 +740,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
                 <span><strong>{draft.status==='worked'?'Відпрацьовано':'Позначити як відпрацьовано'}</strong>
                   </span>
               </button>
-            </div>
+            </div>}
             {visible.overtimeButton&&<div className="day-action-section">
               <strong className="day-action-label">Понаднормові</strong>
               <button type="button" className={`day-ot-toggle ${draft.overtimeExtra?'is-added':''}`}
@@ -675,11 +757,14 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
           {(performance.manualDailyPay||cashPrefs.enabled)&&(draft.dayType??'work')==='work'&&<form className="day-money-entry" onSubmit={saveDayMoney}>
             <div className="day-money-heading"><Wallet size={19}/><strong>Заробіток і каса</strong></div>
             <div className="day-money-fields">
-              {performance.manualDailyPay&&<label><span>Мій заробіток, ₴</span><input inputMode="decimal" type="text" value={wageDraft} placeholder="0,00" onChange={e=>setWageDraft(e.target.value)} disabled={moneyBusy||!activeShift}/></label>}
-              {cashPrefs.enabled&&<label><span>Каса за день, ₴</span><input inputMode="decimal" type="text" value={cashDraft} placeholder="0,00" onChange={e=>setCashDraft(e.target.value)} disabled={moneyBusy||!activeShift}/></label>}
+              {performance.manualDailyPay&&<label><span>Мій заробіток, ₴</span><input inputMode="decimal" type="text" value={wageDraft} placeholder="0,00" onChange={e=>setWageDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
+              {cashPrefs.enabled&&<label><span>Каса за день, ₴</span><input inputMode="decimal" type="text" value={cashDraft} placeholder="0,00" onChange={e=>setCashDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
             </div>
-            <button type="submit" className="btn btn-primary" disabled={moneyBusy||!activeShift}><Save size={18}/>{moneyBusy?'Зберігаємо…':'Зберегти суми'}</button>
-            {!activeShift&&<small>Спочатку відміть робочий день.</small>}
+            {draft.status==='worked'&&<span className="day-money-worked"><CheckCircle2 size={17}/> Відпрацьовано</span>}
+            <button type="submit" className="btn btn-primary day-money-submit" disabled={moneyBusy||quickBusy||busy}>
+              {draft.status==='worked'?<Save size={19}/>:<CheckCircle2 size={19}/>}
+              {moneyBusy?'Зберігаємо…':draft.status==='worked'?'Зберегти зміни':'Зберегти й відмітити'}
+            </button>
             {moneyNotice&&<p role="status" className="save-notice">{moneyNotice}</p>}
           </form>}
           {cashPrefs.enabled&&(draft.dayType??'work')!=='work'&&cashEntry&&<div className="cash-source-note">Для цього дня збережено касу {moneyUA(cashEntry.amount)}, але після позначення вихідного чи відсутності вона <strong>не входить у місячні підсумки</strong>. <button type="button" className="link-button" disabled={moneyBusy} onClick={()=>void clearCash()}>Видалити запис каси</button></div>}

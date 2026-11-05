@@ -14,6 +14,19 @@ export function changeDayType(day: Shift, type: DayType): Shift {
   return next
 }
 
+/** Mark worked for a money save, without toggling it back on later edits. */
+export function markWorkedForDailyPay(day: Shift): Shift {
+  if ((day.dayType ?? 'work') !== 'work') throw Error('Спочатку обери робочий день.')
+  const status = 'worked' as const
+  const next: Shift = {
+    ...day,
+    status,
+    overtimeExtra: day.overtimeExtra ? {...day.overtimeExtra,status} : undefined,
+  }
+  validateDay(next)
+  return next
+}
+
 export function toggleWorkedDay(day: Shift): Shift {
   if ((day.dayType??'work') !== 'work') throw Error('Спочатку обери робочий день.')
   const status = day.status === 'worked' ? 'planned' : 'worked'
