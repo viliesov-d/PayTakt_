@@ -1131,6 +1131,13 @@ export default function App(){
   }, [isNativeAndroid])
 
   const [theme,setTheme]=useState<ThemeChoice>(readTheme)
+  const [networkOnline,setNetworkOnline]=useState(()=>typeof navigator==='undefined'||navigator.onLine)
+  useEffect(()=>{
+    const update=()=>setNetworkOnline(navigator.onLine)
+    window.addEventListener('online',update)
+    window.addEventListener('offline',update)
+    return()=>{window.removeEventListener('online',update);window.removeEventListener('offline',update)}
+  },[])
   const [session,setSession]=useState<Session|null>(null)
   const [loading,setLoading]=useState(firebaseReady)
   const [demo,setDemo]=useState(false)
@@ -1693,12 +1700,12 @@ export default function App(){
     syncTotals.conflicts?'Конфлікт':
     syncTotals.errors?'Помилка':
     offlineSyncing?'Синхронізація':
-    !navigator.onLine?'Очікуємо мережу':
+    !networkOnline?'Очікуємо мережу':
     syncTotals.pending?'Очікує синхронізації':'Збережено'
   const syncPanel=!session?.demo?<details className="paytakt-sync-compact">
     <summary aria-label={tr('Стан синхронізації')}>
       {offlineError||syncTotals.conflicts||syncTotals.errors?
-        <AlertTriangle size={16}/>:offlineSyncing||syncTotals.pending||!navigator.onLine?
+        <AlertTriangle size={16}/>:offlineSyncing||syncTotals.pending||!networkOnline?
         <CloudUpload size={16}/>:<CheckCircle2 size={16}/>}
       <strong>{tr(networkStatus)}</strong>
       {offlineQueue.length>0&&<small>{offlineQueue.length}</small>}
