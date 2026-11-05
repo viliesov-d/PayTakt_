@@ -13,7 +13,7 @@ import {
 import { doc, setDoc } from 'firebase/firestore'
 import { auth, db, firebaseReady } from './lib/firebase'
 import {
-  createWorkspace, deleteShift, demoShifts, ensureProfile, loadWorkspaces, subscribeTemplates, saveTemplate, deleteTemplate,
+  createWorkspace, deleteWorkspace, deleteShift, demoShifts, ensureProfile, loadWorkspaces, subscribeTemplates, saveTemplate, deleteTemplate,
   saveShift, applyMonthlyPattern, shiftHours, shiftCount, validateDay, subscribeShifts, toDateKey, updateProfileTheme,
   type Shift, type DayType, type ShiftKind, type AdditionalShift, type ThemeChoice, type Workspace, type WorkspaceKind, type AccountingCurrency, accountingCurrencies,
   subscribeOvertimePreset, saveOvertimePreset,
@@ -27,6 +27,7 @@ import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
 import { tr, readPresentation, savePresentation, formatDate, formatMonth, locale as presentationLocale, setAccountingCurrency, inputCurrencyLabel, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
 import {buildMonthAnalytics,payoutsInMonth} from './lib/analytics'
+import {readNbuRates,refreshNbuRates,nbuRate,rateCacheIsCurrent,type NbuRateCache} from './lib/nbuRates'
 import {effectiveRevenue,cashTotalsByMonth,parseCashHryvnia,defaultCashPreferences,type DailyCash,type CashPreferences} from './lib/dailyCash'
 import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
 import {defaultCalendarLayout,readCalendarLayout,writeCalendarLayout,moveCalendarBlock,makeCalendarLayoutPreset,isCalendarLayoutPreset,type CalendarLayoutPreset,type CalendarBlockId,type CalendarLayout} from './lib/calendarLayout'
@@ -866,27 +867,34 @@ function TeamPage({workspace}:{workspace:Workspace}) {
   return <><SectionHeading eyebrow="КОМАНДА" title="Співробітники компанії" detail={`Простір «${workspace.name}» · зараз доступний власнику акаунта.`}/><div className="panel team-owner"><div className="avatar large"><UserRound size={24}/></div><div><h3>Власник простору</h3><p>Повний доступ до власних налаштувань і календаря</p></div><span className="pill mint-pill">Власник</span></div><Placeholder icon={UsersRound} title="Запрошення співробітників — наступний етап" detail="Після налаштування корпоративних ролей тут з’являться запрошення, відділи та доступи. Зараз ніхто інший не може переглядати дані вашого простору."/></>
 }
 
-function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange }: {
+function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates }: {
   session: Session; workspace: Workspace; workspaces: Workspace[]; theme: ThemeChoice;
-  setTheme: (v:ThemeChoice)=>void; onCreate:()=>void; emailVerified:boolean;
+  setTheme: (v:ThemeChoice)=>void; onCreate:()=>void; onDeleteRequest:(w:Workspace)=>void;
+  onSignOut:()=>void; emailVerified:boolean;
   onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>;
   presentation: PresentationSettings; onPresentationChange: (next:PresentationSettings)=>void;
+  fxRates:NbuRateCache|null;
 }) {
   const nativeCurrency=workspace.currency??'UAH'
   const [currencyDraft,setCurrencyDraft]=useState<DisplayCurrency>(presentation.currency)
   const [rateDraft,setRateDraft]=useState(String(presentation.uahPerUnit))
+  const [fxModeDraft,setFxModeDraft]=useState<'auto'|'manual'>(presentation.fxMode==='manual'?'manual':'auto')
   const [currencyError,setCurrencyError]=useState('')
   useEffect(()=>{
     setCurrencyDraft(presentation.currency)
     setRateDraft(String(presentation.uahPerUnit))
+    setFxModeDraft(presentation.fxMode==='manual'?'manual':'auto')
     setCurrencyError('')
   },[presentation.currency,presentation.uahPerUnit])
   const updateCurrency=(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault()
-    const rate=currencyDraft==='UAH'?1:Number(rateDraft.replace(',','.').trim())
+    const official=nbuRate(fxRates,currencyDraft)
+    const rate=currencyDraft==='UAH'?1:fxModeDraft==='auto'?
+      official:Number(rateDraft.replace(',','.').trim())
+    if(rate===null){setCurrencyError(tr('Курс НБУ поки недоступний. Підключись до інтернету або вибери ручний курс.'));return}
     if(!Number.isFinite(rate)||rate<=0||rate>1000000){setCurrencyError(tr('Вкажи курс більше нуля.'));return}
     setCurrencyError('')
-    onPresentationChange({...presentation,currency:currencyDraft,uahPerUnit:rate})
+    onPresentationChange({...presentation,currency:currencyDraft,uahPerUnit:rate,fxMode:fxModeDraft})
   }
   return <>
     <SectionHeading eyebrow="ПЕРСОНАЛІЗАЦІЯ" title="Налаштування" detail="Зовнішній вигляд, профіль та робочі простори."/>
@@ -908,6 +916,9 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
         <div className="setting-info"><span>{tr('Ім’я')}</span><strong>{session.name}</strong></div>
         <div className="setting-info"><span>{tr('Електронна пошта')}</span><strong>{session.email || tr('Деморежим')}</strong></div>
         <div className="setting-info"><span>{tr('Тип входу')}</span><strong>{session.demo?tr('Демонстрація'):tr('Електронна пошта')}</strong></div>
+        <button type="button" className="btn btn-outline paytakt-signout-button" onClick={onSignOut}>
+          <LogOut size={18}/>{tr('Вийти з акаунта')}
+        </button>
       </section>
       <section className="panel settings-panel settings-wide paytakt-locale-settings">
         <div className="settings-heading"><Monitor size={22}/><div><h3>{tr('Мова застосунку')}</h3><p>Українська · English · Русский</p></div></div>
@@ -938,25 +949,53 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
               <option value="EUR">EUR — €</option><option value="PLN">PLN — zł</option><option value="GBP">GBP — £</option>
             </select>
           </label>
-          {currencyDraft!=='UAH'&&<label>{tr('Гривень за 1 одиницю валюти')} ({currencyDraft})
-            <input type="text" inputMode="decimal" required value={rateDraft} onChange={e=>{setRateDraft(e.target.value);setCurrencyError('')}} placeholder="Наприклад, 42.50"/>
-          </label>}
+          {currencyDraft!=='UAH'&&<>
+            <label>{tr('Джерело валютного курсу')}
+              <select value={fxModeDraft} onChange={e=>{setFxModeDraft(e.target.value as 'auto'|'manual');setCurrencyError('')}}>
+                <option value="auto">{tr('Автоматично — офіційний курс НБУ')}</option>
+                <option value="manual">{tr('Вказати курс вручну')}</option>
+              </select>
+            </label>
+            <label>{tr('Гривень за 1 одиницю валюти')} ({currencyDraft})
+              <input type="text" inputMode="decimal" required
+                readOnly={fxModeDraft==='auto'}
+                value={fxModeDraft==='auto'?(nbuRate(fxRates,currencyDraft)?.toFixed(4)??''):rateDraft}
+                onChange={e=>{setRateDraft(e.target.value);setCurrencyError('')}}
+                placeholder={fxModeDraft==='auto'?tr('Очікуємо курс НБУ…'):'Наприклад, 42.50'}/>
+            </label>
+          </>}
+          {currencyDraft!=='UAH'&&fxModeDraft==='auto'&&<p className="paytakt-rate-status" role="status">
+            {fxRates?
+              `${tr('Офіційний курс НБУ на')} ${fxRates.exchangeDate}. ${rateCacheIsCurrent(fxRates)?tr('Перевірено сьогодні.'):tr('Збережений попередній курс, потрібен інтернет для оновлення.')}`:
+              tr('Поки немає курсу НБУ. Підключись до інтернету або введи курс вручну.')}
+          </p>}
           {currencyError&&<p className="form-error" role="alert">{currencyError}</p>}
           <button className="btn btn-primary" type="submit">{tr('Зберегти валюту')}</button>
           <div className="paytakt-currency-example">
             <span>{tr('Валюта відображення')}: {presentation.currency}</span>
             <strong>{moneyUA(1234500)}</strong>
-            <small>{tr('Налаштування збережено на цьому пристрої.')}</small>
+            <small>{tr('Дані зарплати залишаються у валюті робочого простору. Автоматичний курс НБУ перевіряється один раз на день, коли застосунок відкритий та є інтернет.')}</small>
           </div>
         </form>
       </section>
       </>}
       <section className="panel settings-panel settings-wide">
         <div className="settings-heading"><BriefcaseBusiness size={22}/><div><h3>{tr('Робочі простори')}</h3><p>{tr('Особисті записи та компанії не змішуються.')}</p></div></div>
-        <div className="workspace-rows">{workspaces.map(w=><div className="workspace-row" key={w.id}><div className="workspace-symbol">{w.kind==='company'?<Building2 size={19}/>:<UserRound size={19}/>}</div>
-          <div><strong>{w.name}</strong><small>{tr(w.kind==='company'?'Компанія':'Особистий простір')}</small></div>
-          {w.id===workspace.id&&<span className="pill mint-pill">{tr('Активний')}</span>}
+        <div className="workspace-rows">{workspaces.map(w=><div className="workspace-row paytakt-workspace-row" key={w.id}>
+          <div className="workspace-symbol">{w.kind==='company'?<Building2 size={19}/>:<UserRound size={19}/>}</div>
+          <div className="paytakt-workspace-name"><strong>{w.name}</strong><small>{tr(w.kind==='company'?'Компанія':'Особистий простір')} · {w.currency??'UAH'}</small></div>
+          <div className="paytakt-workspace-buttons">
+            {w.id===workspace.id&&<span className="pill mint-pill">{tr('Активний')}</span>}
+            <button type="button" className="btn btn-outline paytakt-delete-workspace"
+              disabled={workspaces.length<2}
+              title={workspaces.length<2?tr('Спочатку створи другий робочий простір.'):tr('Видалити робочий простір')}
+              onClick={()=>onDeleteRequest(w)}
+              aria-label={`${tr('Видалити робочий простір')}: ${w.name}`}>
+              <Trash2 size={16}/><span>{tr('Видалити')}</span>
+            </button>
+          </div>
         </div>)}</div>
+        {workspaces.length===1&&<p className="paytakt-only-workspace-note">{tr('Не можна видалити єдиний простір. Спочатку створи інший.')}</p>}
         <button type="button" className="btn btn-outline" onClick={onCreate}><Plus size={17}/>{tr('Додати робочий простір')}</button>
       </section>
     </div>
@@ -1003,12 +1042,77 @@ function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(ki
   </div>
 }
 
+function DeleteWorkspaceDialog({workspace,onClose,onDelete}:{
+  workspace:Workspace;onClose:()=>void;onDelete:(value:Workspace)=>Promise<void>
+}){
+  const [typed,setTyped]=useState('')
+  const [busy,setBusy]=useState(false)
+  const [error,setError]=useState('')
+  const submit=async(e:FormEvent)=>{
+    e.preventDefault()
+    if(typed.trim()!==workspace.name)return
+    setBusy(true);setError('')
+    try{await onDelete(workspace);onClose()}
+    catch(err){setError(friendlyError(err))}
+    finally{setBusy(false)}
+  }
+  return <div className="modal-backdrop" onMouseDown={e=>{if(!busy&&e.target===e.currentTarget)onClose()}}>
+    <div className="modal paytakt-delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-workspace-title">
+      <div className="modal-head"><div className="modal-icon paytakt-danger-icon"><Trash2 size={22}/></div>
+        <button type="button" className="icon-button" aria-label={tr('Скасувати')} disabled={busy} onClick={onClose}><X size={20}/></button>
+      </div>
+      <h2 id="delete-workspace-title">{tr('Видалити робочий простір')}</h2>
+      <p>{tr('Усі записи календаря, каса, нарахування, плани, шаблони та налаштування цього простору будуть видалені назавжди. Інші робочі простори не постраждають.')}</p>
+      <p className="paytakt-delete-name">{workspace.name} · {workspace.currency??'UAH'}</p>
+      <form onSubmit={submit} className="paytakt-delete-form">
+        <label>{tr('Для підтвердження введи точну назву простору')}
+          <input autoFocus autoComplete="off" value={typed} disabled={busy} onChange={e=>setTyped(e.target.value)}/>
+        </label>
+        {error&&<p className="form-error" role="alert">{error}<br/>{tr('Якщо видалення перервалося, повтори спробу, щоб завершити очищення.')}</p>}
+        <div className="paytakt-delete-actions">
+          <button type="button" className="btn btn-outline" disabled={busy} onClick={onClose}>{tr('Скасувати')}</button>
+          <button type="submit" className="btn paytakt-danger-button" disabled={busy||typed.trim()!==workspace.name}>
+            <Trash2 size={17}/>{busy?tr('Видаляємо…'):tr('Видалити назавжди')}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
 export default function App(){
   const [presentation,setPresentation]=useState<PresentationSettings>(readPresentation)
+  const [fxRates,setFxRates]=useState<NbuRateCache|null>(readNbuRates)
   const onPresentationChange=useCallback((next:PresentationSettings)=>{
-    setPresentation(savePresentation(next))
+    // Native foreign-currency workspaces are unaffected: only UAH display FX.
+    const official=next.fxMode==='manual'?null:nbuRate(readNbuRates(),next.currency)
+    setPresentation(savePresentation({...next,uahPerUnit:official??next.uahPerUnit}))
   },[])
   useEffect(()=>{document.documentElement.lang=presentation.language},[presentation.language])
+  useEffect(()=>{
+    let mounted=true
+    const check=()=>{
+      void refreshNbuRates().then(rates=>{
+        if(!mounted)return
+        setFxRates(rates)
+        if(!rates)return
+        setPresentation(previous=>{
+          if(previous.fxMode==='manual'||previous.currency==='UAH')return previous
+          const official=nbuRate(rates,previous.currency)
+          if(!official||official===previous.uahPerUnit)return previous
+          return savePresentation({...previous,uahPerUnit:official})
+        })
+      }).catch(()=>undefined)
+    }
+    const visible=()=>{if(document.visibilityState==='visible')check()}
+    check()
+    // Check hourly while the app is foregrounded; the fetcher makes no more
+    // than one successful request per Kyiv day and caches stale rates offline.
+    const interval=window.setInterval(visible,60*60*1000)
+    window.addEventListener('online',check)
+    document.addEventListener('visibilitychange',visible)
+    return()=>{mounted=false;window.clearInterval(interval);window.removeEventListener('online',check);document.removeEventListener('visibilitychange',visible)}
+  },[])
   // Capacitor injects this bridge into the Android WebView; the hosted website stays unchanged.
   const [isNativeAndroid] = useState(() => {
     const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor
@@ -1061,6 +1165,7 @@ export default function App(){
   const [mobileMenu,setMobileMenu]=useState(false)
   const [workspaceMenu,setWorkspaceMenu]=useState(false)
   const [createOpen,setCreateOpen]=useState(false)
+  const [deleteTarget,setDeleteTarget]=useState<Workspace|null>(null)
   const [shiftsError,setShiftsError]=useState('')
   const [emailVerified,setEmailVerified]=useState(false)
   const [verificationMessage,setVerificationMessage]=useState('')
@@ -1293,6 +1398,17 @@ export default function App(){
     if(auth){try{await signOut(auth)}catch(e){setError(friendlyError(e))}}
   }
   const selectWorkspace=(w:Workspace)=>{setAccountingCurrency(w.currency??'UAH');setPayLoaded(false);setShiftsLoaded(false);setSetupPayDraft(null);setWorkspace(w);setWorkspaceMenu(false);setMobileMenu(false);setForceWizard(false);setPage('calendar');try{localStorage.setItem(`paytakt-workspace:${session?.uid}`,w.id)}catch{/* optional */}}
+  const removeWorkspace=async(target:Workspace)=>{
+    if(!session)throw Error('Увійди в акаунт')
+    if(workspaces.length<2)throw Error('Спочатку створи інший робочий простір.')
+    if(!workspaces.some(item=>item.id===target.id))throw Error('Простір не знайдено.')
+    if(!session.demo)await deleteWorkspace(session.uid,target.id)
+    const remaining=workspaces.filter(item=>item.id!==target.id)
+    setWorkspaces(remaining)
+    try{localStorage.removeItem(`paytakt-wizard-v2:${session.uid}:${target.id}`)}catch{/* optional */}
+    if(workspace?.id===target.id)selectWorkspace(remaining[0])
+    setDeleteTarget(null)
+  }
   const createCompany=async(kind:WorkspaceKind,name:string,currency:AccountingCurrency)=>{
     if(!session)throw Error('Увійди в акаунт')
     let created:Workspace
@@ -1402,7 +1518,7 @@ export default function App(){
   if(!session)return <AuthScreen onDemo={enterDemo} language={presentation.language} onLanguageChange={language=>onPresentationChange({...presentation,language})}/>
   if(!workspace)return <div className="loading-screen"><Logo/><div className="firebase-note wide">{error||'Не вдалося відкрити робочий простір. Перевір доступ до акаунта.'}</div><button type="button" className="btn btn-outline" onClick={logout}>{tr("Вийти з акаунта")}</button></div>
   if(!session.demo&&(!payLoaded||!shiftsLoaded))return <div className="loading-screen"><Logo/><div className="spinner"/><p>Завантажуємо графік і правила роботи…</p></div>
-  if(forceWizard||newWorkspaceNeedsWizard)return <OnboardingWizard key={`${session.uid}:${workspace.id}`} workspaceKey={`${session.uid}:${workspace.id}`} workspaceName={workspace.name} isExisting={Boolean(paySettings||shifts.length)} onComplete={finishOnboarding} onCancel={forceWizard?()=>setForceWizard(false):undefined}/>
+  if(forceWizard||newWorkspaceNeedsWizard)return <OnboardingWizard key={`${session.uid}:${workspace.id}`} workspaceKey={`${session.uid}:${workspace.id}`} workspaceName={workspace.name} isExisting={Boolean(paySettings||shifts.length)} onComplete={finishOnboarding} onCancel={forceWizard?()=>setForceWizard(false):undefined} onSignOut={()=>void logout()}/>
   return <div className="app-shell zmina-shell">
     <header className="zmina-site-header">
       <div className="zmina-header-main">
@@ -1446,7 +1562,7 @@ export default function App(){
         {page==='pay'&&<PayPageV5 key={workspace.id} workspaceName={workspace.name} shifts={shifts} settings={paySettings} performance={performance} targets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} loaded={payLoaded&&salesLoaded&&unitsLoaded&&cashLoaded&&performanceLoaded&&targetsLoaded&&wagesLoaded} salesFromCash={cashPrefs.enabled&&cashPrefs.useForSales} salesByMonth={effectiveSales} onSaveMonthlySales={onSaveMonthlySales} unitsByMonth={unitsByMonth} onSaveMonthlyUnits={onSaveMonthlyUnits} demo={session.demo} goToRules={()=>navigate('rules')}/>}
         {page==='rules'&&<RulesPageV5 key={workspace.id} shifts={shifts} workspaceName={workspace.name} settings={setupPayDraft??paySettings} loaded={payLoaded} demo={session.demo} onSave={onSavePay} performance={performance} onSavePerformance={onSavePerformance} onApplyZmina={onApplyZmina}/>}
         {page==='team'&&workspace.kind==='company'&&<TeamPage workspace={workspace}/>}
-        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange}/>}
+        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates}/>}
         {page==='settings'&&<section className="panel v2-settings-actions">
           <div className="v2-settings-head"><div><h3>{tr("Налаштування твоєї роботи")}</h3><p>Персональний майстер або точні правила — обирай зручний спосіб.</p></div></div>
           <div className="v2-settings-links">
@@ -1486,5 +1602,6 @@ export default function App(){
       })}
     </nav>}
     {createOpen&&<CreateWorkspaceDialog onClose={()=>setCreateOpen(false)} onCreate={createCompany}/>}
+    {deleteTarget&&<DeleteWorkspaceDialog workspace={deleteTarget} onClose={()=>setDeleteTarget(null)} onDelete={removeWorkspace}/>}
   </div>
 }

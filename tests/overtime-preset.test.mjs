@@ -23,6 +23,6 @@ test('pay settings v5 keep local validation and owner-only Firestore access',()=
  validatePaySettings(defaultPaySettings)
  const rules=readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')
  assert.match(rules,/match \/paySettings\/\{payId\}/)
- assert.match(rules,/allow create, update: if payId == 'current'[\s\S]*?ownWorkspace\(workspaceId\)[\s\S]*?request\.resource\.data\.version == 5/)
+ assert.match(rules,/allow create, update: if payId == 'current'[\s\S]*?activeWorkspace\(workspaceId\)[\s\S]*?request\.resource\.data\.version == 5/)
  assert.doesNotMatch(rules,/function validPaySettings\(\)/)
 })

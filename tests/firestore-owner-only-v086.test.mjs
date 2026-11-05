@@ -15,8 +15,9 @@ const payMatch=rules.match(/match \/paySettings\/\{payId\}\s*\{([^}]+)\}/)
 test('paySettings route is scoped to current and authenticated workspace owner',()=>{
   assert.ok(payMatch, 'paySettings/current route must exist')
   assert.match(payMatch[1],/allow get:\s*if payId == 'current' && ownWorkspace\(workspaceId\)/)
-  assert.match(payMatch[1],/allow list, delete:\s*if false/)
-  assert.match(payMatch[1],/allow create, update:\s*if payId == 'current'\s*&& ownWorkspace\(workspaceId\)\s*&& request\.resource\.data\.version == 5/)
+  assert.match(payMatch[1],/allow list:\s*if false/)
+  assert.match(payMatch[1],/allow delete:\s*if payId == 'current' && ownWorkspace\(workspaceId\)/)
+  assert.match(payMatch[1],/allow create, update:\s*if payId == 'current'\s*&& activeWorkspace\(workspaceId\)\s*&& request\.resource\.data\.version == 5/)
 })
 
 test('workspace owner guard checks authenticated UID against stored owner',()=>{

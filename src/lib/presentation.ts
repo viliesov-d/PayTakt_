@@ -3,7 +3,7 @@
  * UAH-only legacy workspaces retain their original semantics. */
 export type Language = 'uk' | 'en' | 'ru'
 export type DisplayCurrency = 'UAH' | 'USD' | 'EUR' | 'PLN' | 'GBP'
-export type PresentationSettings = { language: Language; currency: DisplayCurrency; uahPerUnit: number }
+export type PresentationSettings = { language: Language; currency: DisplayCurrency; uahPerUnit: number; fxMode?: 'auto' | 'manual' }
 const key = 'paytakt-presentation-v1'
 export const localeForLanguage: Record<Language, string> = { uk: 'uk-UA', en: 'en-US', ru: 'ru-RU' }
 export const currencies: DisplayCurrency[] = ['UAH', 'USD', 'EUR', 'PLN', 'GBP']
@@ -1927,6 +1927,82 @@ const translations: Record<string, { en: string; ru: string }> = {
   "Створюємо…": {
     "en": "Creating…",
     "ru": "Создаём…"
+  },
+  "Джерело валютного курсу": {
+    "en": "Exchange rate source",
+    "ru": "Источник валютного курса"
+  },
+  "Автоматично — офіційний курс НБУ": {
+    "en": "Automatic — official NBU rate",
+    "ru": "Автоматически — официальный курс НБУ"
+  },
+  "Вказати курс вручну": {
+    "en": "Enter exchange rate manually",
+    "ru": "Ввести курс вручную"
+  },
+  "Очікуємо курс НБУ…": {
+    "en": "Waiting for NBU rate…",
+    "ru": "Ожидаем курс НБУ…"
+  },
+  "Курс НБУ поки недоступний. Підключись до інтернету або вибери ручний курс.": {
+    "en": "NBU rates are unavailable. Connect to the internet or enter a manual rate.",
+    "ru": "Курс НБУ пока недоступен. Подключитесь к интернету или введите курс вручную."
+  },
+  "Офіційний курс НБУ на": {
+    "en": "Official NBU rate for",
+    "ru": "Официальный курс НБУ на"
+  },
+  "Перевірено сьогодні.": {
+    "en": "Checked today.",
+    "ru": "Проверено сегодня."
+  },
+  "Збережений попередній курс, потрібен інтернет для оновлення.": {
+    "en": "Using a cached rate. Connect to update.",
+    "ru": "Используется предыдущий курс. Подключитесь для обновления."
+  },
+  "Поки немає курсу НБУ. Підключись до інтернету або введи курс вручну.": {
+    "en": "No NBU rate yet. Connect or enter a rate manually.",
+    "ru": "Курс НБУ пока отсутствует. Подключитесь или введите курс вручную."
+  },
+  "Дані зарплати залишаються у валюті робочого простору. Автоматичний курс НБУ перевіряється один раз на день, коли застосунок відкритий та є інтернет.": {
+    "en": "Pay remains in your workspace currency. NBU rates refresh once daily while the app is open and online.",
+    "ru": "Зарплата остаётся в валюте пространства. Курс НБУ обновляется раз в день, когда приложение открыто и есть интернет."
+  },
+  "Видалити робочий простір": {
+    "en": "Delete workspace",
+    "ru": "Удалить рабочее пространство"
+  },
+  "Спочатку створи другий робочий простір.": {
+    "en": "Create another workspace first.",
+    "ru": "Сначала создайте ещё одно рабочее пространство."
+  },
+  "Не можна видалити єдиний простір. Спочатку створи інший.": {
+    "en": "You cannot delete your only workspace. Create another one first.",
+    "ru": "Нельзя удалить единственное пространство. Сначала создайте другое."
+  },
+  "Усі записи календаря, каса, нарахування, плани, шаблони та налаштування цього простору будуть видалені назавжди. Інші робочі простори не постраждають.": {
+    "en": "All calendar entries, cash, earnings, targets, templates, and settings in this workspace will be permanently deleted. Other workspaces are unaffected.",
+    "ru": "Все записи календаря, касса, начисления, планы, шаблоны и настройки этого пространства будут удалены навсегда. Другие пространства не затронуты."
+  },
+  "Для підтвердження введи точну назву простору": {
+    "en": "Enter the exact workspace name to confirm",
+    "ru": "Для подтверждения введите точное название пространства"
+  },
+  "Скасувати": {
+    "en": "Cancel",
+    "ru": "Отмена"
+  },
+  "Видаляємо…": {
+    "en": "Deleting…",
+    "ru": "Удаляем…"
+  },
+  "Видалити назавжди": {
+    "en": "Permanently delete",
+    "ru": "Удалить навсегда"
+  },
+  "Якщо видалення перервалося, повтори спробу, щоб завершити очищення.": {
+    "en": "If deletion was interrupted, retry to finish cleaning up.",
+    "ru": "Если удаление прервалось, повторите попытку, чтобы завершить очистку."
   }
 }
 
@@ -1947,11 +2023,12 @@ export function readPresentation(): PresentationSettings {
           language: validLanguage(obj.language) ? obj.language : 'uk',
           currency: validCurrency(obj.currency) && (obj.currency === 'UAH' || (typeof obj.uahPerUnit === 'number' && Number.isFinite(obj.uahPerUnit) && obj.uahPerUnit > 0)) ? obj.currency : 'UAH',
           uahPerUnit: typeof obj.uahPerUnit === 'number' && Number.isFinite(obj.uahPerUnit) && obj.uahPerUnit > 0 ? obj.uahPerUnit : 1,
+          fxMode: obj.fxMode === 'manual' ? 'manual' : 'auto',
         }
       }
     }
   } catch {/* localStorage can be unavailable in private mode */}
-  return { language: 'uk', currency: 'UAH', uahPerUnit: 1 }
+  return { language: 'uk', currency: 'UAH', uahPerUnit: 1, fxMode: 'auto' }
 }
 let current: PresentationSettings = readPresentation()
 let workspaceCurrency: DisplayCurrency = 'UAH'
@@ -1970,6 +2047,7 @@ export function savePresentation(value: PresentationSettings): PresentationSetti
     language: validLanguage(value.language) ? value.language : 'uk',
     currency: validCurrency(value.currency) ? value.currency : 'UAH',
     uahPerUnit: Number.isFinite(value.uahPerUnit) && value.uahPerUnit > 0 ? value.uahPerUnit : 1,
+    fxMode: value.fxMode === 'manual' ? 'manual' : 'auto',
   }
   if (safe.currency !== 'UAH' && (!Number.isFinite(value.uahPerUnit) || value.uahPerUnit <= 0)) throw Error('Exchange rate must be positive')
   current = safe

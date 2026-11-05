@@ -73,6 +73,6 @@ test('workspace currency metadata and Firestore rules remain immutable',()=>{
   const data=readFileSync(new URL('../src/lib/data.ts',import.meta.url),'utf8')
   const rules=readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')
   assert.match(data,/currency: isAccountingCurrency\(d\.data\(\)\.currency\) \? d\.data\(\)\.currency : 'UAH'/)
-  assert.match(rules,/request\.resource\.data\.get\('currency','UAH'\) == resource\.data\.get\('currency','UAH'\)/)
+  assert.match(rules,/request\.resource\.data\.diff\(resource\.data\)\.affectedKeys\(\)\.hasOnly\(\['deleting'\]\)/)
   assert.match(rules,/getAfter\([\s\S]*?\.data\.get\('currency', 'UAH'\) == request\.resource\.data\.get\('currency', 'UAH'\)/)
 })

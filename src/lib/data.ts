@@ -1,5 +1,6 @@
 import {
-  collection, doc, getDoc, getDocs, setDoc, writeBatch, runTransaction, deleteDoc,
+  collection, doc, getDoc, getDocs, getDocFromServer, getDocsFromServer,
+  limit, query, updateDoc, setDoc, writeBatch, runTransaction, deleteDoc,
   serverTimestamp, onSnapshot, type Unsubscribe,
 } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
@@ -110,6 +111,64 @@ export async function createWorkspace(uid: string, kind: WorkspaceKind, name: st
   })
   await batch.commit()
   return workspace
+}
+
+
+/**
+ * Permanently delete one owner's workspace and every known PayTakt collection.
+ * IMPORTANT: deleting a Firestore parent document does not delete its children.
+ * A two-phase server-confirmed delete prevents leaving inaccessible orphans.
+ *
+ * The first write locks the workspace against all new writes via Firestore Rules.
+ * If interrupted, it stays visible to its owner so deletion can be retried.
+ * The final atomic batch deletes BOTH the root document and user's index.
+ */
+export async function deleteWorkspace(uid:string, workspaceId:string):Promise<void>{
+  if(!db || !auth?.currentUser || auth.currentUser.uid!==uid)
+    throw Error('Потрібно увійти у власний акаунт.')
+  if(!navigator.onLine)throw Error('Для видалення простору потрібен інтернет.')
+
+  const root=doc(db,'workspaces',workspaceId)
+  const snap=await getDocFromServer(root)
+  if(!snap.exists())throw Error('Робочий простір уже видалено.')
+  if(snap.data().ownerUid!==uid)throw Error('Лише власник може видаляти простір.')
+
+  // A deletion in progress blocks writes from other signed-in devices.
+  if(snap.data().deleting!==true)await updateDoc(root,{deleting:true})
+
+  // All Firestore subcollections used by PayTakt. Process the SERVER, never
+  // cached offline snapshots, to prevent missing records and orphaned data.
+  const collections=[
+    'shifts','scheduleTemplates','dailyCash','dailyWages',
+    'monthlyTargets','monthlySales','monthlyUnits',
+  ] as const
+  for(const name of collections){
+    while(true){
+      const docs=await getDocsFromServer(query(collection(db,'workspaces',workspaceId,name),limit(80)))
+      if(docs.empty)break
+      const batch=writeBatch(db)
+      docs.docs.forEach(item=>batch.delete(item.ref))
+      await batch.commit()
+    }
+  }
+
+  // Rules intentionally prohibit listing the settings and paySettings
+  // collections. Delete their known document IDs with server-confirmed reads.
+  const individual=[
+    ['settings','overtime'],['settings','cash'],['settings','performance'],
+    ['paySettings','current'],
+  ] as const
+  const batch=writeBatch(db)
+  for(const [name,id] of individual){
+    const ref=doc(db,'workspaces',workspaceId,name,id)
+    const item=await getDocFromServer(ref)
+    if(item.exists())batch.delete(ref)
+  }
+  // Do not delete the owner index or root until every child is gone. This
+  // batch is atomic; an interrupted earlier stage can always be retried.
+  batch.delete(doc(db,'users',uid,'workspaces',workspaceId))
+  batch.delete(root)
+  await batch.commit()
 }
 
 export function subscribeShifts(workspaceId: string, onChange: (data: Shift[]) => void, onError: (error: Error) => void): Unsubscribe {

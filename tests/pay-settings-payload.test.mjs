@@ -36,5 +36,5 @@ test('client keeps strict v5 payload even when server avoids unused monolithic v
   const saved=preparePaySettingsWrite(clone())
   assert.deepEqual(Object.keys(saved).sort(),Object.keys(defaultPaySettings).sort())
   assert.doesNotMatch(rules,/function validPaySettings\(\)/)
-  assert.match(rules,/allow create, update: if payId == 'current'[\s\S]*?ownWorkspace\(workspaceId\)[\s\S]*?request\.resource\.data\.version == 5/)
+  assert.match(rules,/allow create, update: if payId == 'current'[\s\S]*?activeWorkspace\(workspaceId\)[\s\S]*?request\.resource\.data\.version == 5/)
 })
