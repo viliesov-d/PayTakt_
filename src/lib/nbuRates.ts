@@ -63,7 +63,7 @@ export async function refreshNbuRates(options?:{force?:boolean;fetcher?:typeof f
   const cached=readNbuRates()
   if(!options?.force&&cached?.checkedOn===today)return cached
   if(!options?.force&&Date.now()<retryAfter)return cached
-  if(typeof navigator!=='undefined'&&!navigator.onLine)return cached
+  if(typeof navigator!=='undefined'&&navigator.onLine===false)return cached
   if(pending)return pending
   const fetcher=options?.fetcher??fetch
   pending=(async()=>{
