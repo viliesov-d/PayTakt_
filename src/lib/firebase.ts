@@ -18,7 +18,9 @@ export const firebaseApp: FirebaseApp | null = firebaseReady
   : null
 export const auth: Auth | null = firebaseApp ? getAuth(firebaseApp) : null
 if (auth) auth.languageCode = 'uk'
-// Offline cache is for viewing previously loaded shifts. Editing while offline is disabled in v0.3.
+// Firestore persistent cache supports offline reads; local day edits are separately
+// queued and conflict-checked in offlineQueue/offlineSync. Do not depend on
+// Firestore's last-write-wins offline writes for payroll data.
 function createFirestore(app: FirebaseApp): Firestore {
   try {
     return initializeFirestore(app, {localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})})

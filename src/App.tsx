@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import {
   ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, BriefcaseBusiness, Building2, CalendarDays,
   Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clock3,
-  LayoutDashboard, LockKeyhole, LogOut, Mail, Menu, Monitor, Moon, Plus, Save, TrendingUp,
+  LayoutDashboard, LockKeyhole, LogOut, Mail, Menu, Monitor, Moon, Plus, Save, TrendingUp, AlertTriangle, CloudUpload,
   RotateCcw, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Target, Trash2, UserRound,
   UsersRound, Wallet, X, ReceiptText,
 } from 'lucide-react'
@@ -13,8 +13,8 @@ import {
 import { doc, setDoc } from 'firebase/firestore'
 import { auth, db, firebaseReady } from './lib/firebase'
 import {
-  createWorkspace, deleteWorkspace, deleteShift, demoShifts, ensureProfile, loadWorkspaces, subscribeTemplates, saveTemplate, deleteTemplate,
-  saveShift, applyMonthlyPattern, shiftHours, shiftCount, validateDay, subscribeShifts, toDateKey, updateProfileTheme,
+  createWorkspace, deleteWorkspace, demoShifts, ensureProfile, loadWorkspaces, subscribeTemplates, saveTemplate, deleteTemplate,
+  applyMonthlyPattern, shiftHours, shiftCount, validateDay, subscribeShifts, toDateKey, updateProfileTheme,
   type Shift, type DayType, type ShiftKind, type AdditionalShift, type ThemeChoice, type Workspace, type WorkspaceKind, type AccountingCurrency, accountingCurrencies,
   subscribeOvertimePreset, saveOvertimePreset,
 } from './lib/data'
@@ -27,6 +27,8 @@ import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
 import { tr, readPresentation, savePresentation, formatDate, formatMonth, locale as presentationLocale, setAccountingCurrency, inputCurrencyLabel, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
 import {buildMonthAnalytics,payoutsInMonth} from './lib/analytics'
+import {enqueueOffline,readOfflineQueue,retryOfflineErrors,discardOffline,acceptOverwrite,offlineSummary,overlayShifts,overlayAmounts,overlayWages,type OfflineKind,type OfflineValue,type OfflineEdit} from './lib/offlineQueue'
+import {flushOfflineQueue} from './lib/offlineSync'
 import {readNbuRates,refreshNbuRates,nbuRate,rateCacheIsCurrent,type NbuRateCache} from './lib/nbuRates'
 import {effectiveRevenue,cashTotalsByMonth,parseCashHryvnia,defaultCashPreferences,type DailyCash,type CashPreferences} from './lib/dailyCash'
 import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
@@ -35,7 +37,7 @@ import {StatisticsPage} from './components/StatisticsPage'
 import {OnboardingWizard} from './components/OnboardingWizard'
 import {calendarFeatures} from './lib/featureVisibility'
 import {onboardingMonthKeys,schedulePattern,onboardingCalendarDays,onboardingOvertimePreset,makeOnboardingPaySettings,makeOnboardingPerformance,validateOnboardingDraft,type OnboardingDraft} from './lib/onboarding'
-import { savePaySettings, subscribePaySettings, saveMonthlySales, subscribeMonthlySales, saveMonthlyUnits, subscribeMonthlyUnits, subscribeDailyCash, saveDailyCash, removeDailyCash, subscribeCashPreferences, saveCashPreferences,subscribePerformanceSettings,savePerformanceSettings,subscribeMonthlyTargets,saveMonthlyTarget,removeMonthlyTarget,subscribeDailyWages,saveDailyWage,removeDailyWage } from './lib/data'
+import { savePaySettings, subscribePaySettings, saveMonthlySales, subscribeMonthlySales, saveMonthlyUnits, subscribeMonthlyUnits, subscribeDailyCash, subscribeCashPreferences, saveCashPreferences,subscribePerformanceSettings,savePerformanceSettings,subscribeMonthlyTargets,saveMonthlyTarget,removeMonthlyTarget,subscribeDailyWages } from './lib/data'
 
 type Page = 'setup' | 'dashboard' | 'calendar' | 'statistics' | 'pay' | 'rules' | 'team' | 'settings'
 type Session = { uid: string; email: string; name: string; demo: boolean }
@@ -1130,7 +1132,15 @@ export default function App(){
   const [error,setError]=useState('')
   const [workspaces,setWorkspaces]=useState<Workspace[]>([])
   const [workspace,setWorkspace]=useState<Workspace|null>(null)
-  const [shifts,setShifts]=useState<Shift[]>([])
+  const [offlineQueue,setOfflineQueue]=useState<OfflineEdit[]>([])
+  const [offlineError,setOfflineError]=useState('')
+  const [offlineSyncing,setOfflineSyncing]=useState(false)
+  const syncingRef=useRef(false)
+  const activeUidRef=useRef('')
+  const [serverShifts,setShifts]=useState<Shift[]>([])
+  const shifts=useMemo(()=>workspace&&!session?.demo?
+    overlayShifts(serverShifts,offlineQueue,workspace.id):serverShifts,
+    [serverShifts,offlineQueue,workspace?.id,session?.demo])
   const [shiftsLoaded,setShiftsLoaded]=useState(false)
   const [forceWizard,setForceWizard]=useState(false)
   const [templates,setTemplates]=useState<ScheduleTemplate[]>([])
@@ -1143,11 +1153,17 @@ export default function App(){
   const [performance,setPerformance]=useState<PerformanceSettings>(defaultPerformanceSettings)
   const [performanceError,setPerformanceError]=useState('')
   const [performanceLoaded,setPerformanceLoaded]=useState(false)
-  const [dailyWages,setDailyWages]=useState<Record<string,number>>({})
+  const [serverDailyWages,setDailyWages]=useState<Record<string,number>>({})
+  const dailyWages=useMemo(()=>workspace&&!session?.demo?
+    overlayWages(serverDailyWages,offlineQueue,workspace.id):serverDailyWages,
+    [serverDailyWages,offlineQueue,workspace?.id,session?.demo])
   const [wagesLoaded,setWagesLoaded]=useState(false)
   const [monthlyTargets,setMonthlyTargets]=useState<Record<string,number>>({})
   const [targetsLoaded,setTargetsLoaded]=useState(false)
-  const [cashRecords,setCashRecords]=useState<DailyCash[]>([])
+  const [serverCashRecords,setCashRecords]=useState<DailyCash[]>([])
+  const cashRecords=useMemo(()=>workspace&&!session?.demo?
+    overlayAmounts(serverCashRecords,offlineQueue,workspace.id,'dailyCash'):serverCashRecords,
+    [serverCashRecords,offlineQueue,workspace?.id,session?.demo])
   const [cashPrefs,setCashPrefs]=useState<CashPreferences>(defaultCashPreferences)
   const [cashError,setCashError]=useState('')
   const [cashLoaded,setCashLoaded]=useState(false)
@@ -1169,6 +1185,87 @@ export default function App(){
   const [shiftsError,setShiftsError]=useState('')
   const [emailVerified,setEmailVerified]=useState(false)
   const [verificationMessage,setVerificationMessage]=useState('')
+
+  activeUidRef.current=session?.uid??''
+  // Queue is tied to the Firebase user UID. It survives application restarts
+  // but cannot be accidentally replayed under another signed-in account.
+  useEffect(()=>{
+    if(!session||session.demo){setOfflineQueue([]);setOfflineError('');return}
+    try{setOfflineQueue(readOfflineQueue(session.uid));setOfflineError('')}
+    catch(error){setOfflineError(friendlyError(error))}
+  },[session?.uid,session?.demo])
+
+  const flushNow=useCallback(async function syncQueuedEdits(uid:string){
+    if(!uid||syncingRef.current||typeof navigator!=='undefined'&&!navigator.onLine)return
+    syncingRef.current=true
+    if(activeUidRef.current===uid)setOfflineSyncing(true)
+    try{
+      await flushOfflineQueue(uid,()=>{
+        if(activeUidRef.current!==uid)return
+        try{setOfflineQueue(readOfflineQueue(uid));setOfflineError('')}
+        catch(error){setOfflineError(friendlyError(error))}
+      })
+    }catch(error){
+      if(activeUidRef.current===uid)setOfflineError(friendlyError(error))
+    }finally{
+      syncingRef.current=false
+      if(activeUidRef.current===uid){
+        setOfflineSyncing(false)
+        try{
+          const remaining=readOfflineQueue(uid)
+          setOfflineQueue(remaining)
+          if(remaining.some(e=>e.state==='pending')&&navigator.onLine)
+            void Promise.resolve().then(()=>syncQueuedEdits(uid))
+        }catch(error){setOfflineError(friendlyError(error))}
+      }
+    }
+  },[])
+  useEffect(()=>{
+    if(session?.uid&&!session.demo&&offlineQueue.some(e=>e.state==='pending')&&
+      (typeof navigator==='undefined'||navigator.onLine))void flushNow(session.uid)
+  },[session?.uid,session?.demo,offlineQueue,flushNow])
+  useEffect(()=>{
+    if(!session?.uid||session.demo)return
+    const uid=session.uid
+    const retry=()=>{
+      if(typeof navigator!=='undefined'&&!navigator.onLine)return
+      try{setOfflineQueue(retryOfflineErrors(uid));setOfflineError('')}
+      catch(error){setOfflineError(friendlyError(error))}
+    }
+    window.addEventListener('online',retry)
+    const onVisible=()=>{if(document.visibilityState==='visible')retry()}
+    document.addEventListener('visibilitychange',onVisible)
+    return()=>{
+      window.removeEventListener('online',retry)
+      document.removeEventListener('visibilitychange',onVisible)
+    }
+  },[session?.uid,session?.demo])
+  const queueDayEdit=(kind:OfflineKind,date:string,next:OfflineValue)=>{
+    if(!session||!workspace||session.demo)throw Error('Робочий простір не обрано')
+    const before:OfflineValue=kind==='shifts'?
+      (serverShifts.find(s=>s.date===date)??null):
+      kind==='dailyCash'?(serverCashRecords.find(c=>c.date===date)?.amount??null):
+      (serverDailyWages[date]??null)
+    // Storage write is synchronous and must succeed before reporting a save.
+    const updated=enqueueOffline(session.uid,workspace.id,kind,date,before,next)
+    setOfflineQueue(updated)
+    setOfflineError('')
+  }
+  const retrySync=()=>{
+    if(!session||session.demo)return
+    try{setOfflineQueue(retryOfflineErrors(session.uid));setOfflineError('')}
+    catch(error){setOfflineError(friendlyError(error))}
+  }
+  const resolveConflict=(id:string,decision:'server'|'local')=>{
+    if(!session||session.demo)return
+    try{
+      setOfflineQueue(decision==='server'?
+        discardOffline(session.uid,id):acceptOverwrite(session.uid,id))
+      setOfflineError('')
+    }catch(error){setOfflineError(friendlyError(error))}
+  }
+  const syncTotals=offlineSummary(offlineQueue)
+
 
   const setThemeChoice=useCallback((value:ThemeChoice)=>{
     setTheme(value)
@@ -1280,13 +1377,13 @@ export default function App(){
   }
   const onSaveDailyWage=async(date:string,amount:number)=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
-    if(!session.demo)await saveDailyWage(workspace.id,{date,amount})
-    setDailyWages(old=>({...old,[date]:amount}))
+    if(session.demo)setDailyWages(old=>({...old,[date]:amount}))
+    else queueDayEdit('dailyWages',date,amount)
   }
   const onRemoveDailyWage=async(date:string)=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
-    if(!session.demo)await removeDailyWage(workspace.id,date)
-    setDailyWages(old=>{const next={...old};delete next[date];return next})
+    if(session.demo)setDailyWages(old=>{const next={...old};delete next[date];return next})
+    else queueDayEdit('dailyWages',date,null)
   }
   const onSaveTarget=async(month:string,amount:number)=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
@@ -1328,13 +1425,13 @@ export default function App(){
   }
   const onSaveCash=async(record:DailyCash)=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
-    if(!session.demo)await saveDailyCash(workspace.id,record)
-    setCashRecords(old=>[...old.filter(x=>x.date!==record.date),record])
+    if(session.demo)setCashRecords(old=>[...old.filter(x=>x.date!==record.date),record])
+    else queueDayEdit('dailyCash',record.date,record.amount)
   }
   const onDeleteCash=async(date:string)=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
-    if(!session.demo)await removeDailyCash(workspace.id,date)
-    setCashRecords(old=>old.filter(x=>x.date!==date))
+    if(session.demo)setCashRecords(old=>old.filter(x=>x.date!==date))
+    else queueDayEdit('dailyCash',date,null)
   }
   const onSavePay=async(settings:PaySettings)=>{
     if(!workspace||!session)throw Error('Робочий простір не обрано')
@@ -1391,6 +1488,7 @@ export default function App(){
     setAccountingCurrency('UAH');setDemo(true);setSession({uid:'demo',email:'',name:'Гість',demo:true});setWorkspaces([personal,company]);setWorkspace(personal);setPage('dashboard');setLoading(false)
   }
   const logout=async()=>{
+    if(offlineQueue.length&&!window.confirm('Є записи, які ще не синхронізовано з Firebase. Вони залишаться на цьому пристрої та синхронізуються після повторного входу. Вийти?'))return
     setAccountingCurrency('UAH')
     setSetupPayDraft(null)
     setMobileMenu(false);setWorkspaceMenu(false);setForceWizard(false);setPage('calendar')
@@ -1402,7 +1500,11 @@ export default function App(){
     if(!session)throw Error('Увійди в акаунт')
     if(workspaces.length<2)throw Error('Спочатку створи інший робочий простір.')
     if(!workspaces.some(item=>item.id===target.id))throw Error('Простір не знайдено.')
-    if(!session.demo)await deleteWorkspace(session.uid,target.id)
+    if(!session.demo){
+      if(offlineQueue.some(e=>e.workspaceId===target.id))
+        throw Error('У цьому просторі є локальні зміни. Перед видаленням синхронізуй їх або виріши конфлікти.')
+      await deleteWorkspace(session.uid,target.id)
+    }
     const remaining=workspaces.filter(item=>item.id!==target.id)
     setWorkspaces(remaining)
     try{localStorage.removeItem(`paytakt-wizard-v2:${session.uid}:${target.id}`)}catch{/* optional */}
@@ -1420,7 +1522,7 @@ export default function App(){
     if(!workspace||!session)throw Error('Робочий простір не обрано')
     validateDay(shift)
     if(session.demo){setShifts(old=>[...old.filter(x=>x.date!==shift.date),shift]);return}
-    await saveShift(workspace.id,shift)
+    queueDayEdit('shifts',shift.date,shift)
   }
   const onApplyPattern=async(generated:GeneratedCalendarDay[],mode:PatternApplyMode):Promise<PatternApplySummary>=>{
     if(!workspace||!session)throw Error('Робочий простір не обрано')
@@ -1432,6 +1534,7 @@ export default function App(){
       }
       return planned.summary
     }
+    if(offlineQueue.some(e=>e.workspaceId===workspace.id))throw Error('Спочатку синхронізуй або виріши конфлікти локальних змін, перш ніж застосовувати графік до всього місяця.')
     return applyMonthlyPattern(workspace.id,generated,mode)
   }
   const resendVerification=async()=>{
@@ -1447,7 +1550,7 @@ export default function App(){
   const onDelete=async(date:string)=>{
     if(!workspace||!session)throw Error('Робочий простір не обрано')
     if(session.demo){setShifts(old=>old.filter(s=>s.date!==date));return}
-    await deleteShift(workspace.id,date)
+    queueDayEdit('shifts',date,null)
   }
   const finishOnboarding=async(draft:OnboardingDraft)=>{
     if(!session||!workspace)throw Error('Обери робочий простір.')
@@ -1551,6 +1654,39 @@ export default function App(){
     </header>
     <div className="main-column">
       <main className="main-content">{session.demo&&<div className="demo-banner"><Sparkles size={16}/><span><strong>Демоверсія.</strong> Зміни календаря й налаштування зарплати тут тимчасові.</span><button type="button" onClick={logout}>До реєстрації <ArrowRight size={15}/></button></div>}{error&&<div className="alert-banner" role="alert">{error}</div>}{overtimePresetError&&<div className="alert-banner" role="alert">Налаштування понаднормових: {overtimePresetError}</div>}{shiftsError&&<div className="alert-banner" role="alert">Не вдалося прочитати зміни: {shiftsError}</div>}{payError&&<div className="alert-banner" role="alert">Налаштування зарплати: {payError}</div>}{salesError&&<div className="alert-banner" role="alert">Показники продажів: {salesError}</div>}{cashError&&<div className="alert-banner" role="alert">Каса: {cashError}</div>}{verificationMessage&&<div className="alert-banner" role="status">{verificationMessage}<button className="small-dismiss" onClick={()=>setVerificationMessage('')} type="button" aria-label="Закрити повідомлення"><X size={16}/></button></div>}
+        {!session.demo&&<section className={`paytakt-sync-status ${syncTotals.conflicts||syncTotals.errors||offlineError?'has-issue':''}`} aria-label={tr('Стан синхронізації')}>
+          <div className="paytakt-sync-main" role="status">
+            {syncTotals.conflicts||syncTotals.errors||offlineError?
+              <AlertTriangle size={18} aria-hidden="true"/>:
+              offlineSyncing||syncTotals.pending?<CloudUpload size={18} aria-hidden="true"/>:
+              <CheckCircle2 size={18} aria-hidden="true"/>}
+            <div>
+              <strong>{tr(offlineError?'Помилка локального сховища':
+                syncTotals.conflicts?'Конфлікт синхронізації':
+                syncTotals.errors?'Помилка синхронізації':
+                offlineSyncing?'Синхронізуємо…':
+                syncTotals.pending?'Очікує синхронізації':
+                navigator.onLine?'Збережено у Firebase':'Офлайн · збережені дані')}</strong>
+              <small>{tr('Локальні записи')}: {offlineQueue.length}{offlineQueue.length>0?
+                ` · ${syncTotals.pending} ${tr('в черзі')}, ${syncTotals.conflicts} ${tr('конфліктів')}`:''}</small>
+            </div>
+            {(syncTotals.errors>0||syncTotals.pending>0)&&<button className="btn btn-outline" type="button" onClick={retrySync}
+              disabled={!navigator.onLine||offlineSyncing}>{tr('Повторити синхронізацію')}</button>}
+          </div>
+          {offlineError&&<p role="alert" className="paytakt-sync-error">{offlineError}</p>}
+          {offlineQueue.filter(e=>e.state==='conflict'||e.state==='error').map(entry=><div key={entry.id} className="paytakt-sync-conflict">
+            <div><strong>{entry.date} · {tr(entry.kind==='shifts'?'Календар':entry.kind==='dailyCash'?'Каса за день':'Оплата за день')}</strong>
+              <p>{entry.error??tr('Зміни очікують вирішення.')}</p></div>
+            {entry.state==='conflict'&&<div className="paytakt-sync-actions">
+              <button type="button" className="btn btn-outline"
+                onClick={()=>resolveConflict(entry.id,'server')}>{tr('Залишити серверну версію')}</button>
+              <button type="button" className="btn btn-outline" onClick={()=>{
+                if(window.confirm(tr('Це замінить серверний запис твоєю локальною версією. Продовжити?')))
+                  resolveConflict(entry.id,'local')
+              }}>{tr('Зберегти мою версію')}</button>
+            </div>}
+          </div>)}
+        </section>}
         {setupPayDraft&&<div className="alert-banner" role="status">Ти вибрав шаблон оплати, але його правила ще не збережено. Після налаштування графіка відкрий «Правила оплати», перевір ставку й натисни «Зберегти». <button type="button" className="btn btn-outline" onClick={()=>navigate('rules')}>{tr("Відкрити правила оплати")}</button></div>}
         <div className="page-motion" key={`${workspace.id}:${page}:${presentation.language}:${presentation.currency}:${presentation.uahPerUnit}`}>
         {page==='setup'&&<SetupPage key={workspace.id} settings={paySettings} loaded={payLoaded} onChoose={chooseSetup}/>}
