@@ -5,3 +5,15 @@ node_modules
 /.firebase
 *.tsbuildinfo
 .DS_Store
+
+# Android local settings and build outputs (keep the Android source project)
+/android/local.properties
+/android/.gradle/
+/android/.idea/
+/android/.cxx/
+/android/captures/
+/android/build/
+/android/app/build/
+/android/app/release/
+*.jks
+*.keystore
