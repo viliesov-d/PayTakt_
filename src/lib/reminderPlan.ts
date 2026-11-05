@@ -32,8 +32,8 @@ export function readReminderSettings(uid:string,workspaceId:string):ReminderPref
       tomorrow:value.tomorrow!==false,
       payday:value.payday!==false,
       leadMinutes:([15,30,60,120] as const).includes(value.leadMinutes as 15)?value.leadMinutes as 15|30|60|120:60,
-      tomorrowHour:Number.isInteger(value.tomorrowHour)&&value.tomorrowHour!>=0&&value.tomorrowHour!<=23?value.tomorrowHour!:19,
-      paydayHour:Number.isInteger(value.paydayHour)&&value.paydayHour!>=0&&value.paydayHour!<=23?value.paydayHour!:9,
+      tomorrowHour:Number.isInteger(value.tomorrowHour)&&(value.tomorrowHour as number)>=0&&(value.tomorrowHour as number)<=23?value.tomorrowHour as number:19,
+      paydayHour:Number.isInteger(value.paydayHour)&&(value.paydayHour as number)>=0&&(value.paydayHour as number)<=23?value.paydayHour as number:9,
     }
   }catch{return {...defaultReminders}}
 }
