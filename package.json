@@ -10,9 +10,10 @@
     "typecheck": "tsc -b",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "android:setup": "node scripts/setup-android.mjs",
-    "android:sync": "npm run build && cap sync android",
+    "android:sync": "npm run build && cap sync android && npm run android:icon",
     "android:open": "cap open android",
-    "android:run": "npm run android:sync && cap run android"
+    "android:run": "npm run android:sync && cap run android",
+    "android:icon": "java scripts/GenerateAndroidIcon.java"
   },
   "dependencies": {
     "firebase": "^12.4.0",
