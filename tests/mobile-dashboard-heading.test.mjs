@@ -7,7 +7,7 @@ const css=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8')
 
 test('monthly dashboard summary has a scoped heading for mobile layout',()=>{
   assert.match(app,/<div className="dashboard-summary-heading">\s*<SectionHeading eyebrow="КОРОТКИЙ ОГЛЯД" title="Підсумок місяця"/)
-  assert.match(app,/Моя статистика <TrendingUp size=\{17\}/)
+  assert.match(app,/\{tr\("Моя статистика"\)\} <TrendingUp size=\{17\}/)
 })
 test('mobile dashboard summary text and button align left with the cards',()=>{
   assert.match(css,/@media\(max-width:700px\)\{[\s\S]*?\.dashboard-summary-heading \.section-head\{/)

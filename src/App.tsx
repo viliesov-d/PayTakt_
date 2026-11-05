@@ -25,6 +25,7 @@ import {defaultOvertimePreset,validateOvertimePreset,segmentHours,type OvertimeP
 import {changeDayType, markWorkedForDailyPay, toggleWorkedDay, togglePresetOvertime} from './lib/dayActions'
 import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
+import { tr, readPresentation, savePresentation, formatDate, formatMonth, locale as presentationLocale, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
 import {buildMonthAnalytics,payoutsInMonth} from './lib/analytics'
 import {effectiveRevenue,cashTotalsByMonth,parseCashHryvnia,defaultCashPreferences,type DailyCash,type CashPreferences} from './lib/dailyCash'
 import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
@@ -37,8 +38,8 @@ import { savePaySettings, subscribePaySettings, saveMonthlySales, subscribeMonth
 
 type Page = 'setup' | 'dashboard' | 'calendar' | 'statistics' | 'pay' | 'rules' | 'team' | 'settings'
 type Session = { uid: string; email: string; name: string; demo: boolean }
-const dateFormat = new Intl.DateTimeFormat('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
-const monthFormat = new Intl.DateTimeFormat('uk-UA', { month: 'long', year: 'numeric' })
+const dateFormat = { format: formatDate }
+const monthFormat = { format: formatMonth }
 const weekdayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд']
 const defaultShift = (date: string): Shift => ({ id: date, date, start: '09:00', end: '18:00', breakMinutes: 60, status: 'planned', note: '', dayType:'work', kind:'regular', additionalShifts:[], overtimeMinutes:0, plannedWorkday:true, plannedMinutes:480 })
 const nav: { id: Page; title: string; icon: typeof LayoutDashboard; companyOnly?: boolean }[] = [
@@ -81,7 +82,7 @@ function ThemeControls({ value, onChange }: { value: ThemeChoice; onChange: (v: 
   </div>
 }
 
-function AuthScreen({ onDemo }: { onDemo: () => void }) {
+function AuthScreen({ onDemo, language, onLanguageChange }: { onDemo: () => void; language: Language; onLanguageChange: (value:Language)=>void }) {
   const [variant, setVariant] = useState<'login'|'register'>('register')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -121,43 +122,43 @@ function AuthScreen({ onDemo }: { onDemo: () => void }) {
   }
   return <div className="auth-layout">
     <section className="auth-art">
-      <div className="auth-art-top"><Logo/><span className="auth-caption">НОВА ПЛАТФОРМА</span></div>
+      <div className="auth-art-top"><Logo/><span className="auth-caption">{tr("НОВА ПЛАТФОРМА")}</span></div>
       <div className="auth-art-main">
         <div className="auth-art-glow"/>
         <div className="auth-orbit orbit-one"/><div className="auth-orbit orbit-two"/>
-        <span className="auth-tag"><Sparkles size={15}/> Розумні графіки та зарплата</span>
-        <h1>Твій графік.<br/>Твої правила.<br/><span>Твій PayTakt.</span></h1>
-        <p>Керуйте робочим часом, створюйте власні графіки та працюйте із зарплатою в одному просторі.</p>
+        <span className="auth-tag"><Sparkles size={15}/> {tr("Розумні графіки та зарплата")}</span>
+        <h1>{tr("Твій графік.")}<br/>{tr("Твої правила.")}<br/><span>{tr("Твій PayTakt.")}</span></h1>
+        <p>{tr("Керуйте робочим часом, створюйте власні графіки та працюйте із зарплатою в одному просторі.")}</p>
         <div className="auth-visual">
-          <div className="visual-top"><span className="visual-dot"/> Мій робочий ритм <span className="visual-small">Листопад</span></div>
+          <div className="visual-top"><span className="visual-dot"/> {tr("Мій робочий ритм")} <span className="visual-small">{tr("Листопад")}</span></div>
           <div className="visual-bars">{[44,70,53,86,64,92,61,76,98,57].map((h,i)=><span key={i} style={{height:`${h}%`}} className={i===8?'highlight':''}/>)}</div>
-          <div className="visual-caption"><span>Плануйте зміни</span><span><ArrowUpRight size={14}/> Ваш час — ваші правила</span></div>
+          <div className="visual-caption"><span>{tr("Плануйте зміни")}</span><span><ArrowUpRight size={14}/> {tr("Ваш час — ваші правила")}</span></div>
         </div>
       </div>
-      <div className="auth-art-bottom"><ShieldCheck size={17}/> Працює для особистого обліку та команд</div>
+      <div className="auth-art-bottom"><ShieldCheck size={17}/> {tr("Працює для особистого обліку та команд")}</div>
     </section>
     <section className="auth-panel">
-      <div className="auth-mobile-logo"><Logo/></div>
+      <div className="auth-mobile-logo"><Logo/></div><div className="paytakt-auth-language"><label htmlFor="paytakt-auth-lang">{tr("Мова застосунку")}</label><select id="paytakt-auth-lang" value={language} onChange={e=>onLanguageChange(e.target.value as Language)}><option value="uk">Українська</option><option value="en">English</option><option value="ru">Русский</option></select></div>
       <div className="auth-form-wrap">
-        <div className="eyebrow">ПОЧАТОК РОБОТИ</div>
-        <h2>{variant === 'register' ? 'Створіть свій простір' : 'З поверненням!'}</h2>
-        <p className="auth-intro">{variant === 'register' ? 'Новий акаунт для персонального обліку та управління командою.' : 'Увійдіть, щоб продовжити роботу з вашими графіками.'}</p>
+        <div className="eyebrow">{tr("ПОЧАТОК РОБОТИ")}</div>
+        <h2>{tr(variant === 'register' ? 'Створіть свій простір' : 'З поверненням!')}</h2>
+        <p className="auth-intro">{tr(variant === 'register' ? 'Новий акаунт для персонального обліку та управління командою.' : 'Увійдіть, щоб продовжити роботу з вашими графіками.')}</p>
         <div className="auth-tabs">
-          <button type="button" className={variant==='register'?'selected':''} onClick={()=>{setVariant('register');setError('');setNotice('')}}>Реєстрація</button>
-          <button type="button" className={variant==='login'?'selected':''} onClick={()=>{setVariant('login');setError('');setNotice('')}}>Вхід</button>
+          <button type="button" className={variant==='register'?'selected':''} onClick={()=>{setVariant('register');setError('');setNotice('')}}>{tr("Реєстрація")}</button>
+          <button type="button" className={variant==='login'?'selected':''} onClick={()=>{setVariant('login');setError('');setNotice('')}}>{tr("Вхід")}</button>
         </div>
         <form onSubmit={submit} className="auth-form">
-          {variant === 'register' && <label>Ваше ім’я<input required value={name} maxLength={70} onChange={e=>setName(e.target.value)} placeholder="Наприклад, Олександр" autoComplete="name"/></label>}
-          <label>Електронна пошта<span className="field-icon"><Mail size={17}/></span><input required value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="you@example.com" autoComplete="email" className="with-icon"/></label>
-          <label>Пароль<span className="field-icon"><LockKeyhole size={17}/></span><input required minLength={6} value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Щонайменше 6 символів" autoComplete={variant==='register'?'new-password':'current-password'} className="with-icon"/></label>
-          {variant === 'login' && <button type="button" className="link-button forgot" onClick={resetPassword}>Забули пароль?</button>}
+          {variant === 'register' && <label>{tr("Ваше ім’я")}<input required value={name} maxLength={70} onChange={e=>setName(e.target.value)} placeholder="Наприклад, Олександр" autoComplete="name"/></label>}
+          <label>{tr("Електронна пошта")}<span className="field-icon"><Mail size={17}/></span><input required value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="you@example.com" autoComplete="email" className="with-icon"/></label>
+          <label>{tr("Пароль")}<span className="field-icon"><LockKeyhole size={17}/></span><input required minLength={6} value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Щонайменше 6 символів" autoComplete={variant==='register'?'new-password':'current-password'} className="with-icon"/></label>
+          {variant === 'login' && <button type="button" className="link-button forgot" onClick={resetPassword}>{tr("Забули пароль?")}</button>}
           {error && <p className="form-error" role="alert">{error}</p>}
           {notice && <p className="form-success" role="status">{notice}</p>}
-          <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>{busy?'Опрацьовуємо…':variant==='register'?'Створити акаунт':'Увійти'} <ArrowRight size={18}/></button>
+          <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>{tr(busy?'Опрацьовуємо…':variant==='register'?'Створити акаунт':'Увійти')} <ArrowRight size={18}/></button>
         </form>
-        <div className="auth-divider"><span>або</span></div>
-        <button type="button" className="btn btn-outline demo-button" onClick={onDemo}>Переглянути демоверсію <ArrowUpRight size={17}/></button>
-        {!firebaseReady && <div className="firebase-note"><CircleHelp size={17}/><span><strong>Реєстрація тимчасово недоступна.</strong> Зараз можна переглянути демоверсію.</span></div>}
+        <div className="auth-divider"><span>{tr("або")}</span></div>
+        <button type="button" className="btn btn-outline demo-button" onClick={onDemo}>{tr("Переглянути демоверсію")} <ArrowUpRight size={17}/></button>
+        {!firebaseReady && <div className="firebase-note"><CircleHelp size={17}/><span><strong>{tr("Реєстрація тимчасово недоступна.")}</strong> {tr("Зараз можна переглянути демоверсію.")}</span></div>}
       </div>
       <div className="auth-footer">© {new Date().getFullYear()} PayTakt · Створено з турботою про ваш час</div>
     </section>
@@ -165,11 +166,11 @@ function AuthScreen({ onDemo }: { onDemo: () => void }) {
 }
 
 function SectionHeading({ eyebrow, title, detail, children }: { eyebrow?: string; title: string; detail?: string; children?: ReactNode }) {
-  return <div className="section-head"><div><div className="eyebrow">{eyebrow}</div><h2>{title}</h2>{detail && <p className="subtitle">{detail}</p>}</div>{children}</div>
+  return <div className="section-head"><div><div className="eyebrow">{eyebrow?tr(eyebrow):null}</div><h2>{tr(title)}</h2>{detail && <p className="subtitle">{tr(detail)}</p>}</div>{children}</div>
 }
 
 function Placeholder({ icon: Icon, title, detail }: { icon: typeof Wallet; title: string; detail: string }) {
-  return <div className="placeholder"><div className="placeholder-icon"><Icon size={28}/></div><h3>{title}</h3><p>{detail}</p><span className="pill soft"><Sparkles size={14}/> На наступному етапі розробки</span></div>
+  return <div className="placeholder"><div className="placeholder-icon"><Icon size={28}/></div><h3>{title}</h3><p>{detail}</p><span className="pill soft"><Sparkles size={14}/> {tr("На наступному етапі розробки")}</span></div>
 }
 
 function Dashboard({ workspace, shifts, paySettings, salesByMonth, unitsByMonth, performance, monthlyTargets, cashByMonth, dailyWages, onGoCalendar, onCreateCompany, onGoPay, onGoStatistics }: { workspace: Workspace; shifts: Shift[]; paySettings: PaySettings | null; salesByMonth: Record<string,number>; unitsByMonth: Record<string,number>; performance:PerformanceSettings;monthlyTargets:Record<string,number>;cashByMonth:Record<string,number>;dailyWages:Record<string,number>; onGoCalendar: () => void; onCreateCompany: () => void; onGoPay: () => void; onGoStatistics: () => void }) {
@@ -182,35 +183,35 @@ function Dashboard({ workspace, shifts, paySettings, salesByMonth, unitsByMonth,
   const nextShifts = [...shifts].filter(s=>s.date>=toDateKey(today) && (!s.dayType || s.dayType==='work')).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,4)
   return <>
     <div className="page-hero zmina-hero">
-      <div className="hero-content"><span className="hero-chip"><span className="zmina-hero-dot"/> ПЛАНУЙ · ПРАЦЮЙ · ЗАРОБЛЯЙ</span><h1>Твій графік.<br/><span>Твої правила.</span></h1><p>Зміни, зарплата, плани та виплати — усе на своєму місці. Без зайвих налаштувань.</p><button className="btn btn-hero" onClick={onGoCalendar}>Перейти до календаря <ArrowUpRight size={18}/></button></div>
+      <div className="hero-content"><span className="hero-chip"><span className="zmina-hero-dot"/> {tr("ПЛАНУЙ · ПРАЦЮЙ · ЗАРОБЛЯЙ")}</span><h1>{tr("Твій графік.")}<br/><span>{tr("Твої правила.")}</span></h1><p>{tr("Зміни, зарплата, плани та виплати — усе на своєму місці. Без зайвих налаштувань.")}</p><button className="btn btn-hero" onClick={onGoCalendar}>{tr("Перейти до календаря")} <ArrowUpRight size={18}/></button></div>
       <div className="hero-graphic zmina-hero-art" aria-hidden="true">
         <div className="zmina-art-orb orb-top"/><div className="zmina-art-orb orb-bottom"/>
         <div className="zmina-mini-calendar">
-          <div className="zmina-mini-head"><span>МІЙ КАЛЕНДАР</span><CalendarDays size={19}/></div>
-          <div className="zmina-mini-weekdays">{weekdayLabels.map(day=><span key={day}>{day}</span>)}</div>
+          <div className="zmina-mini-head"><span>{tr("МІЙ КАЛЕНДАР")}</span><CalendarDays size={19}/></div>
+          <div className="zmina-mini-weekdays">{weekdayLabels.map(day=><span key={day}>{tr(day)}</span>)}</div>
           <div className="zmina-mini-dates">{Array.from({length:28},(_,i)=>{const offset=(new Date(today.getFullYear(),today.getMonth(),1).getDay()+6)%7;const day=i-offset+1;if(day<1)return <span key={i} className="is-empty"/>;const date=new Date(today.getFullYear(),today.getMonth(),day);const off=date.getDay()===0||date.getDay()===6;return <span key={i} className={off?'is-off':'is-work'}>{day}</span>})}</div>
-          <div className="zmina-mini-foot"><span className="zmina-mini-check">✦</span> План на місяць — під контролем</div>
+          <div className="zmina-mini-foot"><span className="zmina-mini-check">✦</span> {tr("План на місяць — під контролем")}</div>
         </div>
         <div className="zmina-floating-coin coin-primary">₴</div><div className="zmina-floating-coin coin-secondary">✦</div>
       </div>
     </div>
     <div className="dashboard-summary-heading">
       <SectionHeading eyebrow="КОРОТКИЙ ОГЛЯД" title="Підсумок місяця" detail={`${monthFormat.format(today)} · ${workspace.name}`}>
-        <button type="button" className="btn btn-outline" onClick={onGoStatistics}>Моя статистика <TrendingUp size={17}/></button>
+        <button type="button" className="btn btn-outline" onClick={onGoStatistics}>{tr("Моя статистика")} <TrendingUp size={17}/></button>
       </SectionHeading>
     </div>
     <div className="stats-grid">
-      <div className="stat-card"><div className="stat-top"><span>Заплановано змін</span><CalendarDays size={20}/></div><div className="stat-value">{summary.plannedShifts} <span>змін</span></div><div className="stat-hint">У поточному місяці</div></div>
-      <div className="stat-card"><div className="stat-top"><span>Відпрацьовано</span><Clock3 size={20}/></div><div className="stat-value">{summary.workedHours.toLocaleString('uk-UA',{maximumFractionDigits:1})} <span>год</span></div><div className="stat-hint">З підтверджених вами змін</div></div>
-      <div className="stat-card"><div className="stat-top"><span>Понаднормові години</span><Clock3 size={20}/></div><div className="stat-value">{summary.overtimeHours.toLocaleString('uk-UA',{maximumFractionDigits:1})} <span>год</span></div><div className="stat-hint">За підтвердженим графіком і тарифами</div></div>
-      <div className="stat-card salary-stat" role="button" tabIndex={0} onClick={onGoPay} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onGoPay()}}}><div className="stat-top"><span>Попередня зарплата</span><Wallet size={20}/></div><div className="stat-value salary-dashboard-value">{salary?moneyUA(salary.gross):'—'}</div><div className="stat-hint">{salary?'До податків · натисни для деталізації':'Налаштуй правила оплати'}</div></div>
+      <div className="stat-card"><div className="stat-top"><span>{tr("Заплановано змін")}</span><CalendarDays size={20}/></div><div className="stat-value">{summary.plannedShifts} <span>{tr("змін")}</span></div><div className="stat-hint">{tr("У поточному місяці")}</div></div>
+      <div className="stat-card"><div className="stat-top"><span>{tr("Відпрацьовано")}</span><Clock3 size={20}/></div><div className="stat-value">{summary.workedHours.toLocaleString('uk-UA',{maximumFractionDigits:1})} <span>{tr("год")}</span></div><div className="stat-hint">{tr("З підтверджених вами змін")}</div></div>
+      <div className="stat-card"><div className="stat-top"><span>{tr("Понаднормові години")}</span><Clock3 size={20}/></div><div className="stat-value">{summary.overtimeHours.toLocaleString('uk-UA',{maximumFractionDigits:1})} <span>{tr("год")}</span></div><div className="stat-hint">{tr("За підтвердженим графіком і тарифами")}</div></div>
+      <div className="stat-card salary-stat" role="button" tabIndex={0} onClick={onGoPay} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onGoPay()}}}><div className="stat-top"><span>{tr("Попередня зарплата")}</span><Wallet size={20}/></div><div className="stat-value salary-dashboard-value">{salary?moneyUA(salary.gross):'—'}</div><div className="stat-hint">{tr(salary?'До податків · натисни для деталізації':'Налаштуй правила оплати')}</div></div>
     </div>
-    <div className="dashboard-stats-link"><span><TrendingUp size={17}/> Детальні години, понаднормові, динаміка за 6 місяців і календар виплат</span><button className="link-button" type="button" onClick={onGoStatistics}>Відкрити статистику <ArrowUpRight size={16}/></button></div>
+    <div className="dashboard-stats-link"><span><TrendingUp size={17}/> {tr("Детальні години, понаднормові, динаміка за 6 місяців і календар виплат")}</span><button className="link-button" type="button" onClick={onGoStatistics}>{tr("Відкрити статистику")} <ArrowUpRight size={16}/></button></div>
     <div className="dashboard-grid">
-      <section className="panel"><div className="panel-title"><div><h3>Динаміка робочих годин</h3><p>Фактично відпрацьовані години за тижнями</p></div><span className="pill">Цей місяць</span></div><div className="chart-wrap">{weeks.map((h,i)=><div className="chart-column" key={i}><div className="chart-column-top">{h?Math.round(h*10)/10:''}</div><div className="chart-track"><span style={{height:`${h?Math.max(8,h/max*100):4}%`}}/></div><small>{summary.weeks[i].label}</small></div>)}</div></section>
-      <section className="panel upcoming-panel"><div className="panel-title"><div><h3>Найближчі зміни</h3><p>Твої наступні робочі дні</p></div><button className="icon-button" onClick={onGoCalendar} aria-label="Перейти до календаря"><ArrowUpRight size={19}/></button></div>{nextShifts.length?nextShifts.map(s=><div className="upcoming-row" key={s.id}><div className="upcoming-date"><strong>{s.date.slice(-2)}</strong><span>{monthFormat.format(new Date(s.date+'T12:00')).split(' ')[0].slice(0,3)}</span></div><div><strong>{dateFormat.format(new Date(s.date+'T12:00'))}</strong><small>{s.start}–{s.end} · {s.status==='worked'?'Відпрацьовано':'Заплановано'}</small></div><span className="small-dot"/></div>):<div className="empty-line">Поки немає майбутніх змін. Додай першу в календарі.</div>}</section>
+      <section className="panel"><div className="panel-title"><div><h3>{tr("Динаміка робочих годин")}</h3><p>{tr("Фактично відпрацьовані години за тижнями")}</p></div><span className="pill">{tr("Цей місяць")}</span></div><div className="chart-wrap">{weeks.map((h,i)=><div className="chart-column" key={i}><div className="chart-column-top">{h?Math.round(h*10)/10:''}</div><div className="chart-track"><span style={{height:`${h?Math.max(8,h/max*100):4}%`}}/></div><small>{summary.weeks[i].label}</small></div>)}</div></section>
+      <section className="panel upcoming-panel"><div className="panel-title"><div><h3>{tr("Найближчі зміни")}</h3><p>{tr("Твої наступні робочі дні")}</p></div><button className="icon-button" onClick={onGoCalendar} aria-label="Перейти до календаря"><ArrowUpRight size={19}/></button></div>{nextShifts.length?nextShifts.map(s=><div className="upcoming-row" key={s.id}><div className="upcoming-date"><strong>{s.date.slice(-2)}</strong><span>{monthFormat.format(new Date(s.date+'T12:00')).split(' ')[0].slice(0,3)}</span></div><div><strong>{dateFormat.format(new Date(s.date+'T12:00'))}</strong><small>{s.start}–{s.end} · {s.status==='worked'?'Відпрацьовано':'Заплановано'}</small></div><span className="small-dot"/></div>):<div className="empty-line">{tr("Поки немає майбутніх змін. Додай першу в календарі.")}</div>}</section>
     </div>
-    {workspace.kind==='personal' && <div className="team-banner"><div className="banner-icon"><Building2 size={26}/></div><div><strong>Керуєш командою?</strong><p>Створи окремий простір компанії, не змішуючи особисті дані з робочими.</p></div><button type="button" className="btn btn-outline" onClick={onCreateCompany}>Створити компанію <Plus size={16}/></button></div>}
+    {workspace.kind==='personal' && <div className="team-banner"><div className="banner-icon"><Building2 size={26}/></div><div><strong>{tr("Керуєш командою?")}</strong><p>{tr("Створи окремий простір компанії, не змішуючи особисті дані з робочими.")}</p></div><button type="button" className="btn btn-outline" onClick={onCreateCompany}>{tr("Створити компанію")} <Plus size={16}/></button></div>}
   </>
 }
 
@@ -398,7 +399,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
   const calendarMetrics = useMemo(()=>buildMonthAnalytics(shifts,monthKey,paySettings,salesByMonth[monthKey]??0,unitsByMonth[monthKey]??0,performance,planTarget(monthKey,performance,monthlyTargets),cashByMonth[monthKey]??0,dailyWages),[shifts,monthKey,paySettings,salesByMonth,unitsByMonth,performance,monthlyTargets,cashByMonth,dailyWages])
   const target=planTarget(monthKey,performance,monthlyTargets)
   const progress=performance.enabled&&calendarMetrics.result?performanceProgress(calendarMetrics.result,performance,target,cashByMonth[monthKey]??0):null
-  const measure=(amount:number)=>performance.metric==='units'?amount.toLocaleString('uk-UA'):moneyUA(amount)
+  const measure=(amount:number)=>performance.metric==='units'?amount.toLocaleString(presentationLocale()):moneyUA(amount)
   const paymentMarkers = useMemo(()=>payoutsInMonth(shifts,monthKey,paySettings,salesByMonth,unitsByMonth,performance,monthlyTargets,cashByMonth,dailyWages),[shifts,monthKey,paySettings,salesByMonth,unitsByMonth,performance,monthlyTargets,cashByMonth,dailyWages])
   const paymentsByDay = useMemo(()=>{
     const map=new Map<string,typeof paymentMarkers>()
@@ -518,79 +519,79 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
       <span className="pill mint-pill"><CalendarDays size={15}/> {working} змін у місяці</span>
     </SectionHeading>
     <section id="schedule-settings" className="panel cycle-panel" aria-label="Конструктор графіків">
-      <div className="cycle-top"><div><div className="eyebrow">ШАБЛОН РОБОЧОГО РИТМУ</div><h3>Графік під твої правила</h3><p>{cycleOpen?'Налаштуй цикл і застосуй його до календаря.':'Шаблон застосовано або згорнуто. Календар нижче доступний для редагування.'}</p></div>
+      <div className="cycle-top"><div><div className="eyebrow">{tr("ШАБЛОН РОБОЧОГО РИТМУ")}</div><h3>{tr("Графік під твої правила")}</h3><p>{cycleOpen?'Налаштуй цикл і застосуй його до календаря.':'Шаблон застосовано або згорнуто. Календар нижче доступний для редагування.'}</p></div>
         <div className="cycle-head-actions"><span className="pill mint-pill"><Clock3 size={15}/> {pattern.length} днів у циклі</span><button className="btn btn-outline" type="button" aria-expanded={cycleOpen} aria-controls="cycle-config" onClick={()=>setCycleOpen(v=>!v)}><ChevronDown size={16} className={cycleOpen?'rotate-icon':''}/>{cycleOpen?'Згорнути':'Налаштувати графік'}</button></div></div>
       {!cycleOpen&&<p className="cycle-collapsed-summary">{preset===WEEKDAY_FIVE_TWO_PRESET?'5/2 · Пн–Пт, Сб–Нд вихідні':preset==='custom'?'Власний цикл':preset} · {pattern.filter(p=>p.type==='work').length} робочих днів у циклі. {cycleMessage||'Натисни «Налаштувати графік», щоб внести зміни.'}</p>}
       {cycleOpen&&<div id="cycle-config">
       <div className="template-toolbar">
         <label>Готовий графік
           <select value={preset} onChange={e=>changePreset(e.target.value)}>
-            <option value="2/2">2/2 — дві зміни, два вихідні</option>
-            <option value="4/2">4/2 — чотири зміни, два вихідні</option>
-            <option value="5/2-weekdays">5/2 — Пн–Пт робочі, Сб–Нд вихідні</option>
-            <option value="5/2">5/2 — змінний цикл (від дати початку)</option>
-            <option value="1/1">1/1 — одна зміна, один вихідний</option>
-            <option value="2/1">2/1 — дві зміни, один вихідний</option>
-            <option value="1/2">1/2 — одна зміна, два вихідні</option>
-            <option value="3/1">3/1 — три зміни, один вихідний</option>
-            <option value="3/3">3/3 — три зміни, три вихідні</option>
-            <option value="4/4">4/4 — чотири зміни, чотири вихідні</option>
-            <option value="6/1">6/1 — шість змін, один вихідний</option>
-            <option value="7/7">7/7 — сім змін, сім вихідних</option>
-            <option value="day-night-48">День / ніч / 48 год відпочинку</option>
-            <option value="night-2/2">Нічні 2/2</option>
-            <option value="duty-24-72">Добова зміна / 3 вихідних</option>
-            <option value="custom">Власний цикл</option>
+            <option value="2/2">{tr("2/2 — дві зміни, два вихідні")}</option>
+            <option value="4/2">{tr("4/2 — чотири зміни, два вихідні")}</option>
+            <option value="5/2-weekdays">{tr("5/2 — Пн–Пт робочі, Сб–Нд вихідні")}</option>
+            <option value="5/2">{tr("5/2 — змінний цикл (від дати початку)")}</option>
+            <option value="1/1">{tr("1/1 — одна зміна, один вихідний")}</option>
+            <option value="2/1">{tr("2/1 — дві зміни, один вихідний")}</option>
+            <option value="1/2">{tr("1/2 — одна зміна, два вихідні")}</option>
+            <option value="3/1">{tr("3/1 — три зміни, один вихідний")}</option>
+            <option value="3/3">{tr("3/3 — три зміни, три вихідні")}</option>
+            <option value="4/4">{tr("4/4 — чотири зміни, чотири вихідні")}</option>
+            <option value="6/1">{tr("6/1 — шість змін, один вихідний")}</option>
+            <option value="7/7">{tr("7/7 — сім змін, сім вихідних")}</option>
+            <option value="day-night-48">{tr("День / ніч / 48 год відпочинку")}</option>
+            <option value="night-2/2">{tr("Нічні 2/2")}</option>
+            <option value="duty-24-72">{tr("Добова зміна / 3 вихідних")}</option>
+            <option value="custom">{tr("Власний цикл")}</option>
           </select>
         </label>
         <label>Мої збережені шаблони
           <select value={selectedTemplate} onChange={e=>chooseTemplate(e.target.value)}>
-            <option value="">Оберіть шаблон…</option>
+            <option value="">{tr("Оберіть шаблон…")}</option>
             {templates.map(t=><option value={t.id} key={t.id}>{t.name}</option>)}
           </select>
         </label>
         {preset===WEEKDAY_FIVE_TWO_PRESET
-          ? <div className="weekday-schedule-help" role="note"><CheckCircle2 size={17}/><span><strong>Прив’язка до понеділка автоматична.</strong> Субота й неділя залишатимуться вихідними в будь-якому місяці. Години можна змінити нижче.</span></div>
-          : <label>Перший день циклу<input type="date" value={anchorDate} onChange={e=>setAnchorDate(e.target.value)}/></label>}
+          ? <div className="weekday-schedule-help" role="note"><CheckCircle2 size={17}/><span><strong>{tr("Прив’язка до понеділка автоматична.")}</strong> {tr("Субота й неділя залишатимуться вихідними в будь-якому місяці. Години можна змінити нижче.")}</span></div>
+          : <label>{tr("Перший день циклу")}<input type="date" value={anchorDate} onChange={e=>setAnchorDate(e.target.value)}/></label>}
       </div>
-      <div className="pattern-head"><strong>Послідовність циклу</strong><span>Натискай на години й тип дня, щоб змінювати їх</span></div>
+      <div className="pattern-head"><strong>{tr("Послідовність циклу")}</strong><span>{tr("Натискай на години й тип дня, щоб змінювати їх")}</span></div>
       <div className="pattern-grid">
         {pattern.map((slot,i)=><div className={`pattern-card ${slot.type==='off'?'rest':''}`} key={i}>
-          <div className="pattern-card-top"><strong>{preset===WEEKDAY_FIVE_TWO_PRESET?weekdayLabels[i]:`День ${i+1}`}</strong><button type="button" className="pattern-remove" onClick={()=>{setPattern(old=>old.filter((_,idx)=>idx!==i));setPreset('custom')}} disabled={pattern.length<=1} title="Прибрати день" aria-label={`Прибрати день ${i+1}`}><X size={15}/></button></div>
+          <div className="pattern-card-top"><strong>{preset===WEEKDAY_FIVE_TWO_PRESET?tr(weekdayLabels[i]):`${tr('День')} ${i+1}`}</strong><button type="button" className="pattern-remove" onClick={()=>{setPattern(old=>old.filter((_,idx)=>idx!==i));setPreset('custom')}} disabled={pattern.length<=1} title="Прибрати день" aria-label={`Прибрати день ${i+1}`}><X size={15}/></button></div>
           <select aria-label={`Тип дня ${i+1}`} value={slot.type} onChange={e=>{changeSlot(i,{type:e.target.value as PatternDay['type']});setPreset('custom')}}>
-            <option value="work">Робочий</option><option value="off">Вихідний</option>
+            <option value="work">{tr("Робочий")}</option><option value="off">{tr("Вихідний")}</option>
           </select>
           {slot.type==='work' ? <>
-            <div className="pattern-times"><label>З<input type="time" value={slot.start} onChange={e=>changeSlot(i,{start:e.target.value})}/></label><label>До<input type="time" value={slot.end} onChange={e=>changeSlot(i,{end:e.target.value})}/></label></div>
-            <label>Перерва, хв<input type="number" min="0" max="1439" value={slot.breakMinutes} onChange={e=>changeSlot(i,{breakMinutes:Number(e.target.value)})}/></label>
-          </> : <div className="pattern-rest-label"><Moon size={16}/> День відпочинку</div>}
-          <label>Назва<input maxLength={70} value={slot.label} onChange={e=>changeSlot(i,{label:e.target.value})}/></label>
-          {slot.type==='work'&&pattern.filter(p=>p.type==='work').length>1&&<button type="button" className="pattern-copy" onClick={()=>copyToWorkdays(i)} title="Скопіювати час, перерву та назву на всі робочі дні циклу"><CheckCircle2 size={15}/> Застосувати до всіх робочих днів</button>}
+            <div className="pattern-times"><label>{tr("З")}<input type="time" value={slot.start} onChange={e=>changeSlot(i,{start:e.target.value})}/></label><label>{tr("До")}<input type="time" value={slot.end} onChange={e=>changeSlot(i,{end:e.target.value})}/></label></div>
+            <label>{tr("Перерва, хв")}<input type="number" min="0" max="1439" value={slot.breakMinutes} onChange={e=>changeSlot(i,{breakMinutes:Number(e.target.value)})}/></label>
+          </> : <div className="pattern-rest-label"><Moon size={16}/> {tr("День відпочинку")}</div>}
+          <label>{tr("Назва")}<input maxLength={70} value={slot.label} onChange={e=>changeSlot(i,{label:e.target.value})}/></label>
+          {slot.type==='work'&&pattern.filter(p=>p.type==='work').length>1&&<button type="button" className="pattern-copy" onClick={()=>copyToWorkdays(i)} title="Скопіювати час, перерву та назву на всі робочі дні циклу"><CheckCircle2 size={15}/> {tr("Застосувати до всіх робочих днів")}</button>}
         </div>)}
-        {pattern.length<28 && <button type="button" className="pattern-add" onClick={()=>{setPattern(old=>[...old,workSlot()]);setPreset('custom')}}><Plus size={23}/><span>Додати день</span></button>}
+        {pattern.length<28 && <button type="button" className="pattern-add" onClick={()=>{setPattern(old=>[...old,workSlot()]);setPreset('custom')}}><Plus size={23}/><span>{tr("Додати день")}</span></button>}
       </div>
       <div className="template-save-row">
-        <label>Назва шаблону<input value={templateName} onChange={e=>setTemplateName(e.target.value)} maxLength={80} placeholder="Наприклад, зміни на складі"/></label>
+        <label>{tr("Назва шаблону")}<input value={templateName} onChange={e=>setTemplateName(e.target.value)} maxLength={80} placeholder="Наприклад, зміни на складі"/></label>
         <button type="button" className="btn btn-outline" disabled={templateBusy} onClick={storeTemplate}><Save size={16}/> {selectedTemplate?'Оновити шаблон':'Зберегти шаблон'}</button>
-        {selectedTemplate&&<button type="button" className="btn btn-danger" disabled={templateBusy} onClick={removeTemplate}><Trash2 size={16}/> Видалити шаблон</button>}
+        {selectedTemplate&&<button type="button" className="btn btn-danger" disabled={templateBusy} onClick={removeTemplate}><Trash2 size={16}/> {tr("Видалити шаблон")}</button>}
       </div>
       {templateMessage&&<p role="status" className="save-notice">{templateMessage}</p>}
       {visible.overtimeButton&&<div className="overtime-preset-editor" aria-label="Шаблон фіксованих понаднормових">
-        <div><strong>Швидкі понаднормові для календаря</strong><p>Один раз задай інтервал, неоплачувану перерву та повний тариф. Потім натискай «+ Додати понаднормові» в потрібному дні.</p></div>
+        <div><strong>{tr("Швидкі понаднормові для календаря")}</strong><p>Один раз задай інтервал, неоплачувану перерву та повний тариф. Потім натискай «+ Додати понаднормові» в потрібному дні.</p></div>
         <div className="overtime-preset-grid">
-          <label>Початок<input type="time" value={overtimeDraft.start} onChange={e=>setOvertimeDraft(old=>({...old,start:e.target.value}))}/></label>
-          <label>Кінець<input type="time" value={overtimeDraft.end} onChange={e=>setOvertimeDraft(old=>({...old,end:e.target.value}))}/></label>
-          <label>Перерва, хв<input type="number" min="0" max="1439" step="1" value={overtimeDraft.breakMinutes} onChange={e=>setOvertimeDraft(old=>({...old,breakMinutes:Number(e.target.value)}))}/></label>
-          <label>Оплата, %<input type="number" min="100" max="1000" step="0.01" value={overtimeDraft.basisPoints/100} onChange={e=>setOvertimeDraft(old=>({...old,basisPoints:Math.round(Number(e.target.value)*100)}))}/></label>
+          <label>{tr("Початок")}<input type="time" value={overtimeDraft.start} onChange={e=>setOvertimeDraft(old=>({...old,start:e.target.value}))}/></label>
+          <label>{tr("Кінець")}<input type="time" value={overtimeDraft.end} onChange={e=>setOvertimeDraft(old=>({...old,end:e.target.value}))}/></label>
+          <label>{tr("Перерва, хв")}<input type="number" min="0" max="1439" step="1" value={overtimeDraft.breakMinutes} onChange={e=>setOvertimeDraft(old=>({...old,breakMinutes:Number(e.target.value)}))}/></label>
+          <label>{tr("Оплата, %")}<input type="number" min="100" max="1000" step="0.01" value={overtimeDraft.basisPoints/100} onChange={e=>setOvertimeDraft(old=>({...old,basisPoints:Math.round(Number(e.target.value)*100)}))}/></label>
         </div>
         <div className="overtime-preset-actions"><span>{segmentHours(overtimeDraft).toLocaleString('uk-UA',{maximumFractionDigits:2})} додаткових год · {overtimeDraft.basisPoints/100}% від погодинної бази</span><button type="button" className="btn btn-outline" disabled={overtimeBusy} onClick={saveOvertime}><Save size={16}/>{overtimeBusy?'Зберігаємо…':'Зберегти шаблон понаднормових'}</button></div>
         {overtimeMessage&&<p className="save-notice" role="status">{overtimeMessage}</p>}
       </div>}
       <div className="pattern-apply-settings">
-        <strong>Як перенести шаблон у календар?</strong>
+        <strong>{tr("Як перенести шаблон у календар?")}</strong>
         <div className="apply-mode-options" role="group" aria-label="Режим застосування графіка">
-          <label><input type="radio" name="pattern-apply-mode" value="update-planned" checked={applyMode==='update-planned'} onChange={()=>{setApplyMode('update-planned');setCycleMessage('')}}/> Оновити заплановані дні</label>
-          <label><input type="radio" name="pattern-apply-mode" value="missing" checked={applyMode==='missing'} onChange={()=>{setApplyMode('missing');setCycleMessage('')}}/> Лише порожні дні</label>
+          <label><input type="radio" name="pattern-apply-mode" value="update-planned" checked={applyMode==='update-planned'} onChange={()=>{setApplyMode('update-planned');setCycleMessage('')}}/> {tr("Оновити заплановані дні")}</label>
+          <label><input type="radio" name="pattern-apply-mode" value="missing" checked={applyMode==='missing'} onChange={()=>{setApplyMode('missing');setCycleMessage('')}}/> {tr("Лише порожні дні")}</label>
         </div>
         <p className="apply-safety-note">Відпрацьовані зміни, відпустки, лікарняні, неоплачувані дні, підробітки та дні з додатковими змінами завжди захищені від автоматичного перезапису.</p>
       </div>
@@ -608,9 +609,9 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
       {layoutOpen&&<section id="calendar-layout-settings" className="panel calendar-layout-editor" aria-label="Налаштування блоків календаря">
         <div className="calendar-layout-editor-head">
           <div>
-            <span className="calendar-layout-kicker">МІЙ ЕКРАН</span>
-            <h3>Налаштуй календар під себе</h3>
-            <p>Обирай потрібні блоки та їхній порядок. Дані не видаляються.</p>
+            <span className="calendar-layout-kicker">{tr("МІЙ ЕКРАН")}</span>
+            <h3>{tr("Налаштуй календар під себе")}</h3>
+            <p>{tr("Обирай потрібні блоки та їхній порядок. Дані не видаляються.")}</p>
           </div>
           <button type="button" className="calendar-layout-reset" onClick={()=>changeLayout(defaultCalendarLayout)}>
             <RotateCcw size={17}/> Скинути
@@ -631,8 +632,8 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
           )}
         </div>
         <div className="calendar-layout-section-heading">
-          <h4>Блоки й порядок</h4>
-          <p>Стрілки переміщують блок. Перемикач приховує його з екрана.</p>
+          <h4>{tr("Блоки й порядок")}</h4>
+          <p>{tr("Стрілки переміщують блок. Перемикач приховує його з екрана.")}</p>
         </div>
         <div className="calendar-layout-list">
           {layout.order.map((id,i)=>{
@@ -644,7 +645,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
               <span className="calendar-layout-block-icon">{id==='calendar'?<CalendarDays size={20}/>:id==='plan'?<Target size={20}/>:<TrendingUp size={20}/>}</span>
               <span className="calendar-layout-row-label"><strong>{titles[id]}</strong><small>{!available?'Спочатку увімкни план у правилах оплати':descriptions[id]}</small></span>
               {id==='calendar'?
-                <span className="calendar-layout-fixed">Завжди</span>:
+                <span className="calendar-layout-fixed">{tr("Завжди")}</span>:
                 <label className="calendar-layout-visibility">
                   <input type="checkbox" checked={layout.visible[id]} disabled={!available}
                     onChange={e=>changeLayout({...layout,visible:{...layout.visible,[id]:e.target.checked}})}
@@ -660,33 +661,33 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
             </div>
           })}
         </div>
-        <div className="calendar-layout-section-heading"><h4>Редактор дня</h4><p>Швидкі дії з обраною датою.</p></div>
+        <div className="calendar-layout-section-heading"><h4>{tr("Редактор дня")}</h4><p>{tr("Швидкі дії з обраною датою.")}</p></div>
         <div className="calendar-layout-editor-extras">
           <label className="calendar-layout-extra-toggle">
-            <span><strong>Показувати редактор дня</strong><small>Можна сховати, коли потрібен тільки огляд.</small></span>
+            <span><strong>{tr("Показувати редактор дня")}</strong><small>{tr("Можна сховати, коли потрібен тільки огляд.")}</small></span>
             <input type="checkbox" checked={layout.visible.editor}
               onChange={e=>changeLayout({...layout,visible:{...layout.visible,editor:e.target.checked}})}/>
           </label>
           <label className="calendar-layout-extra-toggle">
-            <span><strong>Редактор над календарем на комп’ютері</strong><small>На телефоні редактор і так знаходиться зверху.</small></span>
+            <span><strong>{tr("Редактор над календарем на комп’ютері")}</strong><small>{tr("На телефоні редактор і так знаходиться зверху.")}</small></span>
             <input type="checkbox" checked={layout.dayTop}
               onChange={e=>changeLayout({...layout,dayTop:e.target.checked})}/>
           </label>
         </div>
-        <p className="calendar-layout-footnote"><CheckCircle2 size={16}/> Зміни зберігаються автоматично на цьому пристрої.</p>
+        <p className="calendar-layout-footnote"><CheckCircle2 size={16}/> {tr("Зміни зберігаються автоматично на цьому пристрої.")}</p>
       </section>}
     </div>
     <div className={`calendar-layout calendar-custom-layout ${layout.dayTop?'day-top':''}`}>
       <div className="calendar-primary-stack">
         <div className="calendar-custom-block" style={{order:blockOrder('calendar')}}>
       <section className="panel calendar-panel"><div className="calendar-toolbar"><div><h3 aria-live="polite" aria-atomic="true">{monthFormat.format(new Date(year,month,1))}</h3></div>
-        <div className="cal-arrows"><button type="button" aria-label="Попередній місяць" onClick={()=>moveMonth(-1)}><ChevronLeft size={20}/></button><button type="button" aria-label="Поточний місяць" className="cal-today" onClick={jumpToToday}>Сьогодні</button><button type="button" aria-label="Наступний місяць" onClick={()=>moveMonth(1)}><ChevronRight size={20}/></button></div></div>
+        <div className="cal-arrows"><button type="button" aria-label="Попередній місяць" onClick={()=>moveMonth(-1)}><ChevronLeft size={20}/></button><button type="button" aria-label="Поточний місяць" className="cal-today" onClick={jumpToToday}>{tr("Сьогодні")}</button><button type="button" aria-label="Наступний місяць" onClick={()=>moveMonth(1)}><ChevronRight size={20}/></button></div></div>
         <div className="calendar-view-options" role="group" aria-label="Фільтр днів календаря">
           {([['all','Усі дні'],['worked','Відпрацьовані'],...(visible.overtimeSettings||historicalOvertime?[['overtime','Понаднормові'] as const]:[])] as const).map(([id,label])=><button type="button" key={id} className={calendarFilter===id?'active':''} onClick={()=>setCalendarFilter(id)} aria-pressed={calendarFilter===id}>{label}</button>)}
-          <label className="calendar-payout-switch"><input type="checkbox" checked={showPayouts} onChange={e=>setShowPayouts(e.target.checked)}/> Дати виплат</label>
+          <label className="calendar-payout-switch"><input type="checkbox" checked={showPayouts} onChange={e=>setShowPayouts(e.target.checked)}/> {tr("Дати виплат")}</label>
         </div>
         <div className="calendar-grid-viewport">
-        <div key={monthKey} className={`cal-grid ${monthDirection===1?'month-slide-next':monthDirection===-1?'month-slide-prev':''}`} role="group" aria-label={`Календар за ${monthFormat.format(new Date(year,month,1))}`}>{weekdayLabels.map(d=><div className="cal-weekday" key={d}>{d}</div>)}{cells.map((day,i)=>{
+        <div key={monthKey} className={`cal-grid ${monthDirection===1?'month-slide-next':monthDirection===-1?'month-slide-prev':''}`} role="group" aria-label={`Календар за ${monthFormat.format(new Date(year,month,1))}`}>{weekdayLabels.map(d=><div className="cal-weekday" key={d}>{tr(d)}</div>)}{cells.map((day,i)=>{
           if(!day)return <div key={`blank-${i}`} className="cal-blank"/>
           const date=toDateKey(new Date(year,month,day)),shift=(instantDay?.date===date?instantDay:monthShifts.find(s=>s.date===date))
           const off=shift?.dayType && shift.dayType!=='work'
@@ -699,35 +700,35 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
           return <button type="button" key={date} className={`cal-day ${selected===date?'selected':''} ${date===toDateKey(today)?'today':''} ${shift?'has-shift':''} ${workedDay?'is-worked':''} ${off?'has-leave':''} ${subdued?'cal-day-muted':''} ${payouts.length?'cal-has-payout':''}`} onClick={()=>select(day)} aria-pressed={selected===date} aria-label={`${date}${label?' — '+label:''}${payouts.length?' · запланована виплата':''}`}><span className="day-number">{day}</span>{shift&&<span key={`${date}-${shift.status}-${shift.dayType??'work'}`} className={`shift-indicator ${off?'leave':shift.status==='worked'?'worked':''}`}>{label}</span>}{overtime>0&&<span key={`${date}-overtime-${overtime}`} className="calendar-overtime">+{(overtime/60).toLocaleString('uk-UA',{maximumFractionDigits:2})} год понадн.</span> }{performance.manualDailyPay&&dailyWages[date]!==undefined&&!off&&<span className="calendar-wage-marker" title={`Заробіток: ${moneyUA(dailyWages[date])}`}><Wallet size={14}/></span>}{cashPrefs.enabled&&cashRecords.some(r=>r.date===date)&&!off&&<span key={`${date}-cash`} className="calendar-cash-marker" title="Каса за день"><ReceiptText size={14}/></span>}{payouts.length>0&&<span key={`${date}-payout-${payouts.length}`} className="calendar-payout-marker"><Wallet size={12}/>{payouts.length>1?`${payouts.length} виплати`:'Виплата'}</span>}</button>
         })}</div>
         </div>
-        <div className="cal-legend"><span><i className="legend-dot planned"/> Заплановано</span><span><i className="legend-dot worked"/> Відпрацьовано</span><span><i className="legend-dot leave"/> Вихідний / відсутність</span><span><i className="legend-border"/> Обрано</span><span><i className="legend-dot payout"/> Дата виплати</span></div>
+        <div className="cal-legend"><span><i className="legend-dot planned"/> {tr("Заплановано")}</span><span><i className="legend-dot worked"/> {tr("Відпрацьовано")}</span><span><i className="legend-dot leave"/> {tr("Вихідний / відсутність")}</span><span><i className="legend-border"/> {tr("Обрано")}</span><span><i className="legend-dot payout"/> {tr("Дата виплати")}</span></div>
       </section>
         </div>
         {performance.enabled&&layout.visible.plan&&<div className="calendar-custom-block" style={{order:blockOrder('plan')}}>
           <section className="panel calendar-plan-panel" aria-label="План і прогрес місяця">
-            <div className="calendar-plan-heading"><span><Target size={21}/> <strong>Мій план</strong></span><b>{progress&&target>0?`${progress.percent.toLocaleString('uk-UA',{maximumFractionDigits:1})}%`:'—'}</b></div>
+            <div className="calendar-plan-heading"><span><Target size={21}/> <strong>{tr("Мій план")}</strong></span><b>{progress&&target>0?`${progress.percent.toLocaleString('uk-UA',{maximumFractionDigits:1})}%`:'—'}</b></div>
             <div className="calendar-plan-bar" role="progressbar" aria-label="Виконання плану" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,Math.max(0,progress?.percent??0))}><span style={{width:`${Math.min(100,Math.max(0,progress?.percent??0))}%`}}/></div>
             <div className="calendar-plan-values"><strong>{progress?measure(progress.actual):'—'}</strong><span>із {measure(target)}</span>{progress&&progress.bonus>0&&<b>+{moneyUA(progress.bonus)} премії</b>}</div>
-            {target===0&&<button type="button" className="link-button" onClick={onGoStatistics}>Встановити план</button>}
+            {target===0&&<button type="button" className="link-button" onClick={onGoStatistics}>{tr("Встановити план")}</button>}
           </section>
         </div>}
         {layout.visible.metrics&&<div className="calendar-custom-block" style={{order:blockOrder('metrics')}}>
           <div className="calendar-month-highlights" key={monthKey} aria-label="Показники вибраного місяця">
-            <div><span>Відпрацьовано</span><strong>{calendarMetrics.workedHours.toLocaleString('uk-UA',{maximumFractionDigits:2})} год</strong></div>
-            {(visible.overtimeSettings||calendarMetrics.overtimeHours>0)&&<div><span>Понаднормові</span><strong>{calendarMetrics.overtimeHours.toLocaleString('uk-UA',{maximumFractionDigits:2})} год</strong></div>}
-            <div><span>Нараховано</span><strong>{calendarMetrics.result?moneyUA(calendarMetrics.result.gross):'—'}</strong></div>
-            <button type="button" onClick={onGoStatistics} className="calendar-stats-action"><TrendingUp size={19}/> Статистика <ArrowUpRight size={16}/></button>
+            <div><span>{tr("Відпрацьовано")}</span><strong>{calendarMetrics.workedHours.toLocaleString('uk-UA',{maximumFractionDigits:2})} год</strong></div>
+            {(visible.overtimeSettings||calendarMetrics.overtimeHours>0)&&<div><span>{tr("Понаднормові")}</span><strong>{calendarMetrics.overtimeHours.toLocaleString('uk-UA',{maximumFractionDigits:2})} год</strong></div>}
+            <div><span>{tr("Нараховано")}</span><strong>{calendarMetrics.result?moneyUA(calendarMetrics.result.gross):'—'}</strong></div>
+            <button type="button" onClick={onGoStatistics} className="calendar-stats-action"><TrendingUp size={19}/> {tr("Статистика")} <ArrowUpRight size={16}/></button>
           </div>
         </div>}
       </div>
       {layout.visible.editor&&<div className="calendar-day-slot"><section className="panel editor-panel day-editor-v2" aria-label="Редактор дня">
         <div className="panel-title day-editor-header">
-          <div><div className="eyebrow">ОБРАНИЙ ДЕНЬ</div><h3 key={selected}>{dateFormat.format(new Date(selected+'T12:00'))}</h3></div>
+          <div><div className="eyebrow">{tr("ОБРАНИЙ ДЕНЬ")}</div><h3 key={selected}>{dateFormat.format(new Date(selected+'T12:00'))}</h3></div>
           <div className="editor-icon"><CalendarDays size={22}/></div>
         </div>
-        {selectedPayments.length>0&&showPayouts&&<div className="editor-payouts"><strong><Wallet size={16}/> Заплановані виплати</strong>{selectedPayments.map(item=><div key={item.id}><span>{item.title}<small>За {item.sourceMonth}</small></span><b>{item.amount===null?'Ще без суми':moneyUA(item.amount)}</b></div>)}<small>Прогноз, а не підтверджена виплата.</small></div>}
+        {selectedPayments.length>0&&showPayouts&&<div className="editor-payouts"><strong><Wallet size={16}/> {tr("Заплановані виплати")}</strong>{selectedPayments.map(item=><div key={item.id}><span>{item.title}<small>За {item.sourceMonth}</small></span><b>{item.amount===null?'Ще без суми':moneyUA(item.amount)}</b></div>)}<small>{tr("Прогноз, а не підтверджена виплата.")}</small></div>}
         <div className="day-editor-simplified">
           <div className="day-action-section">
-            <strong className="day-action-label">Який це день?</strong>
+            <strong className="day-action-label">{tr("Який це день?")}</strong>
             <div className="day-type-buttons" role="group" aria-label="Тип дня">
               {([['work','Робочий'],['off','Вихідний'],['vacation','Відпустка'],['sick','Лікарняний'],['unpaid','За свій рахунок']] as const).map(([type,label])=>
                 <button key={type} type="button" disabled={quickBusy||busy} onClick={()=>quickType(type)}
@@ -737,7 +738,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
           </div>
           {(draft.dayType??'work')==='work'&&<>
             {!(performance.manualDailyPay||cashPrefs.enabled)&&<div className="day-action-section">
-              <strong className="day-action-label">Відпрацював цю зміну?</strong>
+              <strong className="day-action-label">{tr("Відпрацював цю зміну?")}</strong>
               <button type="button" className={`day-worked-toggle ${draft.status==='worked'?'is-worked':''}`}
                 disabled={quickBusy||busy} aria-pressed={draft.status==='worked'} onClick={quickStatus}>
                 {draft.status==='worked'?<CheckCircle2 size={22}/>:<Check size={22}/>}
@@ -746,7 +747,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
               </button>
             </div>}
             {visible.overtimeButton&&<div className="day-action-section">
-              <strong className="day-action-label">Понаднормові</strong>
+              <strong className="day-action-label">{tr("Понаднормові")}</strong>
               <button type="button" className={`day-ot-toggle ${draft.overtimeExtra?'is-added':''}`}
                 disabled={quickBusy||busy} aria-pressed={!!draft.overtimeExtra} onClick={quickOvertime}>
                 {draft.overtimeExtra?<CheckCircle2 size={21}/>:<Plus size={21}/>}
@@ -759,25 +760,25 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
             </div>}
           </>}
           {(performance.manualDailyPay||cashPrefs.enabled)&&(draft.dayType??'work')==='work'&&<form className="day-money-entry" onSubmit={saveDayMoney}>
-            <div className="day-money-heading"><Wallet size={19}/><strong>Заробіток і каса</strong></div>
+            <div className="day-money-heading"><Wallet size={19}/><strong>{tr("Заробіток і каса")}</strong></div>
             <div className="day-money-fields">
-              {performance.manualDailyPay&&<label><span>Мій заробіток, ₴</span><input inputMode="decimal" type="text" value={wageDraft} placeholder="0,00" onChange={e=>setWageDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
-              {cashPrefs.enabled&&<label><span>Каса за день, ₴</span><input inputMode="decimal" type="text" value={cashDraft} placeholder="0,00" onChange={e=>setCashDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
+              {performance.manualDailyPay&&<label><span>{tr("Мій заробіток, ₴")}</span><input inputMode="decimal" type="text" value={wageDraft} placeholder="0,00" onChange={e=>setWageDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
+              {cashPrefs.enabled&&<label><span>{tr("Каса за день, ₴")}</span><input inputMode="decimal" type="text" value={cashDraft} placeholder="0,00" onChange={e=>setCashDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
             </div>
-            {draft.status==='worked'&&<span className="day-money-worked"><CheckCircle2 size={17}/> Відпрацьовано</span>}
+            {draft.status==='worked'&&<span className="day-money-worked"><CheckCircle2 size={17}/> {tr("Відпрацьовано")}</span>}
             <button type="submit" className="btn btn-primary day-money-submit" disabled={moneyBusy||quickBusy||busy}>
               {draft.status==='worked'?<Save size={19}/>:<CheckCircle2 size={19}/>}
               {moneyBusy?'Зберігаємо…':draft.status==='worked'?'Зберегти зміни':'Зберегти й відмітити'}
             </button>
             {moneyNotice&&<p role="status" className="save-notice">{moneyNotice}</p>}
           </form>}
-          {cashPrefs.enabled&&(draft.dayType??'work')!=='work'&&cashEntry&&<div className="cash-source-note">Для цього дня збережено касу {moneyUA(cashEntry.amount)}, але після позначення вихідного чи відсутності вона <strong>не входить у місячні підсумки</strong>. <button type="button" className="link-button" disabled={moneyBusy} onClick={()=>void clearCash()}>Видалити запис каси</button></div>}
+          {cashPrefs.enabled&&(draft.dayType??'work')!=='work'&&cashEntry&&<div className="cash-source-note">Для цього дня збережено касу {moneyUA(cashEntry.amount)}, але після позначення вихідного чи відсутності вона <strong>{tr("не входить у місячні підсумки")}</strong>. <button type="button" className="link-button" disabled={moneyBusy} onClick={()=>void clearCash()}>{tr("Видалити запис каси")}</button></div>}
           {cashNotice&&<p className="save-notice" role="status">{cashNotice}</p>}
-          {quickBusy&&<p className="day-save-pending" role="status">Зберігаємо зміни…</p>}
+          {quickBusy&&<p className="day-save-pending" role="status">{tr("Зберігаємо зміни…")}</p>}
           {status&&<p className="save-notice" role="status">{status}</p>}
         </div>
         <details className="day-advanced">
-          <summary><Settings2 size={17}/> Додаткові параметри <ChevronDown size={17} className="details-chevron"/></summary>
+          <summary><Settings2 size={17}/> {tr("Додаткові параметри")} <ChevronDown size={17} className="details-chevron"/></summary>
           {(performance.manualDailyPay||cashPrefs.enabled)&&draft.status==='worked'&&
             <div className="day-status-correction">
               <button type="button" className="btn btn-outline full" disabled={quickBusy||busy||moneyBusy} onClick={quickStatus}>
@@ -786,33 +787,33 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
             </div>}
           <form onSubmit={submit} className="editor-form">
             {(draft.dayType??'work')==='work'&&<>
-              <div className="day-editor-title"><strong>Час основної зміни</strong><span>{shiftHours({...draft,additionalShifts:[]}).toLocaleString('uk-UA',{maximumFractionDigits:2})} год</span></div>
-              <div className="form-row"><label>Початок<input type="time" required value={draft.start} onChange={e=>setDraft({...draft,start:e.target.value})}/></label><label>Завершення<input type="time" required value={draft.end} onChange={e=>setDraft({...draft,end:e.target.value})}/></label></div>
-              <label>Перерва, хв<input type="number" min="0" max="1439" required value={draft.breakMinutes} onChange={e=>setDraft({...draft,breakMinutes:Number(e.target.value)})}/></label>
-              <label>Планова норма дня, год<input type="number" min="0.25" max="24" step="0.25" value={(draft.plannedMinutes??480)/60} onChange={e=>setDraft({...draft,plannedWorkday:true,plannedMinutes:Math.round(Number(e.target.value)*60)})}/></label>
-              {(visible.overtimeSettings||(draft.overtimeMinutes??0)>0)&&<><label>Позначені понаднормові всередині зміни, год<input type="number" min="0" max="120" step="0.25" value={(draft.overtimeMinutes??0)/60} onChange={e=>setDraft({...draft,overtimeMinutes:Math.round(Number(e.target.value)*60)})}/></label>
+              <div className="day-editor-title"><strong>{tr("Час основної зміни")}</strong><span>{shiftHours({...draft,additionalShifts:[]}).toLocaleString('uk-UA',{maximumFractionDigits:2})} год</span></div>
+              <div className="form-row"><label>{tr("Початок")}<input type="time" required value={draft.start} onChange={e=>setDraft({...draft,start:e.target.value})}/></label><label>{tr("Завершення")}<input type="time" required value={draft.end} onChange={e=>setDraft({...draft,end:e.target.value})}/></label></div>
+              <label>{tr("Перерва, хв")}<input type="number" min="0" max="1439" required value={draft.breakMinutes} onChange={e=>setDraft({...draft,breakMinutes:Number(e.target.value)})}/></label>
+              <label>{tr("Планова норма дня, год")}<input type="number" min="0.25" max="24" step="0.25" value={(draft.plannedMinutes??480)/60} onChange={e=>setDraft({...draft,plannedWorkday:true,plannedMinutes:Math.round(Number(e.target.value)*60)})}/></label>
+              {(visible.overtimeSettings||(draft.overtimeMinutes??0)>0)&&<><label>{tr("Позначені понаднормові всередині зміни, год")}<input type="number" min="0" max="120" step="0.25" value={(draft.overtimeMinutes??0)/60} onChange={e=>setDraft({...draft,overtimeMinutes:Math.round(Number(e.target.value)*60)})}/></label>
               <p className="day-action-hint">Це поле не додає години. Використовуй його лише якщо години вже входять до основної зміни. Для окремих годин є кнопка вище.</p></>}
               {draft.overtimeExtra&&<div className="overtime-extra-card">
-                <strong>Точне редагування доданих понаднормових</strong>
-                <div className="form-row"><label>Початок<input type="time" value={draft.overtimeExtra.start} onChange={e=>setDraft(old=>({...old,overtimeExtra:old.overtimeExtra?{...old.overtimeExtra,start:e.target.value}:undefined}))}/></label><label>Кінець<input type="time" value={draft.overtimeExtra.end} onChange={e=>setDraft(old=>({...old,overtimeExtra:old.overtimeExtra?{...old.overtimeExtra,end:e.target.value}:undefined}))}/></label></div>
-                <div className="form-row"><label>Перерва, хв<input type="number" min="0" max="1439" value={draft.overtimeExtra.breakMinutes} onChange={e=>setDraft(old=>({...old,overtimeExtra:old.overtimeExtra?{...old.overtimeExtra,breakMinutes:Number(e.target.value)}:undefined}))}/></label><label>Тариф, %<input type="number" min="100" max="1000" step="0.01" value={draft.overtimeExtra.basisPoints/100} onChange={e=>setDraft(old=>({...old,overtimeExtra:old.overtimeExtra?{...old.overtimeExtra,basisPoints:Math.round(Number(e.target.value)*100)}:undefined}))}/></label></div>
+                <strong>{tr("Точне редагування доданих понаднормових")}</strong>
+                <div className="form-row"><label>{tr("Початок")}<input type="time" value={draft.overtimeExtra.start} onChange={e=>setDraft(old=>({...old,overtimeExtra:old.overtimeExtra?{...old.overtimeExtra,start:e.target.value}:undefined}))}/></label><label>{tr("Кінець")}<input type="time" value={draft.overtimeExtra.end} onChange={e=>setDraft(old=>({...old,overtimeExtra:old.overtimeExtra?{...old.overtimeExtra,end:e.target.value}:undefined}))}/></label></div>
+                <div className="form-row"><label>{tr("Перерва, хв")}<input type="number" min="0" max="1439" value={draft.overtimeExtra.breakMinutes} onChange={e=>setDraft(old=>({...old,overtimeExtra:old.overtimeExtra?{...old.overtimeExtra,breakMinutes:Number(e.target.value)}:undefined}))}/></label><label>{tr("Тариф, %")}<input type="number" min="100" max="1000" step="0.01" value={draft.overtimeExtra.basisPoints/100} onChange={e=>setDraft(old=>({...old,overtimeExtra:old.overtimeExtra?{...old.overtimeExtra,basisPoints:Math.round(Number(e.target.value)*100)}:undefined}))}/></label></div>
               </div>}
-              <label>Вид зміни<select value={draft.kind||'regular'} onChange={e=>setDraft({...draft,kind:e.target.value as ShiftKind})}><option value="regular">Звичайна</option><option value="extra">Підробіток / додаткова</option><option value="replacement">Заміна</option></select></label>
-              <div className="day-editor-title"><strong>Додаткові зміни</strong><button type="button" className="link-button" onClick={addExtra} disabled={(draft.additionalShifts?.length||0)>=4}><Plus size={15}/> Додати</button></div>
+              <label>{tr("Вид зміни")}<select value={draft.kind||'regular'} onChange={e=>setDraft({...draft,kind:e.target.value as ShiftKind})}><option value="regular">{tr("Звичайна")}</option><option value="extra">{tr("Підробіток / додаткова")}</option><option value="replacement">{tr("Заміна")}</option></select></label>
+              <div className="day-editor-title"><strong>{tr("Додаткові зміни")}</strong><button type="button" className="link-button" onClick={addExtra} disabled={(draft.additionalShifts?.length||0)>=4}><Plus size={15}/> {tr("Додати")}</button></div>
               {(draft.additionalShifts||[]).map((extra,i)=><div className="extra-shift" key={extra.id}>
                 <div className="extra-top"><strong>Додаткова зміна {i+1}</strong><button type="button" onClick={()=>setDraft({...draft,additionalShifts:draft.additionalShifts?.filter(x=>x.id!==extra.id)})} aria-label={`Видалити додаткову зміну ${i+1}`}><Trash2 size={16}/></button></div>
-                <div className="form-row"><label>З<input type="time" value={extra.start} onChange={e=>updateExtra(extra.id,{start:e.target.value})}/></label><label>До<input type="time" value={extra.end} onChange={e=>updateExtra(extra.id,{end:e.target.value})}/></label></div>
-                <label>Перерва, хв<input type="number" min="0" max="1439" value={extra.breakMinutes} onChange={e=>updateExtra(extra.id,{breakMinutes:Number(e.target.value)})}/></label>
+                <div className="form-row"><label>{tr("З")}<input type="time" value={extra.start} onChange={e=>updateExtra(extra.id,{start:e.target.value})}/></label><label>{tr("До")}<input type="time" value={extra.end} onChange={e=>updateExtra(extra.id,{end:e.target.value})}/></label></div>
+                <label>{tr("Перерва, хв")}<input type="number" min="0" max="1439" value={extra.breakMinutes} onChange={e=>updateExtra(extra.id,{breakMinutes:Number(e.target.value)})}/></label>
                 <button type="button" className={`day-worked-toggle compact ${extra.status==='worked'?'is-worked':''}`} onClick={()=>updateExtra(extra.id,{status:extra.status==='worked'?'planned':'worked'})} aria-pressed={extra.status==='worked'}>
                   <CheckCircle2 size={17}/><span><strong>{extra.status==='worked'?'Додаткова зміна відпрацьована':'Позначити додаткову зміну відпрацьованою'}</strong></span>
                 </button>
-                <label>Тип<select value={extra.kind} onChange={e=>updateExtra(extra.id,{kind:e.target.value as ShiftKind})}><option value="extra">Додаткова</option><option value="replacement">Заміна</option><option value="regular">Звичайна</option></select></label>
-                <label>Примітка<input value={extra.note} maxLength={400} onChange={e=>updateExtra(extra.id,{note:e.target.value})}/></label>
+                <label>{tr("Тип")}<select value={extra.kind} onChange={e=>updateExtra(extra.id,{kind:e.target.value as ShiftKind})}><option value="extra">{tr("Додаткова")}</option><option value="replacement">{tr("Заміна")}</option><option value="regular">{tr("Звичайна")}</option></select></label>
+                <label>{tr("Примітка")}<input value={extra.note} maxLength={400} onChange={e=>updateExtra(extra.id,{note:e.target.value})}/></label>
               </div>)}
             </>}
-            <label>Примітка до дня<textarea rows={2} maxLength={400} value={draft.note} onChange={e=>setDraft({...draft,note:e.target.value})} placeholder="Необов’язково"/></label>
+            <label>{tr("Примітка до дня")}<textarea rows={2} maxLength={400} value={draft.note} onChange={e=>setDraft({...draft,note:e.target.value})} placeholder="Необов’язково"/></label>
             <button type="submit" disabled={busy||quickBusy} className="btn btn-primary full"><Save size={17}/>{busy?'Зберігаємо…':'Зберегти додаткові параметри'}</button>
-            {activeShift&&<button type="button" disabled={busy||quickBusy} className="btn btn-danger full" onClick={remove}><Trash2 size={16}/> Видалити запис дня</button>}
+            {activeShift&&<button type="button" disabled={busy||quickBusy} className="btn btn-danger full" onClick={remove}><Trash2 size={16}/> {tr("Видалити запис дня")}</button>}
           </form>
         </details>
 
@@ -839,11 +840,11 @@ function SetupPage({settings,loaded,onChoose}:{settings:PaySettings|null;loaded:
   }
   return <div className="setup-page">
     <SectionHeading eyebrow="ПОКРОКОВЕ НАЛАШТУВАННЯ" title="Підлаштуй PayTakt під свою роботу" detail="Спочатку сфера, потім редагований графік, далі правила зарплати. Шаблони — лише стартові приклади."/>
-    <div className="setup-progress"><span className="current">1. Сфера роботи</span><span className="current">2. Шаблон</span><span>3. Графік</span><span>4. Оплата</span></div>
-    <section className="panel setup-panel"><h3>1. Де ти працюєш?</h3><p className="muted-setup">Це впливає лише на рекомендовані шаблони. Будь-яке поле можна змінити вручну.</p>
-      <div className="sector-grid">{sectors.map(x=><button key={x.id} type="button" aria-pressed={sector===x.id} className={`sector-card ${sector===x.id?'chosen':''}`} onClick={()=>{setSector(x.id);setPresetId('');setShowAll(false);setSearch('');setError('')}}><strong>{x.label}</strong><small>{x.description}</small></button>)}</div>
+    <div className="setup-progress"><span className="current">{tr("1. Сфера роботи")}</span><span className="current">{tr("2. Шаблон")}</span><span>{tr("3. Графік")}</span><span>{tr("4. Оплата")}</span></div>
+    <section className="panel setup-panel"><h3>{tr("1. Де ти працюєш?")}</h3><p className="muted-setup">Це впливає лише на рекомендовані шаблони. Будь-яке поле можна змінити вручну.</p>
+      <div className="sector-grid">{sectors.map(x=><button key={x.id} type="button" aria-pressed={sector===x.id} className={`sector-card ${sector===x.id?'chosen':''}`} onClick={()=>{setSector(x.id);setPresetId('');setShowAll(false);setSearch('');setError('')}}><strong>{tr(x.label)}</strong><small>{tr(x.description)}</small></button>)}</div>
     </section>
-    <section className="panel setup-panel"><h3>2. Обери приклад графіка й оплати</h3><p className="muted-setup">Шаблон заповнює лише початкові параметри. Години, цикли, ставки, бонуси й дати виплат будуть редагуватися далі.</p>
+    <section className="panel setup-panel"><h3>{tr("2. Обери приклад графіка й оплати")}</h3><p className="muted-setup">Шаблон заповнює лише початкові параметри. Години, цикли, ставки, бонуси й дати виплат будуть редагуватися далі.</p>
       <div className="setup-filter-row">
         <label className="setup-search">Знайти графік або спосіб оплати<input type="search" placeholder="Наприклад: 3/3, нічна, оклад, рейс…" value={search} onChange={e=>setSearch(e.target.value)}/></label>
         <button type="button" className="btn btn-outline" aria-pressed={showAll} onClick={()=>{setShowAll(v=>!v);setSearch('');setPresetId('')}}>{showAll?'Лише моя сфера':'Показати всі шаблони'}</button>
@@ -851,7 +852,7 @@ function SetupPage({settings,loaded,onChoose}:{settings:PaySettings|null;loaded:
       <p className="muted-setup">{showAll?'Усі приклади для різних професій. Можна вибрати будь-який, незалежно від сфери.':`Рекомендовано для вибраної сфери: ${suggestions[sector].length} прикладів.`} Жоден не підходить? Обирай «Створи сам».</p>
       <div className="job-presets">
         <button type="button" aria-pressed={selected.id==='create-self'} className={`job-preset job-preset-custom ${selected.id==='create-self'?'chosen':''}`} onClick={()=>{setPresetId('create-self');setError('')}}><span><strong>＋ Створи сам</strong><small>Почни з одного дня, редагуй власний цикл та правила оплати без автоматичного перезапису ставок.</small></span><span className="pill">Власний</span></button>
-        {options.map(x=><button key={x.id} type="button" aria-pressed={selected.id===x.id} className={`job-preset ${selected.id===x.id?'chosen':''}`} onClick={()=>{setPresetId(x.id);setError('')}}><span><strong>{x.name}</strong><small>{x.description}</small></span><span className="pill">{x.shift}</span></button>)}
+        {options.map(x=><button key={x.id} type="button" aria-pressed={selected.id===x.id} className={`job-preset ${selected.id===x.id?'chosen':''}`} onClick={()=>{setPresetId(x.id);setError('')}}><span><strong>{tr(x.name)}</strong><small>{tr(x.description)}</small></span><span className="pill">{x.shift}</span></button>)}
       </div>
       {options.length===0&&<p className="muted-setup">За цим запитом немає готових шаблонів. Можна скористатися «Створи сам».</p>}
       <p className="setup-preview">{selected.id==='create-self'?<><strong>Власне налаштування:</strong> відкриється конструктор з одним робочим днем, до якого можна додати будь-які робочі та вихідні дні. Чинні ставки й правила зарплати залишаться без змін. Налаштуй їх окремо після графіка.</>:<><strong>Що буде застосовано:</strong> графік {selected.shift} (можна змінити кожен день), тип оплати {selected.mode==='monthly'?'оклад':selected.mode==='hourly'?'погодинна':selected.mode==='per_shift'?'позмінна':'за виконану роботу'}, понаднормові — за позначеними в календарі годинами. Суми зарплати не встановлюються автоматично. Шаблон оплати буде лише чернеткою до натискання «Зберегти» в правилах.</>}</p>
@@ -865,20 +866,103 @@ function TeamPage({workspace}:{workspace:Workspace}) {
   return <><SectionHeading eyebrow="КОМАНДА" title="Співробітники компанії" detail={`Простір «${workspace.name}» · зараз доступний власнику акаунта.`}/><div className="panel team-owner"><div className="avatar large"><UserRound size={24}/></div><div><h3>Власник простору</h3><p>Повний доступ до власних налаштувань і календаря</p></div><span className="pill mint-pill">Власник</span></div><Placeholder icon={UsersRound} title="Запрошення співробітників — наступний етап" detail="Після налаштування корпоративних ролей тут з’являться запрошення, відділи та доступи. Зараз ніхто інший не може переглядати дані вашого простору."/></>
 }
 
-function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, emailVerified, onVerify, onRefreshVerification }: {session: Session; workspace: Workspace; workspaces: Workspace[]; theme: ThemeChoice; setTheme: (v:ThemeChoice)=>void; onCreate:()=>void; emailVerified:boolean; onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>}) {
-  return <><SectionHeading eyebrow="ПЕРСОНАЛІЗАЦІЯ" title="Налаштування" detail="Зовнішній вигляд, профіль та робочі простори."/>
-    {!session.demo&&<div className={`verification-card ${emailVerified?'verified':''}`}><div><div className="verification-title"><ShieldCheck size={19}/><strong>{emailVerified?'Електронну пошту підтверджено':'Підтвердь електронну пошту'}</strong></div><p>{emailVerified?'Твій акаунт має підтверджену email-адресу.':'Ми рекомендуємо підтвердити email, щоб захистити доступ до акаунта й відновлення пароля.'}</p></div>{!emailVerified&&<div className="verification-actions"><button className="btn btn-outline" type="button" onClick={()=>void onVerify()}><Mail size={16}/> Надіслати лист</button><button className="btn btn-outline" type="button" onClick={()=>void onRefreshVerification()}><Check size={16}/> Я підтвердив</button></div>}</div>}
-    <div className="settings-grid"><section className="panel settings-panel"><div className="settings-heading"><Sun size={22}/><div><h3>Тема оформлення</h3><p>Обирай вигляд, який комфортний саме тобі.</p></div></div><div className="theme-card-grid">{([['light',Sun,'Денна','Світла й повітряна'],['dark',Moon,'Нічна','Глибокі темні відтінки'],['system',Monitor,'Авто','Як на твоєму пристрої']] as const).map(([value,Icon,label,sub])=><button type="button" key={value} className={`theme-card ${theme===value?'chosen':''}`} onClick={()=>setTheme(value)}><Icon size={24}/><strong>{label}</strong><span>{sub}</span>{theme===value&&<Check size={16} className="theme-check"/>}</button>)}</div></section><section className="panel settings-panel"><div className="settings-heading"><UserRound size={22}/><div><h3>Мій профіль</h3><p>Акаунт PayTakt</p></div></div><div className="setting-info"><span>Ім’я</span><strong>{session.name}</strong></div><div className="setting-info"><span>Електронна пошта</span><strong>{session.email || 'Деморежим'}</strong></div><div className="setting-info"><span>Тип входу</span><strong>{session.demo?'Демонстрація':'Електронна пошта'}</strong></div></section><section className="panel settings-panel settings-wide"><div className="settings-heading"><BriefcaseBusiness size={22}/><div><h3>Робочі простори</h3><p>Особисті записи та компанії не змішуються.</p></div></div><div className="workspace-rows">{workspaces.map(w=><div className="workspace-row" key={w.id}><div className="workspace-symbol">{w.kind==='company'?<Building2 size={19}/>:<UserRound size={19}/>}</div><div><strong>{w.name}</strong><small>{w.kind==='company'?'Компанія':'Особистий простір'}</small></div>{w.id===workspace.id&&<span className="pill mint-pill">Активний</span>}</div>)}</div><button type="button" className="btn btn-outline" onClick={onCreate}><Plus size={17}/> Додати компанію</button></section></div>
+function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange }: {
+  session: Session; workspace: Workspace; workspaces: Workspace[]; theme: ThemeChoice;
+  setTheme: (v:ThemeChoice)=>void; onCreate:()=>void; emailVerified:boolean;
+  onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>;
+  presentation: PresentationSettings; onPresentationChange: (next:PresentationSettings)=>void;
+}) {
+  const [currencyDraft,setCurrencyDraft]=useState<DisplayCurrency>(presentation.currency)
+  const [rateDraft,setRateDraft]=useState(String(presentation.uahPerUnit))
+  const [currencyError,setCurrencyError]=useState('')
+  useEffect(()=>{
+    setCurrencyDraft(presentation.currency)
+    setRateDraft(String(presentation.uahPerUnit))
+    setCurrencyError('')
+  },[presentation.currency,presentation.uahPerUnit])
+  const updateCurrency=(event:FormEvent<HTMLFormElement>)=>{
+    event.preventDefault()
+    const rate=currencyDraft==='UAH'?1:Number(rateDraft.replace(',','.').trim())
+    if(!Number.isFinite(rate)||rate<=0||rate>1000000){setCurrencyError(tr('Вкажи курс більше нуля.'));return}
+    setCurrencyError('')
+    onPresentationChange({...presentation,currency:currencyDraft,uahPerUnit:rate})
+  }
+  return <>
+    <SectionHeading eyebrow="ПЕРСОНАЛІЗАЦІЯ" title="Налаштування" detail="Зовнішній вигляд, профіль та робочі простори."/>
+    {!session.demo&&<div className={`verification-card ${emailVerified?'verified':''}`}>
+      <div><div className="verification-title"><ShieldCheck size={19}/><strong>{tr(emailVerified?'Електронну пошту підтверджено':'Підтвердь електронну пошту')}</strong></div>
+      <p>{emailVerified?'Твій акаунт має підтверджену email-адресу.':'Ми рекомендуємо підтвердити email, щоб захистити доступ до акаунта й відновлення пароля.'}</p></div>
+      {!emailVerified&&<div className="verification-actions">
+        <button className="btn btn-outline" type="button" onClick={()=>void onVerify()}><Mail size={16}/>{tr('Надіслати лист')}</button>
+        <button className="btn btn-outline" type="button" onClick={()=>void onRefreshVerification()}><Check size={16}/>{tr('Я підтвердив')}</button>
+      </div>}
+    </div>}
+    <div className="settings-grid">
+      <section className="panel settings-panel">
+        <div className="settings-heading"><Sun size={22}/><div><h3>{tr('Тема оформлення')}</h3><p>{tr('Обирай вигляд, який комфортний саме тобі.')}</p></div></div>
+        <div className="theme-card-grid">{([['light',Sun,'Денна','Світла й повітряна'],['dark',Moon,'Нічна','Глибокі темні відтінки'],['system',Monitor,'Авто','Як на твоєму пристрої']] as const).map(([value,Icon,label,sub])=><button type="button" key={value} className={`theme-card ${theme===value?'chosen':''}`} onClick={()=>setTheme(value)}><Icon size={24}/><strong>{tr(label)}</strong><span>{tr(sub)}</span>{theme===value&&<Check size={16} className="theme-check"/>}</button>)}</div>
+      </section>
+      <section className="panel settings-panel">
+        <div className="settings-heading"><UserRound size={22}/><div><h3>{tr('Мій профіль')}</h3><p>{tr('Акаунт PayTakt')}</p></div></div>
+        <div className="setting-info"><span>{tr('Ім’я')}</span><strong>{session.name}</strong></div>
+        <div className="setting-info"><span>{tr('Електронна пошта')}</span><strong>{session.email || tr('Деморежим')}</strong></div>
+        <div className="setting-info"><span>{tr('Тип входу')}</span><strong>{session.demo?tr('Демонстрація'):tr('Електронна пошта')}</strong></div>
+      </section>
+      <section className="panel settings-panel settings-wide paytakt-locale-settings">
+        <div className="settings-heading"><Monitor size={22}/><div><h3>{tr('Мова застосунку')}</h3><p>Українська · English · Русский</p></div></div>
+        <div className="paytakt-language-options" role="group" aria-label={tr('Мова застосунку')}>
+          {([['uk','Українська'],['en','English'],['ru','Русский']] as const).map(([value,label])=>
+            <button key={value} type="button" className={presentation.language===value?'active':''}
+              aria-pressed={presentation.language===value}
+              onClick={()=>onPresentationChange({...presentation,language:value as Language})}>{label}{presentation.language===value&&<Check size={16}/>}</button>
+          )}
+        </div>
+      </section>
+      <section className="panel settings-panel settings-wide paytakt-currency-settings">
+        <div className="settings-heading"><Wallet size={22}/><div><h3>{tr('Валюта відображення')}</h3><p>{tr('Зарплата обліковується у гривнях. Інша валюта показує лише орієнтовний еквівалент за вказаним тобою курсом. Введення сум залишається у гривнях.')}</p></div></div>
+        <form className="paytakt-currency-form" onSubmit={updateCurrency}>
+          <label>{tr('Валюта відображення')}
+            <select value={currencyDraft} onChange={e=>{const selected=e.target.value as DisplayCurrency;setCurrencyDraft(selected);setRateDraft(selected==='UAH'?'1':selected===presentation.currency?String(presentation.uahPerUnit):'');setCurrencyError('')}}>
+              <option value="UAH">UAH — ₴</option><option value="USD">USD — $</option>
+              <option value="EUR">EUR — €</option><option value="PLN">PLN — zł</option><option value="GBP">GBP — £</option>
+            </select>
+          </label>
+          {currencyDraft!=='UAH'&&<label>{tr('Гривень за 1 одиницю валюти')} ({currencyDraft})
+            <input type="text" inputMode="decimal" required value={rateDraft} onChange={e=>{setRateDraft(e.target.value);setCurrencyError('')}} placeholder="Наприклад, 42.50"/>
+          </label>}
+          {currencyError&&<p className="form-error" role="alert">{currencyError}</p>}
+          <button className="btn btn-primary" type="submit">{tr('Зберегти валюту')}</button>
+          <div className="paytakt-currency-example">
+            <span>{tr('Валюта відображення')}: {presentation.currency}</span>
+            <strong>{moneyUA(1234500)}</strong>
+            <small>{tr('Налаштування збережено на цьому пристрої.')}</small>
+          </div>
+        </form>
+      </section>
+      <section className="panel settings-panel settings-wide">
+        <div className="settings-heading"><BriefcaseBusiness size={22}/><div><h3>{tr('Робочі простори')}</h3><p>{tr('Особисті записи та компанії не змішуються.')}</p></div></div>
+        <div className="workspace-rows">{workspaces.map(w=><div className="workspace-row" key={w.id}><div className="workspace-symbol">{w.kind==='company'?<Building2 size={19}/>:<UserRound size={19}/>}</div>
+          <div><strong>{w.name}</strong><small>{tr(w.kind==='company'?'Компанія':'Особистий простір')}</small></div>
+          {w.id===workspace.id&&<span className="pill mint-pill">{tr('Активний')}</span>}
+        </div>)}</div>
+        <button type="button" className="btn btn-outline" onClick={onCreate}><Plus size={17}/>{tr('Додати компанію')}</button>
+      </section>
+    </div>
   </>
 }
 
 function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(kind:WorkspaceKind,name:string)=>Promise<void>}){
   const [name,setName]=useState('');const [busy,setBusy]=useState(false);const [error,setError]=useState('')
   const submit=async(e:FormEvent)=>{e.preventDefault();setBusy(true);setError('');try{await onCreate('company',name.trim());onClose()}catch(err){setError(friendlyError(err))}finally{setBusy(false)}}
-  return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div className="modal-head"><div className="modal-icon"><Building2 size={22}/></div><button className="icon-button" type="button" aria-label="Закрити" onClick={onClose}><X size={20}/></button></div><h2 id="modal-title">Нова компанія</h2><p>Створи окремий робочий простір для графіка команди. Запрошення працівників додамо пізніше.</p><form onSubmit={submit}><label>Назва компанії<input autoFocus required minLength={2} maxLength={80} value={name} onChange={e=>setName(e.target.value)} placeholder="Наприклад, Моя команда"/></label>{error&&<p role="alert" className="form-error">{error}</p>}<button type="submit" disabled={busy||name.trim().length<2} className="btn btn-primary full">{busy?'Створюємо…':'Створити простір'}<ArrowRight size={17}/></button></form></div></div>
+  return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div className="modal-head"><div className="modal-icon"><Building2 size={22}/></div><button className="icon-button" type="button" aria-label="Закрити" onClick={onClose}><X size={20}/></button></div><h2 id="modal-title">{tr("Нова компанія")}</h2><p>Створи окремий робочий простір для графіка команди. Запрошення працівників додамо пізніше.</p><form onSubmit={submit}><label>{tr("Назва компанії")}<input autoFocus required minLength={2} maxLength={80} value={name} onChange={e=>setName(e.target.value)} placeholder="Наприклад, Моя команда"/></label>{error&&<p role="alert" className="form-error">{error}</p>}<button type="submit" disabled={busy||name.trim().length<2} className="btn btn-primary full">{busy?'Створюємо…':'Створити простір'}<ArrowRight size={17}/></button></form></div></div>
 }
 
 export default function App(){
+  const [presentation,setPresentation]=useState<PresentationSettings>(readPresentation)
+  const onPresentationChange=useCallback((next:PresentationSettings)=>{
+    setPresentation(savePresentation(next))
+  },[])
+  useEffect(()=>{document.documentElement.lang=presentation.language},[presentation.language])
   // Capacitor injects this bridge into the Android WebView; the hosted website stays unchanged.
   const [isNativeAndroid] = useState(() => {
     const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor
@@ -1266,8 +1350,8 @@ export default function App(){
     setWorkspaceMenu(false)
   }
   if(loading)return <div className="loading-screen"><Logo/><div className="spinner"/><p>Готуємо твій робочий простір…</p></div>
-  if(!session)return <AuthScreen onDemo={enterDemo}/>
-  if(!workspace)return <div className="loading-screen"><Logo/><div className="firebase-note wide">{error||'Не вдалося відкрити робочий простір. Перевір доступ до акаунта.'}</div><button type="button" className="btn btn-outline" onClick={logout}>Вийти з акаунта</button></div>
+  if(!session)return <AuthScreen onDemo={enterDemo} language={presentation.language} onLanguageChange={language=>onPresentationChange({...presentation,language})}/>
+  if(!workspace)return <div className="loading-screen"><Logo/><div className="firebase-note wide">{error||'Не вдалося відкрити робочий простір. Перевір доступ до акаунта.'}</div><button type="button" className="btn btn-outline" onClick={logout}>{tr("Вийти з акаунта")}</button></div>
   if(!session.demo&&(!payLoaded||!shiftsLoaded))return <div className="loading-screen"><Logo/><div className="spinner"/><p>Завантажуємо графік і правила роботи…</p></div>
   if(forceWizard||newWorkspaceNeedsWizard)return <OnboardingWizard key={`${session.uid}:${workspace.id}`} workspaceKey={`${session.uid}:${workspace.id}`} workspaceName={workspace.name} isExisting={Boolean(paySettings||shifts.length)} onComplete={finishOnboarding} onCancel={forceWizard?()=>setForceWizard(false):undefined}/>
   return <div className="app-shell zmina-shell">
@@ -1280,7 +1364,7 @@ export default function App(){
             <span className="workspace-name"><strong>{workspace.name}</strong><small>{workspace.kind==='company'?'Компанія':'Особистий простір'}</small></span>
             <ChevronDown size={15}/>
           </button>
-          {workspaceMenu&&<div className="workspace-popover">{workspaces.map(w=><button type="button" key={w.id} className={workspace.id===w.id?'current':''} onClick={()=>selectWorkspace(w)}>{w.kind==='company'?<Building2 size={16}/>:<UserRound size={16}/>}<span>{w.name}</span>{workspace.id===w.id&&<Check size={15}/>}</button>)}<button type="button" className="create-space" onClick={()=>{setWorkspaceMenu(false);setCreateOpen(true)}}><Plus size={16}/> Нова компанія</button></div>}
+          {workspaceMenu&&<div className="workspace-popover">{workspaces.map(w=><button type="button" key={w.id} className={workspace.id===w.id?'current':''} onClick={()=>selectWorkspace(w)}>{w.kind==='company'?<Building2 size={16}/>:<UserRound size={16}/>}<span>{w.name}</span>{workspace.id===w.id&&<Check size={15}/>}</button>)}<button type="button" className="create-space" onClick={()=>{setWorkspaceMenu(false);setCreateOpen(true)}}><Plus size={16}/> {tr("Нова компанія")}</button></div>}
         </div>
         <div className="zmina-header-tools">
           {page!=='calendar'&&<button
@@ -1290,7 +1374,7 @@ export default function App(){
             aria-label="До календаря"
             title="Повернутися до календаря">
             <CalendarDays size={19} aria-hidden="true"/>
-            <span>До календаря</span>
+            <span>{tr("До календаря")}</span>
           </button>}
           <ThemeControls value={theme} onChange={setThemeChoice}/>
           <button type="button" className="zmina-profile-btn" onClick={()=>navigate('settings')} aria-label="Налаштування профілю" title={session.name}><UserRound size={19}/></button>
@@ -1298,12 +1382,12 @@ export default function App(){
           <button type="button" className="zmina-nav-toggle" onClick={()=>setMobileMenu(v=>!v)} aria-expanded={mobileMenu} aria-controls="zmina-primary-nav" aria-label={mobileMenu?'Згорнути меню':'Відкрити меню'}>{mobileMenu?<X size={22}/>:<Menu size={22}/>}</button>
         </div>
       </div>
-      <nav id="zmina-primary-nav" className={`zmina-primary-nav ${mobileMenu?'expanded':''}`} aria-label="Основна навігація">{allowedNav.map(item=>{const Icon=item.icon;return <button type="button" key={item.id} onClick={()=>navigate(item.id)} className={page===item.id?'active':''} aria-current={page===item.id?'page':undefined}><Icon size={17}/><span>{item.title}</span></button>})}</nav>
+      <nav id="zmina-primary-nav" className={`zmina-primary-nav ${mobileMenu?'expanded':''}`} aria-label="Основна навігація">{allowedNav.map(item=>{const Icon=item.icon;return <button type="button" key={item.id} onClick={()=>navigate(item.id)} className={page===item.id?'active':''} aria-current={page===item.id?'page':undefined}><Icon size={17}/><span>{tr(item.title)}</span></button>})}</nav>
     </header>
     <div className="main-column">
       <main className="main-content">{session.demo&&<div className="demo-banner"><Sparkles size={16}/><span><strong>Демоверсія.</strong> Зміни календаря й налаштування зарплати тут тимчасові.</span><button type="button" onClick={logout}>До реєстрації <ArrowRight size={15}/></button></div>}{error&&<div className="alert-banner" role="alert">{error}</div>}{overtimePresetError&&<div className="alert-banner" role="alert">Налаштування понаднормових: {overtimePresetError}</div>}{shiftsError&&<div className="alert-banner" role="alert">Не вдалося прочитати зміни: {shiftsError}</div>}{payError&&<div className="alert-banner" role="alert">Налаштування зарплати: {payError}</div>}{salesError&&<div className="alert-banner" role="alert">Показники продажів: {salesError}</div>}{cashError&&<div className="alert-banner" role="alert">Каса: {cashError}</div>}{verificationMessage&&<div className="alert-banner" role="status">{verificationMessage}<button className="small-dismiss" onClick={()=>setVerificationMessage('')} type="button" aria-label="Закрити повідомлення"><X size={16}/></button></div>}
-        {setupPayDraft&&<div className="alert-banner" role="status">Ти вибрав шаблон оплати, але його правила ще не збережено. Після налаштування графіка відкрий «Правила оплати», перевір ставку й натисни «Зберегти». <button type="button" className="btn btn-outline" onClick={()=>navigate('rules')}>Відкрити правила оплати</button></div>}
-        <div className="page-motion" key={`${workspace.id}:${page}`}>
+        {setupPayDraft&&<div className="alert-banner" role="status">Ти вибрав шаблон оплати, але його правила ще не збережено. Після налаштування графіка відкрий «Правила оплати», перевір ставку й натисни «Зберегти». <button type="button" className="btn btn-outline" onClick={()=>navigate('rules')}>{tr("Відкрити правила оплати")}</button></div>}
+        <div className="page-motion" key={`${workspace.id}:${page}:${presentation.language}:${presentation.currency}:${presentation.uahPerUnit}`}>
         {page==='setup'&&<SetupPage key={workspace.id} settings={paySettings} loaded={payLoaded} onChoose={chooseSetup}/>}
         {page==='dashboard'&&<Dashboard workspace={workspace} shifts={shifts} paySettings={payLoaded?paySettings:null} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoCalendar={()=>navigate('calendar')} onCreateCompany={()=>setCreateOpen(true)} onGoPay={()=>navigate('pay')} onGoStatistics={()=>navigate('statistics')}/>}
         {page==='calendar'&&<CalendarPage key={`${workspace.id}-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
@@ -1313,30 +1397,31 @@ export default function App(){
         {page==='pay'&&<PayPageV5 key={workspace.id} workspaceName={workspace.name} shifts={shifts} settings={paySettings} performance={performance} targets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} loaded={payLoaded&&salesLoaded&&unitsLoaded&&cashLoaded&&performanceLoaded&&targetsLoaded&&wagesLoaded} salesFromCash={cashPrefs.enabled&&cashPrefs.useForSales} salesByMonth={effectiveSales} onSaveMonthlySales={onSaveMonthlySales} unitsByMonth={unitsByMonth} onSaveMonthlyUnits={onSaveMonthlyUnits} demo={session.demo} goToRules={()=>navigate('rules')}/>}
         {page==='rules'&&<RulesPageV5 key={workspace.id} shifts={shifts} workspaceName={workspace.name} settings={setupPayDraft??paySettings} loaded={payLoaded} demo={session.demo} onSave={onSavePay} performance={performance} onSavePerformance={onSavePerformance} onApplyZmina={onApplyZmina}/>}
         {page==='team'&&workspace.kind==='company'&&<TeamPage workspace={workspace}/>}
+        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange}/>}
         {page==='settings'&&<section className="panel v2-settings-actions">
-          <div className="v2-settings-head"><div><h3>Налаштування твоєї роботи</h3><p>Персональний майстер або точні правила — обирай зручний спосіб.</p></div></div>
+          <div className="v2-settings-head"><div><h3>{tr("Налаштування твоєї роботи")}</h3><p>Персональний майстер або точні правила — обирай зручний спосіб.</p></div></div>
           <div className="v2-settings-links">
-            <button type="button" className="btn btn-primary" onClick={()=>setForceWizard(true)}><Sparkles size={17}/> Пройти майстер</button>
-            <button type="button" className="btn btn-outline" onClick={()=>navigate('rules')}><SlidersHorizontal size={17}/> Правила оплати</button>
-            <a className="btn btn-outline" href="#schedule-settings"><CalendarDays size={17}/> Графік роботи</a>
-            <button type="button" className="btn btn-outline" onClick={()=>navigate('pay')}>Деталі нарахувань</button>
+            <button type="button" className="btn btn-primary" onClick={()=>setForceWizard(true)}><Sparkles size={17}/> {tr("Пройти майстер")}</button>
+            <button type="button" className="btn btn-outline" onClick={()=>navigate('rules')}><SlidersHorizontal size={17}/> {tr("Правила оплати")}</button>
+            <a className="btn btn-outline" href="#schedule-settings"><CalendarDays size={17}/> {tr("Графік роботи")}</a>
+            <button type="button" className="btn btn-outline" onClick={()=>navigate('pay')}>{tr("Деталі нарахувань")}</button>
           </div>
-          <details className="v2-extra-features"><summary><span className="v2-extra-heading"><strong>Інші можливості, якщо вони потрібні</strong><small>Додаткові інструменти та поточні налаштування</small></span><ChevronDown size={19} className="v2-extra-chevron"/></summary>
+          <details className="v2-extra-features"><summary><span className="v2-extra-heading"><strong>{tr("Інші можливості, якщо вони потрібні")}</strong><small>Додаткові інструменти та поточні налаштування</small></span><ChevronDown size={19} className="v2-extra-chevron"/></summary>
             <div className="v2-extra-content">
               <p>Показуємо лише те, що ти обрав у майстрі. За потреби додаткові інструменти можна ввімкнути тут.</p>
               <div className="v2-extra-state">
-                <span><strong>Понаднормові</strong><small>{!paySettings?.overtimeEnabled?'Не використовуються':paySettings.overtimeEntryMode==='marked'?`Кнопка · ${segmentHours(overtimePreset).toLocaleString('uk-UA',{maximumFractionDigits:2})} год · ${overtimePreset.basisPoints/100}%`:`Автоматично після ${paySettings.overtimeThresholdMinutes/60} год / день · ${paySettings.markedOvertimeBasisPoints/100}%`}</small></span>
-                <span><strong>План і премії</strong><small>{performance.enabled?'Увімкнено':'Вимкнено'}</small></span>
-                <span><strong>Оплата за день</strong><small>{performance.manualDailyPay?'Вводжу вручну':'Рахується автоматично'}</small></span>
+                <span><strong>{tr("Понаднормові")}</strong><small>{!paySettings?.overtimeEnabled?'Не використовуються':paySettings.overtimeEntryMode==='marked'?`Кнопка · ${segmentHours(overtimePreset).toLocaleString('uk-UA',{maximumFractionDigits:2})} год · ${overtimePreset.basisPoints/100}%`:`Автоматично після ${paySettings.overtimeThresholdMinutes/60} год / день · ${paySettings.markedOvertimeBasisPoints/100}%`}</small></span>
+                <span><strong>{tr("План і премії")}</strong><small>{performance.enabled?'Увімкнено':'Вимкнено'}</small></span>
+                <span><strong>{tr("Оплата за день")}</strong><small>{performance.manualDailyPay?'Вводжу вручну':'Рахується автоматично'}</small></span>
               </div>
-              <label className="onboard-toggle"><span><strong>Каса за день</strong></span><input type="checkbox" checked={cashPrefs.enabled} onChange={e=>void onChangeCashPrefs({enabled:e.target.checked,useForSales:e.target.checked?cashPrefs.useForSales:false})}/></label>
+              <label className="onboard-toggle"><span><strong>{tr("Каса за день")}</strong></span><input type="checkbox" checked={cashPrefs.enabled} onChange={e=>void onChangeCashPrefs({enabled:e.target.checked,useForSales:e.target.checked?cashPrefs.useForSales:false})}/></label>
               {cashPrefs.enabled&&<label className="onboard-toggle"><span><strong>Каса впливає на % від виручки</strong></span><input type="checkbox" checked={cashPrefs.useForSales} onChange={e=>void onChangeCashPrefs({...cashPrefs,useForSales:e.target.checked})}/></label>}
               <button className="onboard-link" type="button" onClick={()=>navigate('rules')}>Змінити доплати, план і зарплату в правилах оплати</button>
             </div>
           </details>
         </section>}
         {page==='settings'&&<CalendarPage scheduleOnly key={`${workspace.id}-schedule-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
-        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification}/>}
+        
         </div>
         <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>Версія 2.0.0 beta 4</span></footer>
       </main>
@@ -1347,7 +1432,7 @@ export default function App(){
         return <button type="button" key={item.id} onClick={()=>navigate(item.id)}
           className={page===item.id?'active':''} aria-current={page===item.id?'page':undefined}>
           <Icon size={22} strokeWidth={2.2} aria-hidden="true"/>
-          <span>{item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування'}</span>
+          <span>{tr(item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування')}</span>
         </button>
       })}
     </nav>}

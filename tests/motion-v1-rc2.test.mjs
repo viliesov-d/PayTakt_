@@ -9,7 +9,7 @@ const rules = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8
 test('month navigation keeps direction and an accessible today action', () => {
   assert.match(app, /monthDirection, setMonthDirection/)
   assert.match(app, /setMonthDirection\(n<0\?-1:1\)/)
-  assert.match(app, /onClick=\{jumpToToday\}>Сьогодні/)
+  assert.match(app, /onClick=\{jumpToToday\}>\{tr\("Сьогодні"\)\}/)
   assert.match(app, /aria-live="polite" aria-atomic="true"/)
 })
 
@@ -28,7 +28,7 @@ test('optimistic day badges react to a saved status change', () => {
 })
 
 test('page animations and selected calendar cell use CSS transitions', () => {
-  assert.match(app, /className="page-motion" key=\{`\$\{workspace.id\}:\$\{page\}`\}/)
+  assert.match(app, /className="page-motion" key=\{`\$\{workspace.id\}:\$\{page\}:/)
   assert.match(css, /@keyframes page-reveal/)
   assert.match(css, /@keyframes calendar-from-right/)
   assert.match(css, /@keyframes calendar-from-left/)
