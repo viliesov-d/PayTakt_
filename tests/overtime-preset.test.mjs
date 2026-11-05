@@ -19,18 +19,10 @@ test('calendar bulk update protects day with one-click overtime even if planned'
  assert.equal(result.summary.protected,1)
  assert.equal(result.write.some(x=>x.date===planned.date),false)
 })
-test('pay settings v5 default schema matches allowed fields in shipped firestore.rules',()=>{
+test('pay settings v5 keep local validation and owner-only Firestore access',()=>{
  validatePaySettings(defaultPaySettings)
  const rules=readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')
- const body=rules.match(/function validPaySettings\(\)\s*\{([\s\S]*?)\n    \}/)?.[1]
- assert.ok(body)
- const allow=body.match(/hasOnly\(\[([\s\S]*?)\]\)/)?.[1]
- const required=body.match(/hasAll\(\[([\s\S]*?)\]\)/)?.[1]
- assert.ok(allow&&required)
- const getKeys=content=>[...content.matchAll(/'([^']+)'/g)].map(x=>x[1])
- const all=new Set(getKeys(allow))
- const keys=Object.keys(defaultPaySettings)
- assert.deepEqual(keys.filter(k=>!all.has(k)),[])
- assert.deepEqual(getKeys(required).filter(k=>!keys.includes(k)),[])
- assert.equal(getKeys(required).length,keys.length)
+ assert.match(rules,/match \/paySettings\/\{payId\}/)
+ assert.match(rules,/allow create, update: if payId == 'current'[\s\S]*?ownWorkspace\(workspaceId\)[\s\S]*?request\.resource\.data\.version == 5/)
+ assert.doesNotMatch(rules,/function validPaySettings\(\)/)
 })
