@@ -1543,3 +1543,18 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
   .paytakt-currency-form{grid-template-columns:1fr}
   .paytakt-currency-form>.btn{width:100%}
 }
+
+/* Language choice is also available before sign-in. */
+.paytakt-auth-language{
+  align-self:flex-end;display:flex;align-items:center;gap:9px;
+  margin:0 0 13px;max-width:100%;
+}
+.paytakt-auth-language label{font-size:12px;font-weight:750;color:var(--muted-deep)}
+.paytakt-auth-language select{
+  width:auto;max-width:175px;min-width:120px;font-size:14px;
+  padding:9px 12px;background:var(--panel);color:var(--text)
+}
+@media(max-width:440px){
+  .paytakt-auth-language{align-self:stretch;justify-content:flex-end}
+  .paytakt-auth-language select{font-size:16px}
+}
