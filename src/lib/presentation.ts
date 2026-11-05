@@ -1727,8 +1727,8 @@ const translations: Record<string, { en: string; ru: string }> = {
     "ru": "Электронная почта аккаунта подтверждена."
   },
   "Ми рекомендуємо підтвердити email, щоб захистити доступ до акаунта й відновлення пароля.": {
-    "en": "Verify your email to secure the account and password recovery.",
-    "ru": "Подтвердите email для защиты аккаунта и восстановления пароля."
+    "en": "Verify your email to protect account access and password recovery.",
+    "ru": "Рекомендуем подтвердить почту для защиты аккаунта и восстановления пароля."
   },
   "Зміни календаря й налаштування зарплати тут тимчасові.": {
     "en": "Calendar and salary changes are temporary in demo mode.",
@@ -1741,6 +1741,54 @@ const translations: Record<string, { en: string; ru: string }> = {
   "Версія 2.0.0 beta 4": {
     "en": "Version 2.0.0 beta 4",
     "ru": "Версия 2.0.0 beta 4"
+  },
+  "Створіть свій простір": {
+    "en": "Create your workspace",
+    "ru": "Создайте своё пространство"
+  },
+  "З поверненням!": {
+    "en": "Welcome back!",
+    "ru": "С возвращением!"
+  },
+  "Новий акаунт для персонального обліку та управління командою.": {
+    "en": "Your account for personal records and team management.",
+    "ru": "Новый аккаунт для личного учёта и управления командой."
+  },
+  "Увійдіть, щоб продовжити роботу з вашими графіками.": {
+    "en": "Sign in to continue working with your schedules.",
+    "ru": "Войдите, чтобы продолжить работу с графиками."
+  },
+  "Створити акаунт": {
+    "en": "Create account",
+    "ru": "Создать аккаунт"
+  },
+  "Увійти": {
+    "en": "Sign in",
+    "ru": "Войти"
+  },
+  "Опрацьовуємо…": {
+    "en": "Working…",
+    "ru": "Обрабатываем…"
+  },
+  "День": {
+    "en": "Day",
+    "ru": "День"
+  },
+  "ПОКРОКОВЕ НАЛАШТУВАННЯ": {
+    "en": "STEP-BY-STEP SETUP",
+    "ru": "ПОШАГОВАЯ НАСТРОЙКА"
+  },
+  "НАЛАШТУВАННЯ РОБОТИ": {
+    "en": "WORK SETTINGS",
+    "ru": "НАСТРОЙКИ РАБОТЫ"
+  },
+  "Підлаштуй PayTakt під свою роботу": {
+    "en": "Make PayTakt work for you",
+    "ru": "Настрой PayTakt под свою работу"
+  },
+  "Вибери графік, налаштуй час та застосуй до календаря.": {
+    "en": "Pick a schedule, adjust hours and apply to calendar.",
+    "ru": "Выбери график, настрой часы и примени в календаре."
   }
 }
 
