@@ -1,3 +1,4 @@
+import {tr} from '../lib/presentation'
 import {useEffect,useMemo,useState} from 'react'
 import {ArrowLeft,ArrowRight,Check,CheckCircle2,Clock3,CalendarDays,BriefcaseBusiness,Sparkles,ShieldCheck} from 'lucide-react'
 import {sectors,suggestions} from '../lib/professions'
@@ -86,7 +87,7 @@ export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComple
     <header className="onboard-header">
       <div className="onboard-logo"><span>₴</span><strong>paytakt<span className="onboard-accent">.</span></strong></div>
       <span className="onboard-workspace"><BriefcaseBusiness size={15}/>{workspaceName}</span>
-      {onCancel&&<button className="onboard-skip" onClick={onCancel} type="button">До календаря</button>}
+      {onCancel&&<button className="onboard-skip" onClick={onCancel} type="button">{tr("До календаря")}</button>}
     </header>
     <main className="onboard-main">
       <div className="onboard-heading"><span className="onboard-eyebrow"><Sparkles size={15}/> ПЕРСОНАЛЬНЕ НАЛАШТУВАННЯ</span>
@@ -132,7 +133,7 @@ export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComple
           {(['day-night-48','night-2/2','duty-24-72'].includes(draft.preset))&&<p className="onboard-hint">Цей шаблон має різний час для денних, нічних або добових змін. Години вже налаштовані для кожного дня циклу; їх можна змінити в розширеному редакторі календаря.</p>}
           <div className="onboard-fields">
             {!(['day-night-48','night-2/2','duty-24-72'].includes(draft.preset))&&<>
-            <label>Початок<input type="time" value={draft.start} onChange={e=>update({start:e.target.value})}/></label>
+            <label>{tr("Початок")}<input type="time" value={draft.start} onChange={e=>update({start:e.target.value})}/></label>
             <label>Завершення<input type="time" value={draft.end} onChange={e=>update({end:e.target.value})}/></label>
             <label>Перерва, хв<input type="number" min="0" max="1439" value={draft.breakMinutes} onChange={e=>update({breakMinutes:Number(e.target.value)})}/></label></>}
             {draft.preset!=='5/2-weekdays'&&<label>Перший день циклу<input type="date" value={draft.anchorDate} onChange={e=>update({anchorDate:e.target.value})}/></label>}
@@ -190,7 +191,7 @@ export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComple
         <h2>Вибери тільки потрібні можливості</h2>
         <div className="onboard-toggles">
           <label className="onboard-toggle"><span><strong>Нічні доплати</strong><small>Якщо працюєш уночі. Час можна змінити пізніше.</small></span><input type="checkbox" checked={draft.night} onChange={e=>update({night:e.target.checked})}/></label>
-          {canUseCash&&<label className="onboard-toggle"><span><strong>Каса за день</strong><small>Виручка магазину, ресторану або інших продажів</small></span><input type="checkbox" checked={draft.cash} onChange={e=>update({cash:e.target.checked,...(!e.target.checked&&draft.planMetric==='cash'?{planMetric:'earnings' as PlanMetric}:{})})}/></label>}
+          {canUseCash&&<label className="onboard-toggle"><span><strong>{tr("Каса за день")}</strong><small>Виручка магазину, ресторану або інших продажів</small></span><input type="checkbox" checked={draft.cash} onChange={e=>update({cash:e.target.checked,...(!e.target.checked&&draft.planMetric==='cash'?{planMetric:'earnings' as PlanMetric}:{})})}/></label>}
           <label className="onboard-toggle"><span><strong>План і премія</strong><small>За результат роботи, виручку чи виконані завдання</small></span><input type="checkbox" checked={draft.plan} onChange={e=>update({plan:e.target.checked})}/></label>
         </div>
         {draft.manualDailyPay&&draft.night&&draft.overtimeMode==='none'&&<div className="onboard-subpanel"><label className="onboard-small-field">Базова ставка за годину для нічних доплат, грн<input inputMode="decimal" value={draft.overtimeHourlyRate} onChange={e=>update({overtimeHourlyRate:e.target.value})} placeholder="Наприклад, 150"/></label></div>}
@@ -218,8 +219,8 @@ export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComple
         <div className="onboard-review">
           <div><span>Сфера роботи</span><strong>{sectors.find(s=>s.id===draft.sector)?.label}</strong></div>
           <div><span>Графік</span><strong>{scheduleSummary(draft)} · {workDays} робочих днів цього місяця</strong></div>
-          <div><span>Основна оплата</span><strong>{draft.manualDailyPay?'Вношу заробіток сам за кожен день':`${payLabels[draft.mode].title} · ${cash(draft.rate)} ₴`}</strong></div>
-          <div><span>Понаднормові</span><strong>{draft.overtimeMode==='none'?'Не використовую':draft.overtimeMode==='quick'?`Кнопка +${draft.overtimeHoursPerDay} год · ${draft.overtimePercent}%`:`Після ${draft.overtimeAfterHours} год · +${draft.overtimeHoursPerDay} год/день · ${draft.overtimePercent}%`}</strong></div>
+          <div><span>{tr("Основна оплата")}</span><strong>{draft.manualDailyPay?'Вношу заробіток сам за кожен день':`${payLabels[draft.mode].title} · ${cash(draft.rate)} ₴`}</strong></div>
+          <div><span>{tr("Понаднормові")}</span><strong>{draft.overtimeMode==='none'?'Не використовую':draft.overtimeMode==='quick'?`Кнопка +${draft.overtimeHoursPerDay} год · ${draft.overtimePercent}%`:`Після ${draft.overtimeAfterHours} год · +${draft.overtimeHoursPerDay} год/день · ${draft.overtimePercent}%`}</strong></div>
           <div><span>Інші можливості</span><strong>{draft.cash?'Каса': 'Без каси'} · {draft.plan?'План і премія':'Без плану'} · {draft.night?'Нічні':'Без нічних'}</strong></div>
           <div><span>Виплати</span><strong>{draft.payout==='all'?'Одним платежем':draft.payout==='fixed'?'Фіксований аванс':'Аванс за пів місяця'}</strong></div>
         </div>
