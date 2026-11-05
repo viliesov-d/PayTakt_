@@ -1260,7 +1260,7 @@ export default function App(){
     if (p !== page) {
       window.history.pushState({ ...window.history.state, paytaktPage: p }, '')
       setPage(p)
-      window.scrollTo({ top: 0, behavior: 'instant' })
+      window.scrollTo({ top: 0, behavior: 'auto' })
     }
     setMobileMenu(false)
     setWorkspaceMenu(false)
