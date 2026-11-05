@@ -3,7 +3,7 @@
  * UAH-only legacy workspaces retain their original semantics. */
 export type Language = 'uk' | 'en' | 'ru'
 export type DisplayCurrency = 'UAH' | 'USD' | 'EUR' | 'PLN' | 'GBP'
-export type PresentationSettings = { language: Language; currency: DisplayCurrency; uahPerUnit: number }
+export type PresentationSettings = { language: Language; currency: DisplayCurrency; uahPerUnit: number; fxMode?: 'auto' | 'manual' }
 const key = 'paytakt-presentation-v1'
 export const localeForLanguage: Record<Language, string> = { uk: 'uk-UA', en: 'en-US', ru: 'ru-RU' }
 export const currencies: DisplayCurrency[] = ['UAH', 'USD', 'EUR', 'PLN', 'GBP']
@@ -1947,11 +1947,12 @@ export function readPresentation(): PresentationSettings {
           language: validLanguage(obj.language) ? obj.language : 'uk',
           currency: validCurrency(obj.currency) && (obj.currency === 'UAH' || (typeof obj.uahPerUnit === 'number' && Number.isFinite(obj.uahPerUnit) && obj.uahPerUnit > 0)) ? obj.currency : 'UAH',
           uahPerUnit: typeof obj.uahPerUnit === 'number' && Number.isFinite(obj.uahPerUnit) && obj.uahPerUnit > 0 ? obj.uahPerUnit : 1,
+          fxMode: obj.fxMode === 'manual' ? 'manual' : 'auto',
         }
       }
     }
   } catch {/* localStorage can be unavailable in private mode */}
-  return { language: 'uk', currency: 'UAH', uahPerUnit: 1 }
+  return { language: 'uk', currency: 'UAH', uahPerUnit: 1, fxMode: 'auto' }
 }
 let current: PresentationSettings = readPresentation()
 let workspaceCurrency: DisplayCurrency = 'UAH'
@@ -1970,6 +1971,7 @@ export function savePresentation(value: PresentationSettings): PresentationSetti
     language: validLanguage(value.language) ? value.language : 'uk',
     currency: validCurrency(value.currency) ? value.currency : 'UAH',
     uahPerUnit: Number.isFinite(value.uahPerUnit) && value.uahPerUnit > 0 ? value.uahPerUnit : 1,
+    fxMode: value.fxMode === 'manual' ? 'manual' : 'auto',
   }
   if (safe.currency !== 'UAH' && (!Number.isFinite(value.uahPerUnit) || value.uahPerUnit <= 0)) throw Error('Exchange rate must be positive')
   current = safe
