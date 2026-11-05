@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
 import {
   savePresentation, getPresentation, formatMoney, formatDate, tr, setAccountingCurrency, getAccountingCurrency, inputCurrencyLabel,
 } from '../src/lib/presentation.ts'
@@ -66,4 +67,12 @@ test('invalid workspace currency cannot replace the safe UAH default',()=>{
     setAccountingCurrency('UNKNOWN')
     assert.equal(getAccountingCurrency(),'UAH')
   }finally{setAccountingCurrency(before)}
+})
+
+test('workspace currency metadata and Firestore rules remain immutable',()=>{
+  const data=readFileSync(new URL('../src/lib/data.ts',import.meta.url),'utf8')
+  const rules=readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')
+  assert.match(data,/currency: isAccountingCurrency\(d\.data\(\)\.currency\) \? d\.data\(\)\.currency : 'UAH'/)
+  assert.match(rules,/request\.resource\.data\.get\('currency','UAH'\) == resource\.data\.get\('currency','UAH'\)/)
+  assert.match(rules,/getAfter\([\s\S]*?\.data\.get\('currency', 'UAH'\) == request\.resource\.data\.get\('currency', 'UAH'\)/)
 })
