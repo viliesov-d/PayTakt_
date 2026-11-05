@@ -869,13 +869,13 @@ function TeamPage({workspace}:{workspace:Workspace}) {
   return <><SectionHeading eyebrow="КОМАНДА" title="Співробітники компанії" detail={`Простір «${workspace.name}» · зараз доступний власнику акаунта.`}/><div className="panel team-owner"><div className="avatar large"><UserRound size={24}/></div><div><h3>Власник простору</h3><p>Повний доступ до власних налаштувань і календаря</p></div><span className="pill mint-pill">Власник</span></div><Placeholder icon={UsersRound} title="Запрошення співробітників — наступний етап" detail="Після налаштування корпоративних ролей тут з’являться запрошення, відділи та доступи. Зараз ніхто інший не може переглядати дані вашого простору."/></>
 }
 
-function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates }: {
+function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates, syncPanel, remindersPanel }: {
   session: Session; workspace: Workspace; workspaces: Workspace[]; theme: ThemeChoice;
   setTheme: (v:ThemeChoice)=>void; onCreate:()=>void; onDeleteRequest:(w:Workspace)=>void;
   onSignOut:()=>void; emailVerified:boolean;
   onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>;
   presentation: PresentationSettings; onPresentationChange: (next:PresentationSettings)=>void;
-  fxRates:NbuRateCache|null;
+  fxRates:NbuRateCache|null; syncPanel:ReactNode; remindersPanel:ReactNode;
 }) {
   const nativeCurrency=workspace.currency??'UAH'
   const [currencyDraft,setCurrencyDraft]=useState<DisplayCurrency>(presentation.currency)
@@ -909,6 +909,8 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
       </div>}
     </div>}
     <div className="settings-grid">
+      {syncPanel}
+      {remindersPanel}
       <section className="panel settings-panel">
         <div className="settings-heading"><Sun size={22}/><div><h3>{tr('Тема оформлення')}</h3><p>{tr('Обирай вигляд, який комфортний саме тобі.')}</p></div></div>
         <div className="theme-card-grid">{([['light',Sun,'Денна','Світла й повітряна'],['dark',Moon,'Нічна','Глибокі темні відтінки'],['system',Monitor,'Авто','Як на твоєму пристрої']] as const).map(([value,Icon,label,sub])=><button type="button" key={value} className={`theme-card ${theme===value?'chosen':''}`} onClick={()=>setTheme(value)}><Icon size={24}/><strong>{tr(label)}</strong><span>{tr(sub)}</span>{theme===value&&<Check size={16} className="theme-check"/>}</button>)}</div>
@@ -1617,6 +1619,44 @@ export default function App(){
     setMobileMenu(false)
     setWorkspaceMenu(false)
   }
+  const networkStatus=offlineError?'Помилка':
+    syncTotals.conflicts?'Конфлікт':
+    syncTotals.errors?'Помилка':
+    offlineSyncing?'Синхронізація':
+    !navigator.onLine?'Очікуємо мережу':
+    syncTotals.pending?'Очікує синхронізації':'Збережено'
+  const syncPanel=!session?.demo?<details className="paytakt-sync-compact">
+    <summary aria-label={tr('Стан синхронізації')}>
+      {offlineError||syncTotals.conflicts||syncTotals.errors?
+        <AlertTriangle size={16}/>:offlineSyncing||syncTotals.pending||!navigator.onLine?
+        <CloudUpload size={16}/>:<CheckCircle2 size={16}/>}
+      <strong>{tr(networkStatus)}</strong>
+      {offlineQueue.length>0&&<small>{offlineQueue.length}</small>}
+      <ChevronDown size={15} className="paytakt-sync-chevron"/>
+    </summary>
+    <div className="paytakt-sync-compact-details">
+      {offlineQueue.length>0&&<p>{tr('Локальні записи')}: {offlineQueue.length} · {syncTotals.pending} {tr('в черзі')} · {syncTotals.conflicts} {tr('конфліктів')}</p>}
+      {offlineQueue.length===0&&!offlineError&&<p>{tr(networkStatus)}</p>}
+      {offlineError&&<p role="alert" className="paytakt-sync-error">{offlineError}</p>}
+      {(syncTotals.errors>0||syncTotals.pending>0)&&<button type="button" className="btn btn-outline" disabled={!navigator.onLine||offlineSyncing} onClick={retrySync}>
+        {tr('Повторити синхронізацію')}
+      </button>}
+      {offlineQueue.filter(e=>e.state==='conflict'||e.state==='error').map(entry=><div key={entry.id} className="paytakt-sync-conflict">
+        <div><strong>{entry.date} · {tr(entry.kind==='shifts'?'Календар':entry.kind==='dailyCash'?'Каса за день':'Оплата за день')}</strong>
+          <p>{entry.error??tr('Зміни очікують вирішення.')}</p></div>
+        {entry.state==='conflict'&&<div className="paytakt-sync-actions">
+          <button type="button" className="btn btn-outline" onClick={()=>resolveConflict(entry.id,'server')}>
+            {tr('Залишити серверну версію')}
+          </button>
+          <button type="button" className="btn btn-outline" onClick={()=>{
+            if(window.confirm(tr('Це замінить серверний запис твоєю локальною версією. Продовжити?')))
+              resolveConflict(entry.id,'local')
+          }}>{tr('Зберегти мою версію')}</button>
+        </div>}
+      </div>)}
+    </div>
+  </details>:null
+
   if(loading)return <div className="loading-screen"><Logo/><div className="spinner"/><p>Готуємо твій робочий простір…</p></div>
   if(!session)return <AuthScreen onDemo={enterDemo} language={presentation.language} onLanguageChange={language=>onPresentationChange({...presentation,language})}/>
   if(!workspace)return <div className="loading-screen"><Logo/><div className="firebase-note wide">{error||'Не вдалося відкрити робочий простір. Перевір доступ до акаунта.'}</div><button type="button" className="btn btn-outline" onClick={logout}>{tr("Вийти з акаунта")}</button></div>
@@ -1654,39 +1694,6 @@ export default function App(){
     </header>
     <div className="main-column">
       <main className="main-content">{session.demo&&<div className="demo-banner"><Sparkles size={16}/><span><strong>Демоверсія.</strong> Зміни календаря й налаштування зарплати тут тимчасові.</span><button type="button" onClick={logout}>До реєстрації <ArrowRight size={15}/></button></div>}{error&&<div className="alert-banner" role="alert">{error}</div>}{overtimePresetError&&<div className="alert-banner" role="alert">Налаштування понаднормових: {overtimePresetError}</div>}{shiftsError&&<div className="alert-banner" role="alert">Не вдалося прочитати зміни: {shiftsError}</div>}{payError&&<div className="alert-banner" role="alert">Налаштування зарплати: {payError}</div>}{salesError&&<div className="alert-banner" role="alert">Показники продажів: {salesError}</div>}{cashError&&<div className="alert-banner" role="alert">Каса: {cashError}</div>}{verificationMessage&&<div className="alert-banner" role="status">{verificationMessage}<button className="small-dismiss" onClick={()=>setVerificationMessage('')} type="button" aria-label="Закрити повідомлення"><X size={16}/></button></div>}
-        {!session.demo&&<section className={`paytakt-sync-status ${syncTotals.conflicts||syncTotals.errors||offlineError?'has-issue':''}`} aria-label={tr('Стан синхронізації')}>
-          <div className="paytakt-sync-main" role="status">
-            {syncTotals.conflicts||syncTotals.errors||offlineError?
-              <AlertTriangle size={18} aria-hidden="true"/>:
-              offlineSyncing||syncTotals.pending?<CloudUpload size={18} aria-hidden="true"/>:
-              <CheckCircle2 size={18} aria-hidden="true"/>}
-            <div>
-              <strong>{tr(offlineError?'Помилка локального сховища':
-                syncTotals.conflicts?'Конфлікт синхронізації':
-                syncTotals.errors?'Помилка синхронізації':
-                offlineSyncing?'Синхронізуємо…':
-                syncTotals.pending?'Очікує синхронізації':
-                navigator.onLine?'Збережено у Firebase':'Офлайн · збережені дані')}</strong>
-              <small>{tr('Локальні записи')}: {offlineQueue.length}{offlineQueue.length>0?
-                ` · ${syncTotals.pending} ${tr('в черзі')}, ${syncTotals.conflicts} ${tr('конфліктів')}`:''}</small>
-            </div>
-            {(syncTotals.errors>0||syncTotals.pending>0)&&<button className="btn btn-outline" type="button" onClick={retrySync}
-              disabled={!navigator.onLine||offlineSyncing}>{tr('Повторити синхронізацію')}</button>}
-          </div>
-          {offlineError&&<p role="alert" className="paytakt-sync-error">{offlineError}</p>}
-          {offlineQueue.filter(e=>e.state==='conflict'||e.state==='error').map(entry=><div key={entry.id} className="paytakt-sync-conflict">
-            <div><strong>{entry.date} · {tr(entry.kind==='shifts'?'Календар':entry.kind==='dailyCash'?'Каса за день':'Оплата за день')}</strong>
-              <p>{entry.error??tr('Зміни очікують вирішення.')}</p></div>
-            {entry.state==='conflict'&&<div className="paytakt-sync-actions">
-              <button type="button" className="btn btn-outline"
-                onClick={()=>resolveConflict(entry.id,'server')}>{tr('Залишити серверну версію')}</button>
-              <button type="button" className="btn btn-outline" onClick={()=>{
-                if(window.confirm(tr('Це замінить серверний запис твоєю локальною версією. Продовжити?')))
-                  resolveConflict(entry.id,'local')
-              }}>{tr('Зберегти мою версію')}</button>
-            </div>}
-          </div>)}
-        </section>}
         {setupPayDraft&&<div className="alert-banner" role="status">Ти вибрав шаблон оплати, але його правила ще не збережено. Після налаштування графіка відкрий «Правила оплати», перевір ставку й натисни «Зберегти». <button type="button" className="btn btn-outline" onClick={()=>navigate('rules')}>{tr("Відкрити правила оплати")}</button></div>}
         <div className="page-motion" key={`${workspace.id}:${page}:${presentation.language}:${presentation.currency}:${presentation.uahPerUnit}`}>
         {page==='setup'&&<SetupPage key={workspace.id} settings={paySettings} loaded={payLoaded} onChoose={chooseSetup}/>}
@@ -1698,7 +1705,7 @@ export default function App(){
         {page==='pay'&&<PayPageV5 key={workspace.id} workspaceName={workspace.name} shifts={shifts} settings={paySettings} performance={performance} targets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} loaded={payLoaded&&salesLoaded&&unitsLoaded&&cashLoaded&&performanceLoaded&&targetsLoaded&&wagesLoaded} salesFromCash={cashPrefs.enabled&&cashPrefs.useForSales} salesByMonth={effectiveSales} onSaveMonthlySales={onSaveMonthlySales} unitsByMonth={unitsByMonth} onSaveMonthlyUnits={onSaveMonthlyUnits} demo={session.demo} goToRules={()=>navigate('rules')}/>}
         {page==='rules'&&<RulesPageV5 key={workspace.id} shifts={shifts} workspaceName={workspace.name} settings={setupPayDraft??paySettings} loaded={payLoaded} demo={session.demo} onSave={onSavePay} performance={performance} onSavePerformance={onSavePerformance} onApplyZmina={onApplyZmina}/>}
         {page==='team'&&workspace.kind==='company'&&<TeamPage workspace={workspace}/>}
-        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates}/>}
+        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates} syncPanel={syncPanel} remindersPanel={remindersPanel}/>}
         {page==='settings'&&<section className="panel v2-settings-actions">
           <div className="v2-settings-head"><div><h3>{tr("Налаштування твоєї роботи")}</h3><p>Персональний майстер або точні правила — обирай зручний спосіб.</p></div></div>
           <div className="v2-settings-links">
