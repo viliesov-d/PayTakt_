@@ -19,6 +19,11 @@ public class GenerateAndroidIcon {
   private static final Color LIME = new Color(0xC2F075);
 
   private static void drawCalendar(Graphics2D g) {
+    // Launcher masks crop edges unpredictably. Keep the calendar inside
+    // the adaptive-icon safe zone (the old graphic was too large).
+    g.translate(50.0, 50.0);
+    g.scale(0.72, 0.72);
+    g.translate(-50.0, -50.0);
     g.setColor(LIME);
     g.fillRoundRect(23, 27, 54, 53, 10, 10);
     g.setColor(NAVY);
