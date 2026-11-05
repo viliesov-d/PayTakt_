@@ -1558,3 +1558,165 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
   .paytakt-auth-language{align-self:stretch;justify-content:flex-end}
   .paytakt-auth-language select{font-size:16px}
 }
+
+
+/* PayTakt Mobile v0.4: coherent headings, quieter captions and tighter sign-in. */
+@media(max-width:700px){
+  /* Later desktop .section-head styles used align-items:flex-end and nudged
+     headings to the right when the layout became a column. */
+  .main-content .section-head{
+    width:100%;min-width:0;display:flex;flex-direction:column;
+    justify-content:flex-start;align-items:flex-start;
+    gap:5px;margin:16px 0 17px;text-align:left;
+  }
+  .main-content .section-head>div{
+    min-width:0;max-width:100%;width:100%;text-align:left;
+  }
+  .main-content .section-head .eyebrow,
+  .main-content .section-head h2,
+  .main-content .section-head .subtitle{
+    text-align:left;max-width:100%;overflow-wrap:break-word;
+  }
+  .main-content .section-head .eyebrow{
+    font-size:9px;letter-spacing:1.35px;margin-bottom:5px;
+  }
+  .main-content .section-head h2{
+    font-size:clamp(21px,5.6vw,25px);line-height:1.15;
+  }
+  .main-content .section-head>.btn{align-self:flex-start}
+  .main-content .section-head .subtitle{
+    font-size:11.5px;line-height:1.45;margin-top:5px;
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+    line-clamp:2;overflow:hidden;
+  }
+  /* Descriptions stay in the DOM and remain available to screen readers. */
+  .settings-panel .settings-heading p,
+  .pay-block-heading p,
+  .panel .stats-small-note,
+  .stat-hint,
+  .calendar-layout-footnote{
+    font-size:11.5px;line-height:1.45;
+  }
+  .settings-panel .settings-heading p,
+  .pay-block-heading p,
+  .stat-hint{
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+    line-clamp:2;overflow:hidden;
+  }
+  /* Never truncate currency safety information. */
+  .paytakt-currency-settings .settings-heading p{display:block;overflow:visible;-webkit-line-clamp:unset;line-clamp:unset}
+  .settings-panel .settings-heading{gap:9px}
+  .settings-panel .settings-heading h3{line-height:1.22}
+  .main-content .section-head+.panel{margin-top:0}
+  .calendar-overtime{
+    display:inline-flex;align-items:center;justify-content:center;
+    padding:3px 5px;border-radius:6px;font-size:10px;
+    font-weight:800;line-height:1.1;white-space:nowrap;
+    letter-spacing:-.1px;max-width:100%;overflow:hidden;
+  }
+}
+
+/* Sign-in fits the available height on most phones without shrinking inputs
+   below touch targets. Small screens can still scroll, including with keyboard. */
+@media(max-width:700px){
+  .auth-layout{min-height:100svh}
+  .auth-panel{
+    box-sizing:border-box;
+    min-height:100svh;
+    justify-content:flex-start;
+    padding:clamp(12px,2.5svh,23px) 18px max(12px,env(safe-area-inset-bottom,0px));
+    gap:0;
+  }
+  .auth-mobile-logo{
+    display:block;width:min(100%,430px);align-self:center;
+    margin:0 0 7px;
+  }
+  .auth-mobile-logo .brand{font-size:24px}
+  .auth-mobile-logo .brand-mark{width:37px;height:37px}
+  .auth-panel>.paytakt-auth-language{
+    width:min(100%,430px);margin:0 auto 6px;
+    justify-content:flex-end;align-self:center;
+  }
+  .auth-panel>.paytakt-auth-language select{
+    width:auto;min-height:38px;padding:7px 10px;font-size:16px;
+  }
+  .auth-form-wrap{width:min(100%,430px);margin:0 auto}
+  .auth-form-wrap .eyebrow{font-size:9px;margin-bottom:4px}
+  .auth-form-wrap h2{font-size:clamp(23px,6.2vw,27px);margin:0 0 6px}
+  .auth-intro{font-size:12px;line-height:1.4;margin-bottom:12px}
+  .auth-tabs{margin-bottom:12px;padding:3px}
+  .auth-tabs button{padding:8px 11px;min-height:37px}
+  .auth-form{gap:10px}
+  .auth-form label{gap:5px;font-size:11px}
+  .auth-form input{min-height:43px;padding-block:10px;font-size:16px}
+  .auth-form input.with-icon{padding-left:42px}
+  .auth-form .field-icon{top:32px}
+  .auth-submit{margin-top:3px;min-height:44px}
+  .auth-divider{margin:11px 0}
+  .demo-button{min-height:43px}
+  .auth-footer{margin-top:auto;padding-top:12px;font-size:9px}
+}
+@media(max-width:700px) and (max-height:700px){
+  .auth-panel{padding-top:10px;padding-bottom:10px}
+  .auth-mobile-logo{margin-bottom:2px}
+  .auth-panel>.paytakt-auth-language{margin-bottom:3px}
+  .auth-intro{margin-bottom:8px}
+  .auth-tabs{margin-bottom:9px}
+  .auth-form{gap:8px}
+  .auth-divider{margin:8px 0}
+  .auth-footer{padding-top:6px}
+}
+
+/* Livelier calendar interactions, but no infinite animation and no JS timers.
+   Motion is limited to changes of selected day or month; reduced motion is respected. */
+@media(prefers-reduced-motion:no-preference){
+  .calendar-toolbar h3{
+    transform-origin:left center;
+    animation:paytakt-month-title-in .38s cubic-bezier(.18,.8,.24,1) both;
+  }
+  @keyframes paytakt-month-title-in{
+    from{opacity:.45;transform:translateY(7px) scale(.985)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .cal-grid.month-slide-next,
+  .cal-grid.month-slide-prev{
+    animation-duration:.44s;
+  }
+  .cal-grid.month-slide-next .cal-day,
+  .cal-grid.month-slide-prev .cal-day{
+    animation-duration:.38s;
+  }
+  .cal-day.selected{
+    animation:paytakt-day-selected .3s cubic-bezier(.18,.9,.28,1) both;
+  }
+  @keyframes paytakt-day-selected{
+    0%{transform:scale(.94);filter:brightness(1.05)}
+    65%{transform:scale(1.025);filter:brightness(1.025)}
+    100%{transform:scale(1);filter:brightness(1)}
+  }
+  .cal-arrows button{
+    transition:background-color .18s ease,box-shadow .18s ease,transform .18s ease;
+  }
+  .cal-arrows button:active{transform:scale(.91)}
+  .cal-day.is-worked .shift-indicator{
+    animation:paytakt-work-confirm .35s cubic-bezier(.17,.8,.25,1) both;
+  }
+  @keyframes paytakt-work-confirm{
+    from{opacity:.6;transform:translateY(3px) scale(.9)}
+    65%{opacity:1;transform:translateY(0) scale(1.06)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .calendar-overtime{
+    animation:paytakt-overtime-pop .32s cubic-bezier(.15,.8,.3,1.2) both;
+  }
+  @keyframes paytakt-overtime-pop{
+    from{opacity:0;transform:translateY(5px) scale(.85)}
+    70%{opacity:1;transform:translateY(-1px) scale(1.07)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .calendar-toolbar h3,.cal-day.selected,.cal-day.is-worked .shift-indicator,
+  .calendar-overtime{animation:none!important}
+  .cal-arrows button{transition:none!important}
+}
