@@ -12,7 +12,7 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/workspaces/$(workspaceId))
         && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerUid == request.auth.uid;
     }
-    function validProfile(uid) {
+    function validProfile() {
       return request.resource.data.keys().hasOnly(['email', 'displayName', 'theme', 'createdAt'])
         && request.resource.data.keys().hasAll(['email', 'displayName', 'theme'])
         && request.resource.data.email == request.auth.token.email
@@ -137,9 +137,9 @@ service cloud.firestore {
     match /users/{uid} {
       allow get: if isUser(uid);
       allow list, delete: if false;
-      allow create: if isUser(uid) && validProfile(uid);
+      allow create: if isUser(uid) && validProfile();
       allow update: if isUser(uid)
-        && validProfile(uid)
+        && validProfile()
         && request.resource.data.email == resource.data.email
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['displayName', 'theme']);
