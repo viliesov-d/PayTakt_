@@ -34,6 +34,9 @@ import {effectiveRevenue,cashTotalsByMonth,parseCashHryvnia,defaultCashPreferenc
 import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
 import {defaultCalendarLayout,readCalendarLayout,writeCalendarLayout,moveCalendarBlock,makeCalendarLayoutPreset,isCalendarLayoutPreset,type CalendarLayoutPreset,type CalendarBlockId,type CalendarLayout} from './lib/calendarLayout'
 import {StatisticsPage} from './components/StatisticsPage'
+import {NotificationSettings} from './components/NotificationSettings'
+import {defaultReminders,readReminderSettings,saveReminderSettings,type ReminderPreferences} from './lib/reminderPlan'
+import {reconcileReminders,requestRemindersPermission,cancelPayTaktReminders} from './lib/nativeReminders'
 import {OnboardingWizard} from './components/OnboardingWizard'
 import {calendarFeatures} from './lib/featureVisibility'
 import {onboardingMonthKeys,schedulePattern,onboardingCalendarDays,onboardingOvertimePreset,makeOnboardingPaySettings,makeOnboardingPerformance,validateOnboardingDraft,type OnboardingDraft} from './lib/onboarding'
@@ -1134,6 +1137,10 @@ export default function App(){
   const [error,setError]=useState('')
   const [workspaces,setWorkspaces]=useState<Workspace[]>([])
   const [workspace,setWorkspace]=useState<Workspace|null>(null)
+  const [reminderRecord,setReminderRecord]=useState<{key:string;prefs:ReminderPreferences}>({key:'',prefs:defaultReminders})
+  const [reminderBusy,setReminderBusy]=useState(false)
+  const [reminderError,setReminderError]=useState('')
+  const [reminderCount,setReminderCount]=useState(0)
   const [offlineQueue,setOfflineQueue]=useState<OfflineEdit[]>([])
   const [offlineError,setOfflineError]=useState('')
   const [offlineSyncing,setOfflineSyncing]=useState(false)
@@ -1267,6 +1274,66 @@ export default function App(){
     }catch(error){setOfflineError(friendlyError(error))}
   }
   const syncTotals=offlineSummary(offlineQueue)
+
+  const reminderKey=session&&!session.demo&&workspace?`${session.uid}:${workspace.id}`:''
+  const reminderPrefs=reminderRecord.key===reminderKey?reminderRecord.prefs:defaultReminders
+  useEffect(()=>{
+    if(!session||session.demo||!workspace){
+      setReminderRecord({key:'',prefs:defaultReminders})
+      setReminderCount(0)
+      return
+    }
+    setReminderRecord({key:`${session.uid}:${workspace.id}`,prefs:readReminderSettings(session.uid,workspace.id)})
+    setReminderError('')
+    setReminderCount(0)
+  },[session?.uid,session?.demo,workspace?.id])
+
+  const changeReminders=(next:ReminderPreferences)=>{
+    if(!session||session.demo||!workspace)return
+    try {
+      saveReminderSettings(session.uid,workspace.id,next)
+      setReminderRecord({key:`${session.uid}:${workspace.id}`,prefs:next})
+      setReminderError('')
+    } catch(e){setReminderError(friendlyError(e))}
+  }
+  const enableReminders=async()=>{
+    setReminderBusy(true)
+    setReminderError('')
+    try{
+      await requestRemindersPermission() // called only from button click
+      changeReminders({...reminderPrefs,enabled:true})
+    }catch(e){setReminderError(friendlyError(e))}
+    finally{setReminderBusy(false)}
+  }
+  useEffect(()=>{
+    if(!isNativeAndroid)return
+    if(!session||session.demo||!workspace){
+      void cancelPayTaktReminders().catch(()=>undefined)
+      return
+    }
+    if(reminderRecord.key!==reminderKey||!shiftsLoaded||!payLoaded)return
+    let cancelled=false
+    const sync=()=>{
+      void reconcileReminders({
+        uid:session.uid,workspaceId:workspace.id,workspaceName:workspace.name,
+        shifts,pay:paySettings,prefs:reminderPrefs,
+      }).then(count=>{
+        if(!cancelled){setReminderCount(count);setReminderError('')}
+      }).catch(e=>{if(!cancelled)setReminderError(friendlyError(e))})
+    }
+    sync()
+    const onVisible=()=>{if(document.visibilityState==='visible')sync()}
+    document.addEventListener('visibilitychange',onVisible)
+    window.addEventListener('online',sync)
+    // Re-plan while the app stays open; Android owns delivery when closed.
+    const interval=window.setInterval(onVisible,3*60*60*1000)
+    return()=>{
+      cancelled=true;document.removeEventListener('visibilitychange',onVisible)
+      window.removeEventListener('online',sync)
+      window.clearInterval(interval)
+    }
+  },[isNativeAndroid,session?.uid,session?.demo,workspace?.id,workspace?.name,
+    reminderRecord.key,reminderPrefs,shifts,paySettings,payLoaded,shiftsLoaded])
 
 
   const setThemeChoice=useCallback((value:ThemeChoice)=>{
@@ -1619,6 +1686,9 @@ export default function App(){
     setMobileMenu(false)
     setWorkspaceMenu(false)
   }
+  const remindersPanel=<NotificationSettings supported={isNativeAndroid&&!session?.demo}
+    prefs={reminderPrefs} scheduled={reminderCount} busy={reminderBusy} error={reminderError}
+    onEnable={enableReminders} onChange={changeReminders}/>
   const networkStatus=offlineError?'Помилка':
     syncTotals.conflicts?'Конфлікт':
     syncTotals.errors?'Помилка':
