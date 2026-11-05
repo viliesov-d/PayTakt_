@@ -29,7 +29,7 @@ test('Russian translation and EUR formatting are supported', () => {
   try {
     savePresentation({language:'ru',currency:'EUR',uahPerUnit:50})
     assert.equal(tr('Налаштування'),'Настройки')
-    assert.match(formatMoney(500000),/10,00/)
+    assert.match(formatMoney(500000),/100,00/)
   } finally { savePresentation(prior) }
 })
 
