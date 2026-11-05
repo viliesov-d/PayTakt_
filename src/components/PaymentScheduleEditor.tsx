@@ -1,3 +1,4 @@
+import {inputCurrencyLabel,getAccountingCurrency} from '../lib/presentation'
 import {CalendarClock,Plus,Trash2,ArrowUp,ArrowDown,Info,ChevronDown} from 'lucide-react'
 import {defaultPaymentRules,type PaymentRule,type PaymentSource,type PaymentMethod} from '../lib/salary'
 
@@ -51,7 +52,7 @@ export function PaymentScheduleEditor({value,onChange}:{value:PaymentRule[];onCh
           {item.source==='earnings'&&<option value="first_half">Нараховано за 1–15 число</option>}
           <option value="remainder">Весь залишок</option>
         </select></label>
-        {(item.method==='fixed'||item.method==='percent')&&<label>{item.method==='fixed'?'Сума, грн':'Відсоток, %'}<input type="number" required min="0" max={item.method==='fixed'?"1000000000":"100"} step="0.01" value={Number.isFinite(item.amount)?item.method==='fixed'?asCurrency(item.amount):String(item.amount/100):''} onChange={e=>edit(item.id,{amount:item.method==='fixed'?parseCurrency(e.target.value):Math.round(Number(e.target.value)*100)})}/></label>}
+        {(item.method==='fixed'||item.method==='percent')&&<label>{item.method==='fixed'?`Сума, ${inputCurrencyLabel()}`:'Відсоток, %'}<input type="number" required min="0" max={item.method==='fixed'?"1000000000":"100"} step="0.01" value={Number.isFinite(item.amount)?item.method==='fixed'?asCurrency(item.amount):String(item.amount/100):''} onChange={e=>edit(item.id,{amount:item.method==='fixed'?parseCurrency(e.target.value):Math.round(Number(e.target.value)*100)})}/></label>}
         <label>Число місяця<input type="number" required min="1" max="31" step="1" value={item.day} onChange={e=>edit(item.id,{day:Number(e.target.value)})}/></label>
         <label>Коли виплачують<select value={item.monthOffset} onChange={e=>edit(item.id,{monthOffset:Number(e.target.value)})}>
           <option value={0}>Цього місяця</option><option value={1}>Наступного місяця</option><option value={2}>Через 2 місяці</option><option value={3}>Через 3 місяці</option>
