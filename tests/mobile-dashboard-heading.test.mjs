@@ -17,3 +17,13 @@ test('mobile dashboard summary text and button align left with the cards',()=>{
 })
 
 // v0.4: heading alignment retains mobile safety rules.
+
+test('mobile headings align left everywhere',()=>{
+  assert.match(css,/\.main-content \.section-head\{/)
+  assert.match(css,/align-items:flex-start/)
+})
+
+test('calendar overtime label is concise',()=>{
+  assert.match(app,/className="calendar-overtime" aria-label=/)
+  assert.doesNotMatch(app, /год понадн\.<\/span>/)
+})
