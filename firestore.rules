@@ -22,12 +22,13 @@ service cloud.firestore {
         && request.resource.data.theme in ['system', 'light', 'dark'];
     }
     function validWorkspace() {
-      return request.resource.data.keys().hasOnly(['name', 'kind', 'ownerUid', 'createdAt'])
+      return request.resource.data.keys().hasOnly(['name', 'kind', 'currency', 'ownerUid', 'createdAt'])
         && request.resource.data.keys().hasAll(['name', 'kind', 'ownerUid'])
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 2
         && request.resource.data.name.size() <= 80
         && request.resource.data.kind in ['personal', 'company']
+        && request.resource.data.get('currency', 'UAH') in ['UAH', 'USD', 'EUR', 'PLN', 'GBP']
         && request.resource.data.ownerUid == request.auth.uid;
     }
     function validExtra(item) {
@@ -281,12 +282,14 @@ service cloud.firestore {
       match /workspaces/{workspaceId} {
         allow get, list: if isUser(uid);
         allow create: if isUser(uid)
-          && request.resource.data.keys().hasOnly(['name', 'kind', 'role', 'createdAt'])
+          && request.resource.data.keys().hasOnly(['name', 'kind', 'currency', 'role', 'createdAt'])
           && request.resource.data.keys().hasAll(['name', 'kind', 'role'])
           && request.resource.data.role == 'owner'
           && getAfter(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerUid == uid
           && getAfter(/databases/$(database)/documents/workspaces/$(workspaceId)).data.name == request.resource.data.name
-          && getAfter(/databases/$(database)/documents/workspaces/$(workspaceId)).data.kind == request.resource.data.kind;
+          && getAfter(/databases/$(database)/documents/workspaces/$(workspaceId)).data.kind == request.resource.data.kind
+          && request.resource.data.get('currency', 'UAH') in ['UAH', 'USD', 'EUR', 'PLN', 'GBP']
+          && getAfter(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('currency', 'UAH') == request.resource.data.get('currency', 'UAH');
         allow update, delete: if false;
       }
     }
@@ -297,7 +300,10 @@ service cloud.firestore {
       allow create: if signedIn() && validWorkspace();
       allow update: if ownWorkspace(workspaceId)
         && validWorkspace()
-        && request.resource.data.ownerUid == resource.data.ownerUid;
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        // Currency cannot be changed in place: all payroll values are denominated
+        // in this unit. Any eventual migration must be explicit and atomic.
+        && request.resource.data.get('currency','UAH') == resource.data.get('currency','UAH');
       allow delete: if false;
 
       match /settings/{settingsId} {
