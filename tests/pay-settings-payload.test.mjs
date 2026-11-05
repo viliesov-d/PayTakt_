@@ -31,11 +31,10 @@ test('deep sanitizer retains all required v5 keys and default payment allocation
   assert.deepEqual(saved.paymentRules,defaultPaySettings.paymentRules)
 })
 
-test('client payload keys match required and allowed Firestore v5 rules keys',()=>{
+test('client keeps strict v5 payload even when server avoids unused monolithic validator',()=>{
   const rules=fs.readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')
-  const block=rules.slice(rules.indexOf('function validPaySettings()'),rules.indexOf('function validMonthlySales('))
-  const allowed=[...block.match(/hasOnly\(\[([\s\S]*?)\]\)/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1])
-  const required=[...block.match(/hasAll\(\[([\s\S]*?)\]\)/)[1].matchAll(/'([^']+)'/g)].map(m=>m[1])
-  assert.deepEqual(required.sort(),Object.keys(defaultPaySettings).sort())
-  assert.deepEqual(allowed.sort(),[...Object.keys(defaultPaySettings),'updatedAt'].sort())
+  const saved=preparePaySettingsWrite(clone())
+  assert.deepEqual(Object.keys(saved).sort(),Object.keys(defaultPaySettings).sort())
+  assert.doesNotMatch(rules,/function validPaySettings\(\)/)
+  assert.match(rules,/allow create, update: if payId == 'current'[\s\S]*?ownWorkspace\(workspaceId\)[\s\S]*?request\.resource\.data\.version == 5/)
 })
