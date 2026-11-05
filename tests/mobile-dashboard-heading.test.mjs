@@ -27,3 +27,12 @@ test('calendar overtime label is concise',()=>{
   assert.match(app,/className="calendar-overtime" aria-label=/)
   assert.doesNotMatch(app, /год понадн\.<\/span>/)
 })
+
+test('mobile login uses the viewport and calendar has motion safeguards',()=>{
+  assert.match(css,/min-height:100svh/)
+  assert.match(css, /max-height:700px/)
+  assert.match(app, /<h3 key=\{monthKey\} aria-live="polite"/)
+  assert.match(css, /@keyframes paytakt-day-selected/)
+  assert.match(css, /@keyframes paytakt-overtime-pop/)
+  assert.match(css, /prefers-reduced-motion:reduce/)
+})
