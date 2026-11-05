@@ -171,14 +171,12 @@ export async function deleteWorkspace(uid:string, workspaceId:string):Promise<vo
   await batch.commit()
 }
 
-export function subscribeShifts(workspaceId: string, onChange: (data: Shift[]) => void, onError: (error: Error) => void): Unsubscribe {
-  if (!db) return () => undefined
-  return onSnapshot(collection(db, 'workspaces', workspaceId, 'shifts'), snapshot => {
-    const data = snapshot.docs.map(d => {
-      const item = d.data()
+/** Consistent decoding for listeners and transactional conflict checks. */
+export function decodeShift(id:string,raw:Record<string,unknown>):Shift{
+  const item=raw as Record<string,any>
       return {
-        id: d.id,
-        date: String(item.date || d.id),
+        id,
+        date: String(item.date || id),
         start: String(item.start || '09:00'),
         end: String(item.end || '18:00'),
         breakMinutes: Number(item.breakMinutes || 0),
@@ -203,8 +201,17 @@ export function subscribeShifts(workspaceId: string, onChange: (data: Shift[]) =
           note:String(extra.note||''),
         })) : [],
       } as Shift
-    })
-    onChange(data)
+}
+export function comparableShift(shift:Shift|null):string|null{
+  if(shift===null)return null
+  // Ignore Firestore's server-generated timestamp, compare meaningful fields.
+  return JSON.stringify({...dayPayload(shift),updatedAt:undefined})
+}
+
+export function subscribeShifts(workspaceId: string, onChange: (data: Shift[]) => void, onError: (error: Error) => void): Unsubscribe {
+  if (!db) return () => undefined
+  return onSnapshot(collection(db, 'workspaces', workspaceId, 'shifts'), snapshot => {
+    onChange(snapshot.docs.map(d => decodeShift(d.id,d.data())))
   }, onError)
 }
 
