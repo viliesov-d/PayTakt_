@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import {
   ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, BriefcaseBusiness, Building2, CalendarDays,
   Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clock3,
-  LayoutDashboard, LockKeyhole, LogOut, Mail, Menu, Monitor, Moon, Plus, Save, TrendingUp,
+  LayoutDashboard, LockKeyhole, LogOut, Mail, Menu, Monitor, Moon, Plus, Save, TrendingUp, AlertTriangle, CloudUpload,
   RotateCcw, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Target, Trash2, UserRound,
   UsersRound, Wallet, X, ReceiptText,
 } from 'lucide-react'
@@ -1654,6 +1654,39 @@ export default function App(){
     </header>
     <div className="main-column">
       <main className="main-content">{session.demo&&<div className="demo-banner"><Sparkles size={16}/><span><strong>Демоверсія.</strong> Зміни календаря й налаштування зарплати тут тимчасові.</span><button type="button" onClick={logout}>До реєстрації <ArrowRight size={15}/></button></div>}{error&&<div className="alert-banner" role="alert">{error}</div>}{overtimePresetError&&<div className="alert-banner" role="alert">Налаштування понаднормових: {overtimePresetError}</div>}{shiftsError&&<div className="alert-banner" role="alert">Не вдалося прочитати зміни: {shiftsError}</div>}{payError&&<div className="alert-banner" role="alert">Налаштування зарплати: {payError}</div>}{salesError&&<div className="alert-banner" role="alert">Показники продажів: {salesError}</div>}{cashError&&<div className="alert-banner" role="alert">Каса: {cashError}</div>}{verificationMessage&&<div className="alert-banner" role="status">{verificationMessage}<button className="small-dismiss" onClick={()=>setVerificationMessage('')} type="button" aria-label="Закрити повідомлення"><X size={16}/></button></div>}
+        {!session.demo&&<section className={`paytakt-sync-status ${syncTotals.conflicts||syncTotals.errors||offlineError?'has-issue':''}`} aria-label={tr('Стан синхронізації')}>
+          <div className="paytakt-sync-main" role="status">
+            {syncTotals.conflicts||syncTotals.errors||offlineError?
+              <AlertTriangle size={18} aria-hidden="true"/>:
+              offlineSyncing||syncTotals.pending?<CloudUpload size={18} aria-hidden="true"/>:
+              <CheckCircle2 size={18} aria-hidden="true"/>}
+            <div>
+              <strong>{tr(offlineError?'Помилка локального сховища':
+                syncTotals.conflicts?'Конфлікт синхронізації':
+                syncTotals.errors?'Помилка синхронізації':
+                offlineSyncing?'Синхронізуємо…':
+                syncTotals.pending?'Очікує синхронізації':
+                navigator.onLine?'Збережено у Firebase':'Офлайн · збережені дані')}</strong>
+              <small>{tr(`Локальні записи: ${offlineQueue.length}`)}{offlineQueue.length>0?
+                ` · ${syncTotals.pending} ${tr('в черзі')}, ${syncTotals.conflicts} ${tr('конфліктів')}`:''}</small>
+            </div>
+            {(syncTotals.errors>0||syncTotals.pending>0)&&<button className="btn btn-outline" type="button" onClick={retrySync}
+              disabled={!navigator.onLine||offlineSyncing}>{tr('Повторити синхронізацію')}</button>}
+          </div>
+          {offlineError&&<p role="alert" className="paytakt-sync-error">{offlineError}</p>}
+          {offlineQueue.filter(e=>e.state==='conflict'||e.state==='error').map(entry=><div key={entry.id} className="paytakt-sync-conflict">
+            <div><strong>{entry.date} · {tr(entry.kind==='shifts'?'Календар':entry.kind==='dailyCash'?'Каса за день':'Оплата за день')}</strong>
+              <p>{entry.error??tr('Зміни очікують вирішення.')}</p></div>
+            {entry.state==='conflict'&&<div className="paytakt-sync-actions">
+              <button type="button" className="btn btn-outline"
+                onClick={()=>resolveConflict(entry.id,'server')}>{tr('Залишити серверну версію')}</button>
+              <button type="button" className="btn btn-outline" onClick={()=>{
+                if(window.confirm(tr('Це замінить серверний запис твоєю локальною версією. Продовжити?')))
+                  resolveConflict(entry.id,'local')
+              }}>{tr('Зберегти мою версію')}</button>
+            </div>}
+          </div>)}
+        </section>}
         {setupPayDraft&&<div className="alert-banner" role="status">Ти вибрав шаблон оплати, але його правила ще не збережено. Після налаштування графіка відкрий «Правила оплати», перевір ставку й натисни «Зберегти». <button type="button" className="btn btn-outline" onClick={()=>navigate('rules')}>{tr("Відкрити правила оплати")}</button></div>}
         <div className="page-motion" key={`${workspace.id}:${page}:${presentation.language}:${presentation.currency}:${presentation.uahPerUnit}`}>
         {page==='setup'&&<SetupPage key={workspace.id} settings={paySettings} loaded={payLoaded} onChoose={chooseSetup}/>}
