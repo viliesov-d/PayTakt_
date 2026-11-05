@@ -25,6 +25,7 @@ import {defaultOvertimePreset,validateOvertimePreset,segmentHours,type OvertimeP
 import {changeDayType, markWorkedForDailyPay, toggleWorkedDay, togglePresetOvertime} from './lib/dayActions'
 import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
+import { tr, readPresentation, savePresentation, formatDate, formatMonth, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
 import {buildMonthAnalytics,payoutsInMonth} from './lib/analytics'
 import {effectiveRevenue,cashTotalsByMonth,parseCashHryvnia,defaultCashPreferences,type DailyCash,type CashPreferences} from './lib/dailyCash'
 import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
@@ -37,8 +38,8 @@ import { savePaySettings, subscribePaySettings, saveMonthlySales, subscribeMonth
 
 type Page = 'setup' | 'dashboard' | 'calendar' | 'statistics' | 'pay' | 'rules' | 'team' | 'settings'
 type Session = { uid: string; email: string; name: string; demo: boolean }
-const dateFormat = new Intl.DateTimeFormat('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
-const monthFormat = new Intl.DateTimeFormat('uk-UA', { month: 'long', year: 'numeric' })
+const dateFormat = { format: formatDate }
+const monthFormat = { format: formatMonth }
 const weekdayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд']
 const defaultShift = (date: string): Shift => ({ id: date, date, start: '09:00', end: '18:00', breakMinutes: 60, status: 'planned', note: '', dayType:'work', kind:'regular', additionalShifts:[], overtimeMinutes:0, plannedWorkday:true, plannedMinutes:480 })
 const nav: { id: Page; title: string; icon: typeof LayoutDashboard; companyOnly?: boolean }[] = [
@@ -865,10 +866,88 @@ function TeamPage({workspace}:{workspace:Workspace}) {
   return <><SectionHeading eyebrow="КОМАНДА" title="Співробітники компанії" detail={`Простір «${workspace.name}» · зараз доступний власнику акаунта.`}/><div className="panel team-owner"><div className="avatar large"><UserRound size={24}/></div><div><h3>Власник простору</h3><p>Повний доступ до власних налаштувань і календаря</p></div><span className="pill mint-pill">Власник</span></div><Placeholder icon={UsersRound} title="Запрошення співробітників — наступний етап" detail="Після налаштування корпоративних ролей тут з’являться запрошення, відділи та доступи. Зараз ніхто інший не може переглядати дані вашого простору."/></>
 }
 
-function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, emailVerified, onVerify, onRefreshVerification }: {session: Session; workspace: Workspace; workspaces: Workspace[]; theme: ThemeChoice; setTheme: (v:ThemeChoice)=>void; onCreate:()=>void; emailVerified:boolean; onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>}) {
-  return <><SectionHeading eyebrow="ПЕРСОНАЛІЗАЦІЯ" title="Налаштування" detail="Зовнішній вигляд, профіль та робочі простори."/>
-    {!session.demo&&<div className={`verification-card ${emailVerified?'verified':''}`}><div><div className="verification-title"><ShieldCheck size={19}/><strong>{emailVerified?'Електронну пошту підтверджено':'Підтвердь електронну пошту'}</strong></div><p>{emailVerified?'Твій акаунт має підтверджену email-адресу.':'Ми рекомендуємо підтвердити email, щоб захистити доступ до акаунта й відновлення пароля.'}</p></div>{!emailVerified&&<div className="verification-actions"><button className="btn btn-outline" type="button" onClick={()=>void onVerify()}><Mail size={16}/> Надіслати лист</button><button className="btn btn-outline" type="button" onClick={()=>void onRefreshVerification()}><Check size={16}/> Я підтвердив</button></div>}</div>}
-    <div className="settings-grid"><section className="panel settings-panel"><div className="settings-heading"><Sun size={22}/><div><h3>Тема оформлення</h3><p>Обирай вигляд, який комфортний саме тобі.</p></div></div><div className="theme-card-grid">{([['light',Sun,'Денна','Світла й повітряна'],['dark',Moon,'Нічна','Глибокі темні відтінки'],['system',Monitor,'Авто','Як на твоєму пристрої']] as const).map(([value,Icon,label,sub])=><button type="button" key={value} className={`theme-card ${theme===value?'chosen':''}`} onClick={()=>setTheme(value)}><Icon size={24}/><strong>{label}</strong><span>{sub}</span>{theme===value&&<Check size={16} className="theme-check"/>}</button>)}</div></section><section className="panel settings-panel"><div className="settings-heading"><UserRound size={22}/><div><h3>Мій профіль</h3><p>Акаунт PayTakt</p></div></div><div className="setting-info"><span>Ім’я</span><strong>{session.name}</strong></div><div className="setting-info"><span>Електронна пошта</span><strong>{session.email || 'Деморежим'}</strong></div><div className="setting-info"><span>Тип входу</span><strong>{session.demo?'Демонстрація':'Електронна пошта'}</strong></div></section><section className="panel settings-panel settings-wide"><div className="settings-heading"><BriefcaseBusiness size={22}/><div><h3>Робочі простори</h3><p>Особисті записи та компанії не змішуються.</p></div></div><div className="workspace-rows">{workspaces.map(w=><div className="workspace-row" key={w.id}><div className="workspace-symbol">{w.kind==='company'?<Building2 size={19}/>:<UserRound size={19}/>}</div><div><strong>{w.name}</strong><small>{w.kind==='company'?'Компанія':'Особистий простір'}</small></div>{w.id===workspace.id&&<span className="pill mint-pill">Активний</span>}</div>)}</div><button type="button" className="btn btn-outline" onClick={onCreate}><Plus size={17}/> Додати компанію</button></section></div>
+function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange }: {
+  session: Session; workspace: Workspace; workspaces: Workspace[]; theme: ThemeChoice;
+  setTheme: (v:ThemeChoice)=>void; onCreate:()=>void; emailVerified:boolean;
+  onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>;
+  presentation: PresentationSettings; onPresentationChange: (next:PresentationSettings)=>void;
+}) {
+  const [currencyDraft,setCurrencyDraft]=useState<DisplayCurrency>(presentation.currency)
+  const [rateDraft,setRateDraft]=useState(String(presentation.uahPerUnit))
+  const [currencyError,setCurrencyError]=useState('')
+  useEffect(()=>{
+    setCurrencyDraft(presentation.currency)
+    setRateDraft(String(presentation.uahPerUnit))
+    setCurrencyError('')
+  },[presentation.currency,presentation.uahPerUnit])
+  const updateCurrency=(event:FormEvent<HTMLFormElement>)=>{
+    event.preventDefault()
+    const rate=currencyDraft==='UAH'?1:Number(rateDraft.replace(',','.').trim())
+    if(!Number.isFinite(rate)||rate<=0||rate>1000000){setCurrencyError(tr('Вкажи курс більше нуля.'));return}
+    setCurrencyError('')
+    onPresentationChange({...presentation,currency:currencyDraft,uahPerUnit:rate})
+  }
+  return <>
+    <SectionHeading eyebrow="ПЕРСОНАЛІЗАЦІЯ" title="Налаштування" detail="Зовнішній вигляд, профіль та робочі простори."/>
+    {!session.demo&&<div className={`verification-card ${emailVerified?'verified':''}`}>
+      <div><div className="verification-title"><ShieldCheck size={19}/><strong>{tr(emailVerified?'Електронну пошту підтверджено':'Підтвердь електронну пошту')}</strong></div>
+      <p>{emailVerified?'Твій акаунт має підтверджену email-адресу.':'Ми рекомендуємо підтвердити email, щоб захистити доступ до акаунта й відновлення пароля.'}</p></div>
+      {!emailVerified&&<div className="verification-actions">
+        <button className="btn btn-outline" type="button" onClick={()=>void onVerify()}><Mail size={16}/>{tr('Надіслати лист')}</button>
+        <button className="btn btn-outline" type="button" onClick={()=>void onRefreshVerification()}><Check size={16}/>{tr('Я підтвердив')}</button>
+      </div>}
+    </div>}
+    <div className="settings-grid">
+      <section className="panel settings-panel">
+        <div className="settings-heading"><Sun size={22}/><div><h3>{tr('Тема оформлення')}</h3><p>{tr('Обирай вигляд, який комфортний саме тобі.')}</p></div></div>
+        <div className="theme-card-grid">{([['light',Sun,'Денна','Світла й повітряна'],['dark',Moon,'Нічна','Глибокі темні відтінки'],['system',Monitor,'Авто','Як на твоєму пристрої']] as const).map(([value,Icon,label,sub])=><button type="button" key={value} className={`theme-card ${theme===value?'chosen':''}`} onClick={()=>setTheme(value)}><Icon size={24}/><strong>{tr(label)}</strong><span>{tr(sub)}</span>{theme===value&&<Check size={16} className="theme-check"/>}</button>)}</div>
+      </section>
+      <section className="panel settings-panel">
+        <div className="settings-heading"><UserRound size={22}/><div><h3>{tr('Мій профіль')}</h3><p>{tr('Акаунт PayTakt')}</p></div></div>
+        <div className="setting-info"><span>{tr('Ім’я')}</span><strong>{session.name}</strong></div>
+        <div className="setting-info"><span>{tr('Електронна пошта')}</span><strong>{session.email || tr('Деморежим')}</strong></div>
+        <div className="setting-info"><span>{tr('Тип входу')}</span><strong>{session.demo?tr('Демонстрація'):tr('Електронна пошта')}</strong></div>
+      </section>
+      <section className="panel settings-panel settings-wide paytakt-locale-settings">
+        <div className="settings-heading"><Monitor size={22}/><div><h3>{tr('Мова застосунку')}</h3><p>Українська · English · Русский</p></div></div>
+        <div className="paytakt-language-options" role="group" aria-label={tr('Мова застосунку')}>
+          {([['uk','Українська'],['en','English'],['ru','Русский']] as const).map(([value,label])=>
+            <button key={value} type="button" className={presentation.language===value?'active':''}
+              aria-pressed={presentation.language===value}
+              onClick={()=>onPresentationChange({...presentation,language:value as Language})}>{label}{presentation.language===value&&<Check size={16}/>}</button>
+          )}
+        </div>
+      </section>
+      <section className="panel settings-panel settings-wide paytakt-currency-settings">
+        <div className="settings-heading"><Wallet size={22}/><div><h3>{tr('Валюта відображення')}</h3><p>{tr('Зарплата обліковується у гривнях. Інша валюта показує лише орієнтовний еквівалент за вказаним тобою курсом. Введення сум залишається у гривнях.')}</p></div></div>
+        <form className="paytakt-currency-form" onSubmit={updateCurrency}>
+          <label>{tr('Валюта відображення')}
+            <select value={currencyDraft} onChange={e=>{setCurrencyDraft(e.target.value as DisplayCurrency);setCurrencyError('')}}>
+              <option value="UAH">UAH — ₴</option><option value="USD">USD — $</option>
+              <option value="EUR">EUR — €</option><option value="PLN">PLN — zł</option><option value="GBP">GBP — £</option>
+            </select>
+          </label>
+          {currencyDraft!=='UAH'&&<label>{tr('Гривень за 1 одиницю валюти')} ({currencyDraft})
+            <input type="text" inputMode="decimal" required value={rateDraft} onChange={e=>{setRateDraft(e.target.value);setCurrencyError('')}} placeholder="Наприклад, 42.50"/>
+          </label>}
+          {currencyError&&<p className="form-error" role="alert">{currencyError}</p>}
+          <button className="btn btn-primary" type="submit">{tr('Зберегти валюту')}</button>
+          <div className="paytakt-currency-example">
+            <span>{tr('Валюта відображення')}: {presentation.currency}</span>
+            <strong>{moneyUA(1234500)}</strong>
+            <small>{tr('Налаштування збережено на цьому пристрої.')}</small>
+          </div>
+        </form>
+      </section>
+      <section className="panel settings-panel settings-wide">
+        <div className="settings-heading"><BriefcaseBusiness size={22}/><div><h3>{tr('Робочі простори')}</h3><p>{tr('Особисті записи та компанії не змішуються.')}</p></div></div>
+        <div className="workspace-rows">{workspaces.map(w=><div className="workspace-row" key={w.id}><div className="workspace-symbol">{w.kind==='company'?<Building2 size={19}/>:<UserRound size={19}/>}</div>
+          <div><strong>{w.name}</strong><small>{tr(w.kind==='company'?'Компанія':'Особистий простір')}</small></div>
+          {w.id===workspace.id&&<span className="pill mint-pill">{tr('Активний')}</span>}
+        </div>)}</div>
+        <button type="button" className="btn btn-outline" onClick={onCreate}><Plus size={17}/>{tr('Додати компанію')}</button>
+      </section>
+    </div>
   </>
 }
 
@@ -879,6 +958,11 @@ function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(ki
 }
 
 export default function App(){
+  const [presentation,setPresentation]=useState<PresentationSettings>(readPresentation)
+  const onPresentationChange=useCallback((next:PresentationSettings)=>{
+    setPresentation(savePresentation(next))
+  },[])
+  useEffect(()=>{document.documentElement.lang=presentation.language},[presentation.language])
   // Capacitor injects this bridge into the Android WebView; the hosted website stays unchanged.
   const [isNativeAndroid] = useState(() => {
     const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor
@@ -1290,7 +1374,7 @@ export default function App(){
             aria-label="До календаря"
             title="Повернутися до календаря">
             <CalendarDays size={19} aria-hidden="true"/>
-            <span>До календаря</span>
+            <span>{tr("До календаря")}</span>
           </button>}
           <ThemeControls value={theme} onChange={setThemeChoice}/>
           <button type="button" className="zmina-profile-btn" onClick={()=>navigate('settings')} aria-label="Налаштування профілю" title={session.name}><UserRound size={19}/></button>
@@ -1298,12 +1382,12 @@ export default function App(){
           <button type="button" className="zmina-nav-toggle" onClick={()=>setMobileMenu(v=>!v)} aria-expanded={mobileMenu} aria-controls="zmina-primary-nav" aria-label={mobileMenu?'Згорнути меню':'Відкрити меню'}>{mobileMenu?<X size={22}/>:<Menu size={22}/>}</button>
         </div>
       </div>
-      <nav id="zmina-primary-nav" className={`zmina-primary-nav ${mobileMenu?'expanded':''}`} aria-label="Основна навігація">{allowedNav.map(item=>{const Icon=item.icon;return <button type="button" key={item.id} onClick={()=>navigate(item.id)} className={page===item.id?'active':''} aria-current={page===item.id?'page':undefined}><Icon size={17}/><span>{item.title}</span></button>})}</nav>
+      <nav id="zmina-primary-nav" className={`zmina-primary-nav ${mobileMenu?'expanded':''}`} aria-label="Основна навігація">{allowedNav.map(item=>{const Icon=item.icon;return <button type="button" key={item.id} onClick={()=>navigate(item.id)} className={page===item.id?'active':''} aria-current={page===item.id?'page':undefined}><Icon size={17}/><span>{tr(item.title)}</span></button>})}</nav>
     </header>
     <div className="main-column">
       <main className="main-content">{session.demo&&<div className="demo-banner"><Sparkles size={16}/><span><strong>Демоверсія.</strong> Зміни календаря й налаштування зарплати тут тимчасові.</span><button type="button" onClick={logout}>До реєстрації <ArrowRight size={15}/></button></div>}{error&&<div className="alert-banner" role="alert">{error}</div>}{overtimePresetError&&<div className="alert-banner" role="alert">Налаштування понаднормових: {overtimePresetError}</div>}{shiftsError&&<div className="alert-banner" role="alert">Не вдалося прочитати зміни: {shiftsError}</div>}{payError&&<div className="alert-banner" role="alert">Налаштування зарплати: {payError}</div>}{salesError&&<div className="alert-banner" role="alert">Показники продажів: {salesError}</div>}{cashError&&<div className="alert-banner" role="alert">Каса: {cashError}</div>}{verificationMessage&&<div className="alert-banner" role="status">{verificationMessage}<button className="small-dismiss" onClick={()=>setVerificationMessage('')} type="button" aria-label="Закрити повідомлення"><X size={16}/></button></div>}
         {setupPayDraft&&<div className="alert-banner" role="status">Ти вибрав шаблон оплати, але його правила ще не збережено. Після налаштування графіка відкрий «Правила оплати», перевір ставку й натисни «Зберегти». <button type="button" className="btn btn-outline" onClick={()=>navigate('rules')}>Відкрити правила оплати</button></div>}
-        <div className="page-motion" key={`${workspace.id}:${page}`}>
+        <div className="page-motion" key={`${workspace.id}:${page}:${presentation.language}:${presentation.currency}:${presentation.uahPerUnit}`}>
         {page==='setup'&&<SetupPage key={workspace.id} settings={paySettings} loaded={payLoaded} onChoose={chooseSetup}/>}
         {page==='dashboard'&&<Dashboard workspace={workspace} shifts={shifts} paySettings={payLoaded?paySettings:null} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoCalendar={()=>navigate('calendar')} onCreateCompany={()=>setCreateOpen(true)} onGoPay={()=>navigate('pay')} onGoStatistics={()=>navigate('statistics')}/>}
         {page==='calendar'&&<CalendarPage key={`${workspace.id}-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
@@ -1336,7 +1420,7 @@ export default function App(){
           </details>
         </section>}
         {page==='settings'&&<CalendarPage scheduleOnly key={`${workspace.id}-schedule-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
-        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification}/>}
+        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange}/>}
         </div>
         <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>Версія 2.0.0 beta 4</span></footer>
       </main>
@@ -1347,7 +1431,7 @@ export default function App(){
         return <button type="button" key={item.id} onClick={()=>navigate(item.id)}
           className={page===item.id?'active':''} aria-current={page===item.id?'page':undefined}>
           <Icon size={22} strokeWidth={2.2} aria-hidden="true"/>
-          <span>{item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування'}</span>
+          <span>{tr(item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування')}</span>
         </button>
       })}
     </nav>}
