@@ -1518,7 +1518,7 @@ export default function App(){
   if(!session)return <AuthScreen onDemo={enterDemo} language={presentation.language} onLanguageChange={language=>onPresentationChange({...presentation,language})}/>
   if(!workspace)return <div className="loading-screen"><Logo/><div className="firebase-note wide">{error||'Не вдалося відкрити робочий простір. Перевір доступ до акаунта.'}</div><button type="button" className="btn btn-outline" onClick={logout}>{tr("Вийти з акаунта")}</button></div>
   if(!session.demo&&(!payLoaded||!shiftsLoaded))return <div className="loading-screen"><Logo/><div className="spinner"/><p>Завантажуємо графік і правила роботи…</p></div>
-  if(forceWizard||newWorkspaceNeedsWizard)return <OnboardingWizard key={`${session.uid}:${workspace.id}`} workspaceKey={`${session.uid}:${workspace.id}`} workspaceName={workspace.name} isExisting={Boolean(paySettings||shifts.length)} onComplete={finishOnboarding} onCancel={forceWizard?()=>setForceWizard(false):undefined}/>
+  if(forceWizard||newWorkspaceNeedsWizard)return <OnboardingWizard key={`${session.uid}:${workspace.id}`} workspaceKey={`${session.uid}:${workspace.id}`} workspaceName={workspace.name} isExisting={Boolean(paySettings||shifts.length)} onComplete={finishOnboarding} onCancel={forceWizard?()=>setForceWizard(false):undefined} onSignOut={()=>void logout()}/>
   return <div className="app-shell zmina-shell">
     <header className="zmina-site-header">
       <div className="zmina-header-main">
