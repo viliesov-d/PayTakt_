@@ -774,6 +774,12 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
         </div>
         <details className="day-advanced">
           <summary><Settings2 size={17}/> Додаткові параметри <ChevronDown size={17} className="details-chevron"/></summary>
+          {(performance.manualDailyPay||cashPrefs.enabled)&&draft.status==='worked'&&
+            <div className="day-status-correction">
+              <button type="button" className="btn btn-outline full" disabled={quickBusy||busy||moneyBusy} onClick={quickStatus}>
+                <RotateCcw size={17}/> Повернути день у заплановані
+              </button>
+            </div>}
           <form onSubmit={submit} className="editor-form">
             {(draft.dayType??'work')==='work'&&<>
               <div className="day-editor-title"><strong>Час основної зміни</strong><span>{shiftHours({...draft,additionalShifts:[]}).toLocaleString('uk-UA',{maximumFractionDigits:2})} год</span></div>

@@ -57,6 +57,8 @@ test('manual pay and cash share one primary save-worked action; simple toggle is
   assert.match(app,/\{!\(performance\.manualDailyPay\|\|cashPrefs\.enabled\)&&<div className="day-action-section">/)
   assert.match(app,/Зберегти й відмітити/)
   assert.match(app,/Зберегти зміни/)
+  assert.match(app,/Повернути день у заплановані/)
+  assert.match(app,/onClick=\{quickStatus\}/)
   assert.match(css,/\.day-money-submit/)
 })
 

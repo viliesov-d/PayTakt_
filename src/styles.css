@@ -1379,3 +1379,8 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
   .calendar-layout-switch-track,.calendar-layout-switch-track::after,
   .calendar-layout-presets>button,.calendar-layout-movers button{transition:none!important}
 }
+
+/* A correction remains available without adding a second primary day action. */
+.day-status-correction{padding:13px 14px 0}
+.day-status-correction .btn{font-size:13px;min-height:43px;justify-content:center;gap:9px}
+@media(max-width:700px){.day-status-correction .btn{font-size:15px;min-height:46px}}
