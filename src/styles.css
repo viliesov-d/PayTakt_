@@ -1843,3 +1843,40 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
   .paytakt-sync-actions{flex-direction:column;width:100%}
   .paytakt-sync-actions .btn{width:100%}
 }
+
+/* Mobile v0.8 — small sync indicator belongs in settings, not the calendar. */
+.paytakt-sync-compact{grid-column:1/-1;max-width:100%;border:1px solid var(--border);background:var(--panel);border-radius:11px;margin:0 0 2px;align-self:start}
+.paytakt-sync-compact>summary{display:flex;align-items:center;justify-content:flex-start;gap:8px;cursor:pointer;list-style:none;padding:9px 12px;color:var(--muted-deep);font-size:12px;min-height:39px}
+.paytakt-sync-compact>summary::-webkit-details-marker{display:none}
+.paytakt-sync-compact>summary>svg:first-child{color:var(--mint);flex:0 0 auto}
+.paytakt-sync-compact>summary>strong{font-size:12px;font-weight:700}
+.paytakt-sync-compact>summary>small{font-size:11px;background:var(--panel-soft);border-radius:20px;padding:2px 7px}
+.paytakt-sync-chevron{margin-left:auto;flex:0 0 auto;transition:transform .18s ease}
+.paytakt-sync-compact[open] .paytakt-sync-chevron{transform:rotate(180deg)}
+.paytakt-sync-compact-details{padding:1px 12px 12px;border-top:1px solid var(--border);font-size:12px}
+.paytakt-sync-compact-details>p{margin:10px 0;font-size:12px;color:var(--muted-deep)}
+.paytakt-sync-compact-details>.btn{font-size:12px;min-height:39px}
+.paytakt-reminders .settings-heading{margin-bottom:13px}
+.paytakt-reminder-enable,.paytakt-reminder-disable{display:inline-flex;align-items:center;gap:8px;min-height:42px}
+.paytakt-reminder-summary{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;font-size:12px;font-weight:700;color:var(--muted-deep);padding:9px 12px;background:var(--panel-soft);border-radius:9px;margin-bottom:12px}
+.paytakt-reminder-summary span:first-child{display:inline-flex;align-items:center;gap:7px;color:var(--mint)}
+.paytakt-reminder-option{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.paytakt-reminder-option>span{display:flex;align-items:center;gap:10px;min-width:0}
+.paytakt-reminder-option>span>svg{flex:0 0 auto;color:var(--muted-deep)}
+.paytakt-reminder-option>span>span{display:flex;flex-direction:column;gap:4px}
+.paytakt-reminder-option strong{font-size:13px;line-height:1.3}
+.paytakt-reminder-option small{font-size:11px;line-height:1.4;color:var(--muted-deep)}
+.paytakt-reminder-option input{width:19px;height:19px;flex:0 0 auto;accent-color:var(--mint)}
+.paytakt-reminder-field{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;max-width:340px;margin:9px 0 13px 29px;font-size:12px;color:var(--muted-deep)}
+.paytakt-reminder-field select{max-width:175px;min-width:112px;min-height:40px;font-size:13px}
+.paytakt-reminder-disable{margin-top:15px}
+.paytakt-reminder-note{font-size:11px;line-height:1.55;color:var(--muted-deep);margin:15px 0 0}
+.paytakt-reminders .form-error{display:flex;gap:8px;align-items:center;margin:12px 0 0;overflow-wrap:anywhere}
+@media(max-width:700px){
+ .paytakt-sync-compact{margin:0 0 2px}
+ .paytakt-reminder-option{min-height:55px}
+ .paytakt-reminder-field{margin-left:0;max-width:100%}
+ .paytakt-reminder-enable{width:100%;justify-content:center}
+ .paytakt-reminder-disable{width:100%;justify-content:center}
+}
+@media(prefers-reduced-motion:reduce){.paytakt-sync-chevron{transition:none}}
