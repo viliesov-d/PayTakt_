@@ -4,6 +4,7 @@
  * DST and jurisdiction-specific payroll rules are NOT implemented.
  */
 import {validateDay, overtimeExtraMinutes, type Shift, type AdditionalShift} from './calendar.ts'
+import {formatMoney} from './presentation.ts'
 
 export type PayMode = 'hourly' | 'per_shift' | 'monthly' | 'per_unit'
 export type BandPeriod = 'shift' | 'day' | 'week' | 'month'
@@ -449,4 +450,6 @@ export function calculatePay(shifts:readonly Shift[],month:string,settings:PaySe
   if(!Number.isSafeInteger(gross)||gross>Number.MAX_SAFE_INTEGER)throw Error('Зарплата виходить за межі допустимого діапазону.')
   return {month,workedMinutes:minutes+addedOvertimeMinutes,scheduledDays,scheduledMinutes,markedOvertimeMinutes:markedMinutes,nightPaidMinutes,overtimeMinutes:overtimeMinutes+addedOvertimeMinutes,workedDays:days,workedSegments:segments,extraSegments:extras,salesAmount:sales.amount,salesPlanReached,unitsCount:units.count,unitPlanReached,lines,gross}
 }
-export const moneyUA=(kopeks:number):string=>new Intl.NumberFormat('uk-UA',{style:'currency',currency:'UAH',minimumFractionDigits:2,maximumFractionDigits:2}).format(kopeks/100)
+// Legacy public name retained for existing consumers. Converted display amounts
+// are approximate; stored engine values remain integer UAH kopeks.
+export const moneyUA=(kopeks:number):string=>formatMoney(kopeks)
