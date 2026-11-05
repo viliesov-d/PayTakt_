@@ -867,27 +867,34 @@ function TeamPage({workspace}:{workspace:Workspace}) {
   return <><SectionHeading eyebrow="КОМАНДА" title="Співробітники компанії" detail={`Простір «${workspace.name}» · зараз доступний власнику акаунта.`}/><div className="panel team-owner"><div className="avatar large"><UserRound size={24}/></div><div><h3>Власник простору</h3><p>Повний доступ до власних налаштувань і календаря</p></div><span className="pill mint-pill">Власник</span></div><Placeholder icon={UsersRound} title="Запрошення співробітників — наступний етап" detail="Після налаштування корпоративних ролей тут з’являться запрошення, відділи та доступи. Зараз ніхто інший не може переглядати дані вашого простору."/></>
 }
 
-function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange }: {
+function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates }: {
   session: Session; workspace: Workspace; workspaces: Workspace[]; theme: ThemeChoice;
-  setTheme: (v:ThemeChoice)=>void; onCreate:()=>void; emailVerified:boolean;
+  setTheme: (v:ThemeChoice)=>void; onCreate:()=>void; onDeleteRequest:(w:Workspace)=>void;
+  onSignOut:()=>void; emailVerified:boolean;
   onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>;
   presentation: PresentationSettings; onPresentationChange: (next:PresentationSettings)=>void;
+  fxRates:NbuRateCache|null;
 }) {
   const nativeCurrency=workspace.currency??'UAH'
   const [currencyDraft,setCurrencyDraft]=useState<DisplayCurrency>(presentation.currency)
   const [rateDraft,setRateDraft]=useState(String(presentation.uahPerUnit))
+  const [fxModeDraft,setFxModeDraft]=useState<'auto'|'manual'>(presentation.fxMode==='manual'?'manual':'auto')
   const [currencyError,setCurrencyError]=useState('')
   useEffect(()=>{
     setCurrencyDraft(presentation.currency)
     setRateDraft(String(presentation.uahPerUnit))
+    setFxModeDraft(presentation.fxMode==='manual'?'manual':'auto')
     setCurrencyError('')
   },[presentation.currency,presentation.uahPerUnit])
   const updateCurrency=(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault()
-    const rate=currencyDraft==='UAH'?1:Number(rateDraft.replace(',','.').trim())
+    const official=nbuRate(fxRates,currencyDraft)
+    const rate=currencyDraft==='UAH'?1:fxModeDraft==='auto'?
+      official:Number(rateDraft.replace(',','.').trim())
+    if(rate===null){setCurrencyError(tr('Курс НБУ поки недоступний. Підключись до інтернету або вибери ручний курс.'));return}
     if(!Number.isFinite(rate)||rate<=0||rate>1000000){setCurrencyError(tr('Вкажи курс більше нуля.'));return}
     setCurrencyError('')
-    onPresentationChange({...presentation,currency:currencyDraft,uahPerUnit:rate})
+    onPresentationChange({...presentation,currency:currencyDraft,uahPerUnit:rate,fxMode:fxModeDraft})
   }
   return <>
     <SectionHeading eyebrow="ПЕРСОНАЛІЗАЦІЯ" title="Налаштування" detail="Зовнішній вигляд, профіль та робочі простори."/>
@@ -939,15 +946,32 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
               <option value="EUR">EUR — €</option><option value="PLN">PLN — zł</option><option value="GBP">GBP — £</option>
             </select>
           </label>
-          {currencyDraft!=='UAH'&&<label>{tr('Гривень за 1 одиницю валюти')} ({currencyDraft})
-            <input type="text" inputMode="decimal" required value={rateDraft} onChange={e=>{setRateDraft(e.target.value);setCurrencyError('')}} placeholder="Наприклад, 42.50"/>
-          </label>}
+          {currencyDraft!=='UAH'&&<>
+            <label>{tr('Джерело валютного курсу')}
+              <select value={fxModeDraft} onChange={e=>{setFxModeDraft(e.target.value as 'auto'|'manual');setCurrencyError('')}}>
+                <option value="auto">{tr('Автоматично — офіційний курс НБУ')}</option>
+                <option value="manual">{tr('Вказати курс вручну')}</option>
+              </select>
+            </label>
+            <label>{tr('Гривень за 1 одиницю валюти')} ({currencyDraft})
+              <input type="text" inputMode="decimal" required
+                readOnly={fxModeDraft==='auto'}
+                value={fxModeDraft==='auto'?(nbuRate(fxRates,currencyDraft)?.toFixed(4)??''):rateDraft}
+                onChange={e=>{setRateDraft(e.target.value);setCurrencyError('')}}
+                placeholder={fxModeDraft==='auto'?tr('Очікуємо курс НБУ…'):'Наприклад, 42.50'}/>
+            </label>
+          </>}
+          {currencyDraft!=='UAH'&&fxModeDraft==='auto'&&<p className="paytakt-rate-status" role="status">
+            {fxRates?
+              `${tr('Офіційний курс НБУ на')} ${fxRates.exchangeDate}. ${rateCacheIsCurrent(fxRates)?tr('Перевірено сьогодні.'):tr('Збережений попередній курс, потрібен інтернет для оновлення.')}`:
+              tr('Поки немає курсу НБУ. Підключись до інтернету або введи курс вручну.')}
+          </p>}
           {currencyError&&<p className="form-error" role="alert">{currencyError}</p>}
           <button className="btn btn-primary" type="submit">{tr('Зберегти валюту')}</button>
           <div className="paytakt-currency-example">
             <span>{tr('Валюта відображення')}: {presentation.currency}</span>
             <strong>{moneyUA(1234500)}</strong>
-            <small>{tr('Налаштування збережено на цьому пристрої.')}</small>
+            <small>{tr('Дані зарплати залишаються у валюті робочого простору. Автоматичний курс НБУ перевіряється один раз на день, коли застосунок відкритий та є інтернет.')}</small>
           </div>
         </form>
       </section>
