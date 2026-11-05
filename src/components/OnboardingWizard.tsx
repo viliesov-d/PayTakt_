@@ -1,6 +1,6 @@
 import {tr,inputCurrencyLabel} from '../lib/presentation'
 import {useEffect,useMemo,useState} from 'react'
-import {ArrowLeft,ArrowRight,Check,CheckCircle2,Clock3,CalendarDays,BriefcaseBusiness,Sparkles,ShieldCheck} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Check,CheckCircle2,Clock3,CalendarDays,BriefcaseBusiness,Sparkles,ShieldCheck,LogOut} from 'lucide-react'
 import {sectors,suggestions} from '../lib/professions'
 import {type PayMode} from '../lib/salary'
 import {type TemplatePreset} from '../lib/schedule'
@@ -38,9 +38,9 @@ const number=(value:string)=>Number(value.replace(',','.').replace(/\s/g,''))||0
 const cash=(value:string)=>number(value).toLocaleString('uk-UA',{maximumFractionDigits:2})
 const scheduleSummary=(d:OnboardingDraft)=>scheduleLabels[d.preset]||'Власний графік'
 
-export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComplete,onCancel}:{
+export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComplete,onCancel,onSignOut}:{
   workspaceKey:string;workspaceName:string;isExisting:boolean;
-  onComplete:(draft:OnboardingDraft)=>Promise<void>;onCancel?:()=>void
+  onComplete:(draft:OnboardingDraft)=>Promise<void>;onCancel?:()=>void;onSignOut?:()=>void
 }){
   const draftKey=`paytakt-wizard-v2:${workspaceKey}`
   const [draft,setDraft]=useState<OnboardingDraft>(()=>readDraft(draftKey))
@@ -87,7 +87,12 @@ export function OnboardingWizard({workspaceKey,workspaceName,isExisting,onComple
     <header className="onboard-header">
       <div className="onboard-logo"><span>₴</span><strong>paytakt<span className="onboard-accent">.</span></strong></div>
       <span className="onboard-workspace"><BriefcaseBusiness size={15}/>{workspaceName}</span>
-      {onCancel&&<button className="onboard-skip" onClick={onCancel} type="button">{tr("До календаря")}</button>}
+      <div className="paytakt-wizard-actions">
+        {onCancel&&<button className="onboard-skip" onClick={onCancel} type="button">{tr("До календаря")}</button>}
+        {onSignOut&&<button className="onboard-skip" onClick={onSignOut} type="button">
+          <LogOut size={16}/>{tr('Вийти з акаунта')}
+        </button>}
+      </div>
     </header>
     <main className="onboard-main">
       <div className="onboard-heading"><span className="onboard-eyebrow"><Sparkles size={15}/> {tr("ПЕРСОНАЛЬНЕ НАЛАШТУВАННЯ")}</span>
