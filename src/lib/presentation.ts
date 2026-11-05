@@ -1,4 +1,6 @@
-/** UI presentation settings only. Core payroll amounts are always stored in UAH cents. */
+/** Presentation preferences + active accounting currency.
+ * Stored payroll integers use 1/100 of the active workspace's own currency.
+ * UAH-only legacy workspaces retain their original semantics. */
 export type Language = 'uk' | 'en' | 'ru'
 export type DisplayCurrency = 'UAH' | 'USD' | 'EUR' | 'PLN' | 'GBP'
 export type PresentationSettings = { language: Language; currency: DisplayCurrency; uahPerUnit: number }
@@ -1908,6 +1910,16 @@ export function readPresentation(): PresentationSettings {
   return { language: 'uk', currency: 'UAH', uahPerUnit: 1 }
 }
 let current: PresentationSettings = readPresentation()
+let workspaceCurrency: DisplayCurrency = 'UAH'
+
+/** Currency is set when a workspace is selected, never by a global display option. */
+export function setAccountingCurrency(value: DisplayCurrency): void {
+  workspaceCurrency = validCurrency(value) ? value : 'UAH'
+}
+export function getAccountingCurrency(): DisplayCurrency { return workspaceCurrency }
+export function inputCurrencyLabel(): string {
+  return workspaceCurrency === 'UAH' ? '₴' : workspaceCurrency
+}
 export function getPresentation(): PresentationSettings { return current }
 export function savePresentation(value: PresentationSettings): PresentationSettings {
   const safe: PresentationSettings = {
@@ -1933,12 +1945,17 @@ export function formatDate(date: Date): string {
 export function formatMonth(date: Date): string {
   return new Intl.DateTimeFormat(locale(), { month: 'long', year: 'numeric' }).format(date)
 }
-export function formatMoney(kopeks: number): string {
-  const rate = current.currency === 'UAH' ? 1 : current.uahPerUnit
-  const amount = kopeks / 100 / rate
+export function formatMoney(minorUnits: number): string {
+  // A non-UAH workspace stores its money natively; it must NEVER be
+  // interpreted as hryvnias and converted using the saved UAH/USD rate.
+  const isNativeForeignCurrency = workspaceCurrency !== 'UAH'
+  const targetCurrency = isNativeForeignCurrency ? workspaceCurrency : current.currency
+  const approximate = !isNativeForeignCurrency && current.currency !== 'UAH'
+  const rate = approximate ? current.uahPerUnit : 1
+  const amount = minorUnits / 100 / rate
   const result = new Intl.NumberFormat(locale(), {
-    style: 'currency', currency: current.currency,
+    style: 'currency', currency: targetCurrency,
     minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(amount)
-  return current.currency === 'UAH' ? result : '≈ ' + result
+  return approximate ? '≈ ' + result : result
 }
