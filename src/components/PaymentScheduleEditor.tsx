@@ -1,4 +1,4 @@
-import {inputCurrencyLabel,getAccountingCurrency} from '../lib/presentation'
+import {inputCurrencyLabel} from '../lib/presentation'
 import {CalendarClock,Plus,Trash2,ArrowUp,ArrowDown,Info,ChevronDown} from 'lucide-react'
 import {defaultPaymentRules,type PaymentRule,type PaymentSource,type PaymentMethod} from '../lib/salary'
 
