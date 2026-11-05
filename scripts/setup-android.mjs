@@ -40,4 +40,7 @@ if (existsSync(resolve(root, 'android', 'app', 'build.gradle'))) {
   run('npx', ['cap', 'add', 'android'])
 }
 
+// Keep the launcher icon synchronized whenever Android is regenerated.
+run('java', ['scripts/GenerateAndroidIcon.java'])
+
 console.log('\nAndroid-проєкт готовий. Далі: npm run android:open (Android Studio) або GitHub Actions → Android debug APK.')
