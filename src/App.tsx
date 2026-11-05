@@ -27,6 +27,8 @@ import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
 import { tr, readPresentation, savePresentation, formatDate, formatMonth, locale as presentationLocale, setAccountingCurrency, inputCurrencyLabel, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
 import {buildMonthAnalytics,payoutsInMonth} from './lib/analytics'
+import {enqueueOffline,readOfflineQueue,retryOfflineErrors,discardOffline,acceptOverwrite,offlineSummary,overlayShifts,overlayAmounts,overlayWages,type OfflineKind,type OfflineValue,type OfflineEdit} from './lib/offlineQueue'
+import {flushOfflineQueue} from './lib/offlineSync'
 import {readNbuRates,refreshNbuRates,nbuRate,rateCacheIsCurrent,type NbuRateCache} from './lib/nbuRates'
 import {effectiveRevenue,cashTotalsByMonth,parseCashHryvnia,defaultCashPreferences,type DailyCash,type CashPreferences} from './lib/dailyCash'
 import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
@@ -1130,7 +1132,15 @@ export default function App(){
   const [error,setError]=useState('')
   const [workspaces,setWorkspaces]=useState<Workspace[]>([])
   const [workspace,setWorkspace]=useState<Workspace|null>(null)
-  const [shifts,setShifts]=useState<Shift[]>([])
+  const [offlineQueue,setOfflineQueue]=useState<OfflineEdit[]>([])
+  const [offlineError,setOfflineError]=useState('')
+  const [offlineSyncing,setOfflineSyncing]=useState(false)
+  const syncingRef=useRef(false)
+  const activeUidRef=useRef('')
+  const [serverShifts,setShifts]=useState<Shift[]>([])
+  const shifts=useMemo(()=>workspace&&!session?.demo?
+    overlayShifts(serverShifts,offlineQueue,workspace.id):serverShifts,
+    [serverShifts,offlineQueue,workspace?.id,session?.demo])
   const [shiftsLoaded,setShiftsLoaded]=useState(false)
   const [forceWizard,setForceWizard]=useState(false)
   const [templates,setTemplates]=useState<ScheduleTemplate[]>([])
@@ -1143,11 +1153,17 @@ export default function App(){
   const [performance,setPerformance]=useState<PerformanceSettings>(defaultPerformanceSettings)
   const [performanceError,setPerformanceError]=useState('')
   const [performanceLoaded,setPerformanceLoaded]=useState(false)
-  const [dailyWages,setDailyWages]=useState<Record<string,number>>({})
+  const [serverDailyWages,setDailyWages]=useState<Record<string,number>>({})
+  const dailyWages=useMemo(()=>workspace&&!session?.demo?
+    overlayWages(serverDailyWages,offlineQueue,workspace.id):serverDailyWages,
+    [serverDailyWages,offlineQueue,workspace?.id,session?.demo])
   const [wagesLoaded,setWagesLoaded]=useState(false)
   const [monthlyTargets,setMonthlyTargets]=useState<Record<string,number>>({})
   const [targetsLoaded,setTargetsLoaded]=useState(false)
-  const [cashRecords,setCashRecords]=useState<DailyCash[]>([])
+  const [serverCashRecords,setCashRecords]=useState<DailyCash[]>([])
+  const cashRecords=useMemo(()=>workspace&&!session?.demo?
+    overlayAmounts(serverCashRecords,offlineQueue,workspace.id,'dailyCash'):serverCashRecords,
+    [serverCashRecords,offlineQueue,workspace?.id,session?.demo])
   const [cashPrefs,setCashPrefs]=useState<CashPreferences>(defaultCashPreferences)
   const [cashError,setCashError]=useState('')
   const [cashLoaded,setCashLoaded]=useState(false)
@@ -1169,6 +1185,87 @@ export default function App(){
   const [shiftsError,setShiftsError]=useState('')
   const [emailVerified,setEmailVerified]=useState(false)
   const [verificationMessage,setVerificationMessage]=useState('')
+
+  activeUidRef.current=session?.uid??''
+  // Queue is tied to the Firebase user UID. It survives application restarts
+  // but cannot be accidentally replayed under another signed-in account.
+  useEffect(()=>{
+    if(!session||session.demo){setOfflineQueue([]);setOfflineError('');return}
+    try{setOfflineQueue(readOfflineQueue(session.uid));setOfflineError('')}
+    catch(error){setOfflineError(friendlyError(error))}
+  },[session?.uid,session?.demo])
+
+  const flushNow=useCallback(async(uid:string)=>{
+    if(!uid||syncingRef.current||typeof navigator!=='undefined'&&!navigator.onLine)return
+    syncingRef.current=true
+    if(activeUidRef.current===uid)setOfflineSyncing(true)
+    try{
+      await flushOfflineQueue(uid,()=>{
+        if(activeUidRef.current!==uid)return
+        try{setOfflineQueue(readOfflineQueue(uid));setOfflineError('')}
+        catch(error){setOfflineError(friendlyError(error))}
+      })
+    }catch(error){
+      if(activeUidRef.current===uid)setOfflineError(friendlyError(error))
+    }finally{
+      syncingRef.current=false
+      if(activeUidRef.current===uid){
+        setOfflineSyncing(false)
+        try{
+          const remaining=readOfflineQueue(uid)
+          setOfflineQueue(remaining)
+          if(remaining.some(e=>e.state==='pending')&&navigator.onLine)
+            void Promise.resolve().then(()=>flushNow(uid))
+        }catch(error){setOfflineError(friendlyError(error))}
+      }
+    }
+  },[])
+  useEffect(()=>{
+    if(session?.uid&&!session.demo&&offlineQueue.some(e=>e.state==='pending')&&
+      (typeof navigator==='undefined'||navigator.onLine))void flushNow(session.uid)
+  },[session?.uid,session?.demo,offlineQueue,flushNow])
+  useEffect(()=>{
+    if(!session?.uid||session.demo)return
+    const uid=session.uid
+    const retry=()=>{
+      if(typeof navigator!=='undefined'&&!navigator.onLine)return
+      try{setOfflineQueue(retryOfflineErrors(uid));setOfflineError('')}
+      catch(error){setOfflineError(friendlyError(error))}
+    }
+    window.addEventListener('online',retry)
+    const onVisible=()=>{if(document.visibilityState==='visible')retry()}
+    document.addEventListener('visibilitychange',onVisible)
+    return()=>{
+      window.removeEventListener('online',retry)
+      document.removeEventListener('visibilitychange',onVisible)
+    }
+  },[session?.uid,session?.demo])
+  const queueDayEdit=(kind:OfflineKind,date:string,next:OfflineValue)=>{
+    if(!session||!workspace||session.demo)throw Error('Робочий простір не обрано')
+    const before:OfflineValue=kind==='shifts'?
+      (serverShifts.find(s=>s.date===date)??null):
+      kind==='dailyCash'?(serverCashRecords.find(c=>c.date===date)?.amount??null):
+      (serverDailyWages[date]??null)
+    // Storage write is synchronous and must succeed before reporting a save.
+    const updated=enqueueOffline(session.uid,workspace.id,kind,date,before,next)
+    setOfflineQueue(updated)
+    setOfflineError('')
+  }
+  const retrySync=()=>{
+    if(!session||session.demo)return
+    try{setOfflineQueue(retryOfflineErrors(session.uid));setOfflineError('')}
+    catch(error){setOfflineError(friendlyError(error))}
+  }
+  const resolveConflict=(id:string,decision:'server'|'local')=>{
+    if(!session||session.demo)return
+    try{
+      setOfflineQueue(decision==='server'?
+        discardOffline(session.uid,id):acceptOverwrite(session.uid,id))
+      setOfflineError('')
+    }catch(error){setOfflineError(friendlyError(error))}
+  }
+  const syncTotals=offlineSummary(offlineQueue)
+
 
   const setThemeChoice=useCallback((value:ThemeChoice)=>{
     setTheme(value)
