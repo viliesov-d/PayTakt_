@@ -1603,6 +1603,8 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
     display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
     line-clamp:2;overflow:hidden;
   }
+  /* Never truncate currency safety information. */
+  .paytakt-currency-settings .settings-heading p{display:block;overflow:visible;-webkit-line-clamp:unset;line-clamp:unset}
   .settings-panel .settings-heading{gap:9px}
   .settings-panel .settings-heading h3{line-height:1.22}
   .main-content .section-head+.panel{margin-top:0}
