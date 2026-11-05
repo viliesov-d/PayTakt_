@@ -44,7 +44,7 @@ test('new night and duty templates use distinct valid time ranges',()=>{
 test('payroll v5 requires owner and version 5, with local schema validation',()=>{
   validatePaySettings(defaultPaySettings)
   const rules=readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')
-  assert.match(rules,/allow create, update: if payId == 'current'\s*&& ownWorkspace\(workspaceId\)\s*&& request\.resource\.data\.version == 5/)
+  assert.match(rules,/allow create, update: if payId == 'current'\s*&& activeWorkspace\(workspaceId\)\s*&& request\.resource\.data\.version == 5/)
   assert.match(rules,/allow read, write: if false/)
   assert.doesNotMatch(rules,/function validPaySettings\(\)/)
 })
