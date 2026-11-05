@@ -1922,8 +1922,9 @@ export function savePresentation(value: PresentationSettings): PresentationSetti
   return current
 }
 export function tr(ukrainianText: string): string {
-  if (current.language === 'uk') return ukrainianText
-  return translations[ukrainianText]?.[current.language] ?? ukrainianText
+  const language = current.language
+  if (language === 'uk') return ukrainianText
+  return translations[ukrainianText]?.[language] ?? ukrainianText
 }
 export function locale(): string { return localeForLanguage[current.language] }
 export function formatDate(date: Date): string {
