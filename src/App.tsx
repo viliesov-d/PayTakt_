@@ -13,7 +13,7 @@ import {
 import { doc, setDoc } from 'firebase/firestore'
 import { auth, db, firebaseReady } from './lib/firebase'
 import {
-  createWorkspace, deleteShift, demoShifts, ensureProfile, loadWorkspaces, subscribeTemplates, saveTemplate, deleteTemplate,
+  createWorkspace, deleteWorkspace, deleteShift, demoShifts, ensureProfile, loadWorkspaces, subscribeTemplates, saveTemplate, deleteTemplate,
   saveShift, applyMonthlyPattern, shiftHours, shiftCount, validateDay, subscribeShifts, toDateKey, updateProfileTheme,
   type Shift, type DayType, type ShiftKind, type AdditionalShift, type ThemeChoice, type Workspace, type WorkspaceKind, type AccountingCurrency, accountingCurrencies,
   subscribeOvertimePreset, saveOvertimePreset,
@@ -27,6 +27,7 @@ import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
 import { tr, readPresentation, savePresentation, formatDate, formatMonth, locale as presentationLocale, setAccountingCurrency, inputCurrencyLabel, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
 import {buildMonthAnalytics,payoutsInMonth} from './lib/analytics'
+import {readNbuRates,refreshNbuRates,nbuRate,rateCacheIsCurrent,type NbuRateCache} from './lib/nbuRates'
 import {effectiveRevenue,cashTotalsByMonth,parseCashHryvnia,defaultCashPreferences,type DailyCash,type CashPreferences} from './lib/dailyCash'
 import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
 import {defaultCalendarLayout,readCalendarLayout,writeCalendarLayout,moveCalendarBlock,makeCalendarLayoutPreset,isCalendarLayoutPreset,type CalendarLayoutPreset,type CalendarBlockId,type CalendarLayout} from './lib/calendarLayout'
@@ -1005,10 +1006,37 @@ function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(ki
 
 export default function App(){
   const [presentation,setPresentation]=useState<PresentationSettings>(readPresentation)
+  const [fxRates,setFxRates]=useState<NbuRateCache|null>(readNbuRates)
   const onPresentationChange=useCallback((next:PresentationSettings)=>{
-    setPresentation(savePresentation(next))
+    // Native foreign-currency workspaces are unaffected: only UAH display FX.
+    const official=next.fxMode==='manual'?null:nbuRate(readNbuRates(),next.currency)
+    setPresentation(savePresentation({...next,uahPerUnit:official??next.uahPerUnit}))
   },[])
   useEffect(()=>{document.documentElement.lang=presentation.language},[presentation.language])
+  useEffect(()=>{
+    let mounted=true
+    const check=()=>{
+      void refreshNbuRates().then(rates=>{
+        if(!mounted)return
+        setFxRates(rates)
+        if(!rates)return
+        setPresentation(previous=>{
+          if(previous.fxMode==='manual'||previous.currency==='UAH')return previous
+          const official=nbuRate(rates,previous.currency)
+          if(!official||official===previous.uahPerUnit)return previous
+          return savePresentation({...previous,uahPerUnit:official})
+        })
+      }).catch(()=>undefined)
+    }
+    const visible=()=>{if(document.visibilityState==='visible')check()}
+    check()
+    // Check hourly while the app is foregrounded; the fetcher makes no more
+    // than one successful request per Kyiv day and caches stale rates offline.
+    const interval=window.setInterval(visible,60*60*1000)
+    window.addEventListener('online',check)
+    document.addEventListener('visibilitychange',visible)
+    return()=>{mounted=false;window.clearInterval(interval);window.removeEventListener('online',check);document.removeEventListener('visibilitychange',visible)}
+  },[])
   // Capacitor injects this bridge into the Android WebView; the hosted website stays unchanged.
   const [isNativeAndroid] = useState(() => {
     const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor
