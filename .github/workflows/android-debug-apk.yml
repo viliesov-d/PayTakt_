@@ -35,7 +35,10 @@ jobs:
           java-version: '21'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        # The v3 default requested the removed SDK package "tools" and failed.
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
 
       - name: Install Android API 36 SDK
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
