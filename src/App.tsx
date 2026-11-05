@@ -879,6 +879,16 @@ function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(ki
 }
 
 export default function App(){
+  // Capacitor injects this bridge into the Android WebView; the hosted website stays unchanged.
+  const [isNativeAndroid] = useState(() => {
+    const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor
+    return Boolean(cap?.isNativePlatform?.() && cap?.getPlatform?.() === 'android')
+  })
+  useEffect(() => {
+    document.documentElement.classList.toggle('paytakt-native-android', isNativeAndroid)
+    return () => document.documentElement.classList.remove('paytakt-native-android')
+  }, [isNativeAndroid])
+
   const [theme,setTheme]=useState<ThemeChoice>(readTheme)
   const [session,setSession]=useState<Session|null>(null)
   const [loading,setLoading]=useState(firebaseReady)
@@ -1223,7 +1233,38 @@ export default function App(){
   if(session&&workspace){try{wizardDraftPresent=Boolean(localStorage.getItem(`paytakt-wizard-v2:${session.uid}:${workspace.id}`))}catch{/* no local storage */}}
   const newWorkspaceNeedsWizard=payLoaded&&shiftsLoaded&&!paySettings&&!payError&&!shiftsError&&(shifts.length===0||wizardDraftPresent)
   const allowedNav=useMemo(()=>nav.filter(n=>!n.companyOnly||workspace?.kind==='company'),[workspace?.kind])
-  const navigate=(p:Page)=>{setPage(p);setMobileMenu(false)}
+
+  // Each top-level page gets a real browser history entry. Android's system Back
+  // therefore visits the previous PayTakt page instead of instantly leaving it.
+  useEffect(() => {
+    const current = window.history.state as Record<string, unknown> | null
+    if (!current || typeof current.paytaktPage !== 'string') {
+      window.history.replaceState({ ...current, paytaktPage: 'calendar' }, '')
+    }
+    const onPopState = (event: PopStateEvent) => {
+      const candidate = (event.state as { paytaktPage?: unknown } | null)?.paytaktPage
+      if (typeof candidate === 'string' && (nav.some(item => item.id === candidate) || candidate === 'dashboard' || candidate === 'rules' || candidate === 'pay' || candidate === 'setup')) {
+        setPage(candidate as Page)
+      } else {
+        setPage('calendar')
+      }
+      setMobileMenu(false)
+      setWorkspaceMenu(false)
+      window.scrollTo({ top: 0 })
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  const navigate=(p:Page)=>{
+    if (p !== page) {
+      window.history.pushState({ ...window.history.state, paytaktPage: p }, '')
+      setPage(p)
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    }
+    setMobileMenu(false)
+    setWorkspaceMenu(false)
+  }
   if(loading)return <div className="loading-screen"><Logo/><div className="spinner"/><p>Готуємо твій робочий простір…</p></div>
   if(!session)return <AuthScreen onDemo={enterDemo}/>
   if(!workspace)return <div className="loading-screen"><Logo/><div className="firebase-note wide">{error||'Не вдалося відкрити робочий простір. Перевір доступ до акаунта.'}</div><button type="button" className="btn btn-outline" onClick={logout}>Вийти з акаунта</button></div>
@@ -1300,6 +1341,16 @@ export default function App(){
         <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>Версія 2.0.0 beta 4</span></footer>
       </main>
     </div>
+    {isNativeAndroid&&<nav className="paytakt-mobile-tabs" aria-label="Навігація PayTakt Mobile">
+      {allowedNav.map(item=>{
+        const Icon=item.icon
+        return <button type="button" key={item.id} onClick={()=>navigate(item.id)}
+          className={page===item.id?'active':''} aria-current={page===item.id?'page':undefined}>
+          <Icon size={22} strokeWidth={2.2} aria-hidden="true"/>
+          <span>{item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування'}</span>
+        </button>
+      })}
+    </nav>}
     {createOpen&&<CreateWorkspaceDialog onClose={()=>setCreateOpen(false)} onCreate={createCompany}/>}
   </div>
 }
