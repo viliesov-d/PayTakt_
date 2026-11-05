@@ -1195,7 +1195,7 @@ export default function App(){
     catch(error){setOfflineError(friendlyError(error))}
   },[session?.uid,session?.demo])
 
-  const flushNow=useCallback(async(uid:string)=>{
+  const flushNow=useCallback(async function syncQueuedEdits(uid:string){
     if(!uid||syncingRef.current||typeof navigator!=='undefined'&&!navigator.onLine)return
     syncingRef.current=true
     if(activeUidRef.current===uid)setOfflineSyncing(true)
@@ -1215,7 +1215,7 @@ export default function App(){
           const remaining=readOfflineQueue(uid)
           setOfflineQueue(remaining)
           if(remaining.some(e=>e.state==='pending')&&navigator.onLine)
-            void Promise.resolve().then(()=>flushNow(uid))
+            void Promise.resolve().then(()=>syncQueuedEdits(uid))
         }catch(error){setOfflineError(friendlyError(error))}
       }
     }
@@ -1377,13 +1377,13 @@ export default function App(){
   }
   const onSaveDailyWage=async(date:string,amount:number)=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
-    if(!session.demo)await saveDailyWage(workspace.id,{date,amount})
-    setDailyWages(old=>({...old,[date]:amount}))
+    if(session.demo)setDailyWages(old=>({...old,[date]:amount}))
+    else queueDayEdit('dailyWages',date,amount)
   }
   const onRemoveDailyWage=async(date:string)=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
-    if(!session.demo)await removeDailyWage(workspace.id,date)
-    setDailyWages(old=>{const next={...old};delete next[date];return next})
+    if(session.demo)setDailyWages(old=>{const next={...old};delete next[date];return next})
+    else queueDayEdit('dailyWages',date,null)
   }
   const onSaveTarget=async(month:string,amount:number)=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
@@ -1425,13 +1425,13 @@ export default function App(){
   }
   const onSaveCash=async(record:DailyCash)=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
-    if(!session.demo)await saveDailyCash(workspace.id,record)
-    setCashRecords(old=>[...old.filter(x=>x.date!==record.date),record])
+    if(session.demo)setCashRecords(old=>[...old.filter(x=>x.date!==record.date),record])
+    else queueDayEdit('dailyCash',record.date,record.amount)
   }
   const onDeleteCash=async(date:string)=>{
     if(!session||!workspace)throw Error('Робочий простір не обрано')
-    if(!session.demo)await removeDailyCash(workspace.id,date)
-    setCashRecords(old=>old.filter(x=>x.date!==date))
+    if(session.demo)setCashRecords(old=>old.filter(x=>x.date!==date))
+    else queueDayEdit('dailyCash',date,null)
   }
   const onSavePay=async(settings:PaySettings)=>{
     if(!workspace||!session)throw Error('Робочий простір не обрано')
@@ -1488,6 +1488,7 @@ export default function App(){
     setAccountingCurrency('UAH');setDemo(true);setSession({uid:'demo',email:'',name:'Гість',demo:true});setWorkspaces([personal,company]);setWorkspace(personal);setPage('dashboard');setLoading(false)
   }
   const logout=async()=>{
+    if(offlineQueue.length&&!window.confirm('Є записи, які ще не синхронізовано з Firebase. Вони залишаться на цьому пристрої та синхронізуються після повторного входу. Вийти?'))return
     setAccountingCurrency('UAH')
     setSetupPayDraft(null)
     setMobileMenu(false);setWorkspaceMenu(false);setForceWizard(false);setPage('calendar')
@@ -1499,7 +1500,11 @@ export default function App(){
     if(!session)throw Error('Увійди в акаунт')
     if(workspaces.length<2)throw Error('Спочатку створи інший робочий простір.')
     if(!workspaces.some(item=>item.id===target.id))throw Error('Простір не знайдено.')
-    if(!session.demo)await deleteWorkspace(session.uid,target.id)
+    if(!session.demo){
+      if(offlineQueue.some(e=>e.workspaceId===target.id))
+        throw Error('У цьому просторі є локальні зміни. Перед видаленням синхронізуй їх або виріши конфлікти.')
+      await deleteWorkspace(session.uid,target.id)
+    }
     const remaining=workspaces.filter(item=>item.id!==target.id)
     setWorkspaces(remaining)
     try{localStorage.removeItem(`paytakt-wizard-v2:${session.uid}:${target.id}`)}catch{/* optional */}
@@ -1517,7 +1522,7 @@ export default function App(){
     if(!workspace||!session)throw Error('Робочий простір не обрано')
     validateDay(shift)
     if(session.demo){setShifts(old=>[...old.filter(x=>x.date!==shift.date),shift]);return}
-    await saveShift(workspace.id,shift)
+    queueDayEdit('shifts',shift.date,shift)
   }
   const onApplyPattern=async(generated:GeneratedCalendarDay[],mode:PatternApplyMode):Promise<PatternApplySummary>=>{
     if(!workspace||!session)throw Error('Робочий простір не обрано')
@@ -1529,6 +1534,7 @@ export default function App(){
       }
       return planned.summary
     }
+    if(offlineQueue.some(e=>e.workspaceId===workspace.id))throw Error('Спочатку синхронізуй або виріши конфлікти локальних змін, перш ніж застосовувати графік до всього місяця.')
     return applyMonthlyPattern(workspace.id,generated,mode)
   }
   const resendVerification=async()=>{
@@ -1544,7 +1550,7 @@ export default function App(){
   const onDelete=async(date:string)=>{
     if(!workspace||!session)throw Error('Робочий простір не обрано')
     if(session.demo){setShifts(old=>old.filter(s=>s.date!==date));return}
-    await deleteShift(workspace.id,date)
+    queueDayEdit('shifts',date,null)
   }
   const finishOnboarding=async(draft:OnboardingDraft)=>{
     if(!session||!workspace)throw Error('Обери робочий простір.')
