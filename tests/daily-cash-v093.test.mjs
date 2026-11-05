@@ -33,7 +33,7 @@ test('opt in replaces monthly amount without double counting',()=>{
 test('Firestore owner-only rules contain the new paths and do not open wildcard access',()=>{
   const rules=readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')
   assert.match(rules,/match \/dailyCash\/\{date\}/)
-  assert.match(rules,/allow create, update: if ownWorkspace\(workspaceId\)/)
+  assert.match(rules,/allow create, update: if activeWorkspace\(workspaceId\)/)
   assert.match(rules,/settingsId == 'cash'/)
   assert.doesNotMatch(rules,/allow (?:read|write|create|update|get|list): if true/)
 })
