@@ -1397,6 +1397,7 @@ export default function App(){
         {page==='pay'&&<PayPageV5 key={workspace.id} workspaceName={workspace.name} shifts={shifts} settings={paySettings} performance={performance} targets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} loaded={payLoaded&&salesLoaded&&unitsLoaded&&cashLoaded&&performanceLoaded&&targetsLoaded&&wagesLoaded} salesFromCash={cashPrefs.enabled&&cashPrefs.useForSales} salesByMonth={effectiveSales} onSaveMonthlySales={onSaveMonthlySales} unitsByMonth={unitsByMonth} onSaveMonthlyUnits={onSaveMonthlyUnits} demo={session.demo} goToRules={()=>navigate('rules')}/>}
         {page==='rules'&&<RulesPageV5 key={workspace.id} shifts={shifts} workspaceName={workspace.name} settings={setupPayDraft??paySettings} loaded={payLoaded} demo={session.demo} onSave={onSavePay} performance={performance} onSavePerformance={onSavePerformance} onApplyZmina={onApplyZmina}/>}
         {page==='team'&&workspace.kind==='company'&&<TeamPage workspace={workspace}/>}
+        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange}/>}
         {page==='settings'&&<section className="panel v2-settings-actions">
           <div className="v2-settings-head"><div><h3>{tr("Налаштування твоєї роботи")}</h3><p>Персональний майстер або точні правила — обирай зручний спосіб.</p></div></div>
           <div className="v2-settings-links">
@@ -1420,7 +1421,7 @@ export default function App(){
           </details>
         </section>}
         {page==='settings'&&<CalendarPage scheduleOnly key={`${workspace.id}-schedule-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
-        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange}/>}
+        
         </div>
         <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>Версія 2.0.0 beta 4</span></footer>
       </main>
