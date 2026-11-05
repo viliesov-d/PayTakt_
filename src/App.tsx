@@ -25,7 +25,7 @@ import {defaultOvertimePreset,validateOvertimePreset,segmentHours,type OvertimeP
 import {changeDayType, markWorkedForDailyPay, toggleWorkedDay, togglePresetOvertime} from './lib/dayActions'
 import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
-import { tr, readPresentation, savePresentation, formatDate, formatMonth, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
+import { tr, readPresentation, savePresentation, formatDate, formatMonth, locale as presentationLocale, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
 import {buildMonthAnalytics,payoutsInMonth} from './lib/analytics'
 import {effectiveRevenue,cashTotalsByMonth,parseCashHryvnia,defaultCashPreferences,type DailyCash,type CashPreferences} from './lib/dailyCash'
 import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerformanceSettings,type PerformanceSettings,type MonthlyTarget} from './lib/performance'
@@ -82,7 +82,7 @@ function ThemeControls({ value, onChange }: { value: ThemeChoice; onChange: (v: 
   </div>
 }
 
-function AuthScreen({ onDemo }: { onDemo: () => void }) {
+function AuthScreen({ onDemo, language, onLanguageChange }: { onDemo: () => void; language: Language; onLanguageChange: (value:Language)=>void }) {
   const [variant, setVariant] = useState<'login'|'register'>('register')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -138,11 +138,11 @@ function AuthScreen({ onDemo }: { onDemo: () => void }) {
       <div className="auth-art-bottom"><ShieldCheck size={17}/> {tr("Працює для особистого обліку та команд")}</div>
     </section>
     <section className="auth-panel">
-      <div className="auth-mobile-logo"><Logo/></div>
+      <div className="auth-mobile-logo"><Logo/></div><div className="paytakt-auth-language"><label htmlFor="paytakt-auth-lang">{tr("Мова застосунку")}</label><select id="paytakt-auth-lang" value={language} onChange={e=>onLanguageChange(e.target.value as Language)}><option value="uk">Українська</option><option value="en">English</option><option value="ru">Русский</option></select></div>
       <div className="auth-form-wrap">
         <div className="eyebrow">{tr("ПОЧАТОК РОБОТИ")}</div>
-        <h2>{variant === 'register' ? 'Створіть свій простір' : 'З поверненням!'}</h2>
-        <p className="auth-intro">{variant === 'register' ? 'Новий акаунт для персонального обліку та управління командою.' : 'Увійдіть, щоб продовжити роботу з вашими графіками.'}</p>
+        <h2>{tr(variant === 'register' ? 'Створіть свій простір' : 'З поверненням!')}</h2>
+        <p className="auth-intro">{tr(variant === 'register' ? 'Новий акаунт для персонального обліку та управління командою.' : 'Увійдіть, щоб продовжити роботу з вашими графіками.')}</p>
         <div className="auth-tabs">
           <button type="button" className={variant==='register'?'selected':''} onClick={()=>{setVariant('register');setError('');setNotice('')}}>{tr("Реєстрація")}</button>
           <button type="button" className={variant==='login'?'selected':''} onClick={()=>{setVariant('login');setError('');setNotice('')}}>{tr("Вхід")}</button>
@@ -154,7 +154,7 @@ function AuthScreen({ onDemo }: { onDemo: () => void }) {
           {variant === 'login' && <button type="button" className="link-button forgot" onClick={resetPassword}>{tr("Забули пароль?")}</button>}
           {error && <p className="form-error" role="alert">{error}</p>}
           {notice && <p className="form-success" role="status">{notice}</p>}
-          <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>{busy?'Опрацьовуємо…':variant==='register'?'Створити акаунт':'Увійти'} <ArrowRight size={18}/></button>
+          <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>{tr(busy?'Опрацьовуємо…':variant==='register'?'Створити акаунт':'Увійти')} <ArrowRight size={18}/></button>
         </form>
         <div className="auth-divider"><span>{tr("або")}</span></div>
         <button type="button" className="btn btn-outline demo-button" onClick={onDemo}>{tr("Переглянути демоверсію")} <ArrowUpRight size={17}/></button>
@@ -188,7 +188,7 @@ function Dashboard({ workspace, shifts, paySettings, salesByMonth, unitsByMonth,
         <div className="zmina-art-orb orb-top"/><div className="zmina-art-orb orb-bottom"/>
         <div className="zmina-mini-calendar">
           <div className="zmina-mini-head"><span>{tr("МІЙ КАЛЕНДАР")}</span><CalendarDays size={19}/></div>
-          <div className="zmina-mini-weekdays">{weekdayLabels.map(day=><span key={day}>{day}</span>)}</div>
+          <div className="zmina-mini-weekdays">{weekdayLabels.map(day=><span key={day}>{tr(day)}</span>)}</div>
           <div className="zmina-mini-dates">{Array.from({length:28},(_,i)=>{const offset=(new Date(today.getFullYear(),today.getMonth(),1).getDay()+6)%7;const day=i-offset+1;if(day<1)return <span key={i} className="is-empty"/>;const date=new Date(today.getFullYear(),today.getMonth(),day);const off=date.getDay()===0||date.getDay()===6;return <span key={i} className={off?'is-off':'is-work'}>{day}</span>})}</div>
           <div className="zmina-mini-foot"><span className="zmina-mini-check">✦</span> {tr("План на місяць — під контролем")}</div>
         </div>
@@ -204,7 +204,7 @@ function Dashboard({ workspace, shifts, paySettings, salesByMonth, unitsByMonth,
       <div className="stat-card"><div className="stat-top"><span>{tr("Заплановано змін")}</span><CalendarDays size={20}/></div><div className="stat-value">{summary.plannedShifts} <span>{tr("змін")}</span></div><div className="stat-hint">{tr("У поточному місяці")}</div></div>
       <div className="stat-card"><div className="stat-top"><span>{tr("Відпрацьовано")}</span><Clock3 size={20}/></div><div className="stat-value">{summary.workedHours.toLocaleString('uk-UA',{maximumFractionDigits:1})} <span>{tr("год")}</span></div><div className="stat-hint">{tr("З підтверджених вами змін")}</div></div>
       <div className="stat-card"><div className="stat-top"><span>{tr("Понаднормові години")}</span><Clock3 size={20}/></div><div className="stat-value">{summary.overtimeHours.toLocaleString('uk-UA',{maximumFractionDigits:1})} <span>{tr("год")}</span></div><div className="stat-hint">{tr("За підтвердженим графіком і тарифами")}</div></div>
-      <div className="stat-card salary-stat" role="button" tabIndex={0} onClick={onGoPay} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onGoPay()}}}><div className="stat-top"><span>{tr("Попередня зарплата")}</span><Wallet size={20}/></div><div className="stat-value salary-dashboard-value">{salary?moneyUA(salary.gross):'—'}</div><div className="stat-hint">{salary?'До податків · натисни для деталізації':'Налаштуй правила оплати'}</div></div>
+      <div className="stat-card salary-stat" role="button" tabIndex={0} onClick={onGoPay} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onGoPay()}}}><div className="stat-top"><span>{tr("Попередня зарплата")}</span><Wallet size={20}/></div><div className="stat-value salary-dashboard-value">{salary?moneyUA(salary.gross):'—'}</div><div className="stat-hint">{tr(salary?'До податків · натисни для деталізації':'Налаштуй правила оплати')}</div></div>
     </div>
     <div className="dashboard-stats-link"><span><TrendingUp size={17}/> {tr("Детальні години, понаднормові, динаміка за 6 місяців і календар виплат")}</span><button className="link-button" type="button" onClick={onGoStatistics}>{tr("Відкрити статистику")} <ArrowUpRight size={16}/></button></div>
     <div className="dashboard-grid">
@@ -399,7 +399,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
   const calendarMetrics = useMemo(()=>buildMonthAnalytics(shifts,monthKey,paySettings,salesByMonth[monthKey]??0,unitsByMonth[monthKey]??0,performance,planTarget(monthKey,performance,monthlyTargets),cashByMonth[monthKey]??0,dailyWages),[shifts,monthKey,paySettings,salesByMonth,unitsByMonth,performance,monthlyTargets,cashByMonth,dailyWages])
   const target=planTarget(monthKey,performance,monthlyTargets)
   const progress=performance.enabled&&calendarMetrics.result?performanceProgress(calendarMetrics.result,performance,target,cashByMonth[monthKey]??0):null
-  const measure=(amount:number)=>performance.metric==='units'?amount.toLocaleString('uk-UA'):moneyUA(amount)
+  const measure=(amount:number)=>performance.metric==='units'?amount.toLocaleString(presentationLocale()):moneyUA(amount)
   const paymentMarkers = useMemo(()=>payoutsInMonth(shifts,monthKey,paySettings,salesByMonth,unitsByMonth,performance,monthlyTargets,cashByMonth,dailyWages),[shifts,monthKey,paySettings,salesByMonth,unitsByMonth,performance,monthlyTargets,cashByMonth,dailyWages])
   const paymentsByDay = useMemo(()=>{
     const map=new Map<string,typeof paymentMarkers>()
@@ -557,7 +557,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
       <div className="pattern-head"><strong>{tr("Послідовність циклу")}</strong><span>{tr("Натискай на години й тип дня, щоб змінювати їх")}</span></div>
       <div className="pattern-grid">
         {pattern.map((slot,i)=><div className={`pattern-card ${slot.type==='off'?'rest':''}`} key={i}>
-          <div className="pattern-card-top"><strong>{preset===WEEKDAY_FIVE_TWO_PRESET?weekdayLabels[i]:`День ${i+1}`}</strong><button type="button" className="pattern-remove" onClick={()=>{setPattern(old=>old.filter((_,idx)=>idx!==i));setPreset('custom')}} disabled={pattern.length<=1} title="Прибрати день" aria-label={`Прибрати день ${i+1}`}><X size={15}/></button></div>
+          <div className="pattern-card-top"><strong>{preset===WEEKDAY_FIVE_TWO_PRESET?tr(weekdayLabels[i]):`${tr('День')} ${i+1}`}</strong><button type="button" className="pattern-remove" onClick={()=>{setPattern(old=>old.filter((_,idx)=>idx!==i));setPreset('custom')}} disabled={pattern.length<=1} title="Прибрати день" aria-label={`Прибрати день ${i+1}`}><X size={15}/></button></div>
           <select aria-label={`Тип дня ${i+1}`} value={slot.type} onChange={e=>{changeSlot(i,{type:e.target.value as PatternDay['type']});setPreset('custom')}}>
             <option value="work">{tr("Робочий")}</option><option value="off">{tr("Вихідний")}</option>
           </select>
@@ -687,7 +687,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
           <label className="calendar-payout-switch"><input type="checkbox" checked={showPayouts} onChange={e=>setShowPayouts(e.target.checked)}/> {tr("Дати виплат")}</label>
         </div>
         <div className="calendar-grid-viewport">
-        <div key={monthKey} className={`cal-grid ${monthDirection===1?'month-slide-next':monthDirection===-1?'month-slide-prev':''}`} role="group" aria-label={`Календар за ${monthFormat.format(new Date(year,month,1))}`}>{weekdayLabels.map(d=><div className="cal-weekday" key={d}>{d}</div>)}{cells.map((day,i)=>{
+        <div key={monthKey} className={`cal-grid ${monthDirection===1?'month-slide-next':monthDirection===-1?'month-slide-prev':''}`} role="group" aria-label={`Календар за ${monthFormat.format(new Date(year,month,1))}`}>{weekdayLabels.map(d=><div className="cal-weekday" key={d}>{tr(d)}</div>)}{cells.map((day,i)=>{
           if(!day)return <div key={`blank-${i}`} className="cal-blank"/>
           const date=toDateKey(new Date(year,month,day)),shift=(instantDay?.date===date?instantDay:monthShifts.find(s=>s.date===date))
           const off=shift?.dayType && shift.dayType!=='work'
@@ -842,7 +842,7 @@ function SetupPage({settings,loaded,onChoose}:{settings:PaySettings|null;loaded:
     <SectionHeading eyebrow="ПОКРОКОВЕ НАЛАШТУВАННЯ" title="Підлаштуй PayTakt під свою роботу" detail="Спочатку сфера, потім редагований графік, далі правила зарплати. Шаблони — лише стартові приклади."/>
     <div className="setup-progress"><span className="current">{tr("1. Сфера роботи")}</span><span className="current">{tr("2. Шаблон")}</span><span>{tr("3. Графік")}</span><span>{tr("4. Оплата")}</span></div>
     <section className="panel setup-panel"><h3>{tr("1. Де ти працюєш?")}</h3><p className="muted-setup">Це впливає лише на рекомендовані шаблони. Будь-яке поле можна змінити вручну.</p>
-      <div className="sector-grid">{sectors.map(x=><button key={x.id} type="button" aria-pressed={sector===x.id} className={`sector-card ${sector===x.id?'chosen':''}`} onClick={()=>{setSector(x.id);setPresetId('');setShowAll(false);setSearch('');setError('')}}><strong>{x.label}</strong><small>{x.description}</small></button>)}</div>
+      <div className="sector-grid">{sectors.map(x=><button key={x.id} type="button" aria-pressed={sector===x.id} className={`sector-card ${sector===x.id?'chosen':''}`} onClick={()=>{setSector(x.id);setPresetId('');setShowAll(false);setSearch('');setError('')}}><strong>{tr(x.label)}</strong><small>{tr(x.description)}</small></button>)}</div>
     </section>
     <section className="panel setup-panel"><h3>{tr("2. Обери приклад графіка й оплати")}</h3><p className="muted-setup">Шаблон заповнює лише початкові параметри. Години, цикли, ставки, бонуси й дати виплат будуть редагуватися далі.</p>
       <div className="setup-filter-row">
@@ -852,7 +852,7 @@ function SetupPage({settings,loaded,onChoose}:{settings:PaySettings|null;loaded:
       <p className="muted-setup">{showAll?'Усі приклади для різних професій. Можна вибрати будь-який, незалежно від сфери.':`Рекомендовано для вибраної сфери: ${suggestions[sector].length} прикладів.`} Жоден не підходить? Обирай «Створи сам».</p>
       <div className="job-presets">
         <button type="button" aria-pressed={selected.id==='create-self'} className={`job-preset job-preset-custom ${selected.id==='create-self'?'chosen':''}`} onClick={()=>{setPresetId('create-self');setError('')}}><span><strong>＋ Створи сам</strong><small>Почни з одного дня, редагуй власний цикл та правила оплати без автоматичного перезапису ставок.</small></span><span className="pill">Власний</span></button>
-        {options.map(x=><button key={x.id} type="button" aria-pressed={selected.id===x.id} className={`job-preset ${selected.id===x.id?'chosen':''}`} onClick={()=>{setPresetId(x.id);setError('')}}><span><strong>{x.name}</strong><small>{x.description}</small></span><span className="pill">{x.shift}</span></button>)}
+        {options.map(x=><button key={x.id} type="button" aria-pressed={selected.id===x.id} className={`job-preset ${selected.id===x.id?'chosen':''}`} onClick={()=>{setPresetId(x.id);setError('')}}><span><strong>{tr(x.name)}</strong><small>{tr(x.description)}</small></span><span className="pill">{x.shift}</span></button>)}
       </div>
       {options.length===0&&<p className="muted-setup">За цим запитом немає готових шаблонів. Можна скористатися «Створи сам».</p>}
       <p className="setup-preview">{selected.id==='create-self'?<><strong>Власне налаштування:</strong> відкриється конструктор з одним робочим днем, до якого можна додати будь-які робочі та вихідні дні. Чинні ставки й правила зарплати залишаться без змін. Налаштуй їх окремо після графіка.</>:<><strong>Що буде застосовано:</strong> графік {selected.shift} (можна змінити кожен день), тип оплати {selected.mode==='monthly'?'оклад':selected.mode==='hourly'?'погодинна':selected.mode==='per_shift'?'позмінна':'за виконану роботу'}, понаднормові — за позначеними в календарі годинами. Суми зарплати не встановлюються автоматично. Шаблон оплати буде лише чернеткою до натискання «Зберегти» в правилах.</>}</p>
@@ -922,7 +922,7 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
         <div className="settings-heading"><Wallet size={22}/><div><h3>{tr('Валюта відображення')}</h3><p>{tr('Зарплата обліковується у гривнях. Інша валюта показує лише орієнтовний еквівалент за вказаним тобою курсом. Введення сум залишається у гривнях.')}</p></div></div>
         <form className="paytakt-currency-form" onSubmit={updateCurrency}>
           <label>{tr('Валюта відображення')}
-            <select value={currencyDraft} onChange={e=>{setCurrencyDraft(e.target.value as DisplayCurrency);setCurrencyError('')}}>
+            <select value={currencyDraft} onChange={e=>{const selected=e.target.value as DisplayCurrency;setCurrencyDraft(selected);setRateDraft(selected==='UAH'?'1':selected===presentation.currency?String(presentation.uahPerUnit):'');setCurrencyError('')}}>
               <option value="UAH">UAH — ₴</option><option value="USD">USD — $</option>
               <option value="EUR">EUR — €</option><option value="PLN">PLN — zł</option><option value="GBP">GBP — £</option>
             </select>
@@ -1350,7 +1350,7 @@ export default function App(){
     setWorkspaceMenu(false)
   }
   if(loading)return <div className="loading-screen"><Logo/><div className="spinner"/><p>Готуємо твій робочий простір…</p></div>
-  if(!session)return <AuthScreen onDemo={enterDemo}/>
+  if(!session)return <AuthScreen onDemo={enterDemo} language={presentation.language} onLanguageChange={language=>onPresentationChange({...presentation,language})}/>
   if(!workspace)return <div className="loading-screen"><Logo/><div className="firebase-note wide">{error||'Не вдалося відкрити робочий простір. Перевір доступ до акаунта.'}</div><button type="button" className="btn btn-outline" onClick={logout}>{tr("Вийти з акаунта")}</button></div>
   if(!session.demo&&(!payLoaded||!shiftsLoaded))return <div className="loading-screen"><Logo/><div className="spinner"/><p>Завантажуємо графік і правила роботи…</p></div>
   if(forceWizard||newWorkspaceNeedsWizard)return <OnboardingWizard key={`${session.uid}:${workspace.id}`} workspaceKey={`${session.uid}:${workspace.id}`} workspaceName={workspace.name} isExisting={Boolean(paySettings||shifts.length)} onComplete={finishOnboarding} onCancel={forceWizard?()=>setForceWizard(false):undefined}/>
