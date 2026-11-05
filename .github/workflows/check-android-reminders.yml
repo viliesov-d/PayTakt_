@@ -1,0 +1,51 @@
+name: Check Android native notifications
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/setup-android.mjs'
+      - 'src/lib/nativeReminders.ts'
+      - 'src/lib/reminderPlan.ts'
+      - 'src/components/NotificationSettings.tsx'
+      - '.github/workflows/check-android-reminders.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  compile-debug-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Install locked web dependencies
+        run: npm ci
+      - name: Build PayTakt and link Android Local Notifications
+        run: npm run android:setup
+      - name: Verify native Local Notifications plugin exists
+        run: |
+          test -d node_modules/@capacitor/local-notifications
+          grep -R -l 'LocalNotifications' android/app/src/main/assets/capacitor.plugins.json
+      - name: Compile debug APK (native Java + Gradle)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
