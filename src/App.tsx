@@ -1238,6 +1238,15 @@ export default function App(){
           {workspaceMenu&&<div className="workspace-popover">{workspaces.map(w=><button type="button" key={w.id} className={workspace.id===w.id?'current':''} onClick={()=>selectWorkspace(w)}>{w.kind==='company'?<Building2 size={16}/>:<UserRound size={16}/>}<span>{w.name}</span>{workspace.id===w.id&&<Check size={15}/>}</button>)}<button type="button" className="create-space" onClick={()=>{setWorkspaceMenu(false);setCreateOpen(true)}}><Plus size={16}/> Нова компанія</button></div>}
         </div>
         <div className="zmina-header-tools">
+          {page!=='calendar'&&<button
+            type="button"
+            className="zmina-calendar-return"
+            onClick={()=>navigate('calendar')}
+            aria-label="До календаря"
+            title="Повернутися до календаря">
+            <CalendarDays size={19} aria-hidden="true"/>
+            <span>До календаря</span>
+          </button>}
           <ThemeControls value={theme} onChange={setThemeChoice}/>
           <button type="button" className="zmina-profile-btn" onClick={()=>navigate('settings')} aria-label="Налаштування профілю" title={session.name}><UserRound size={19}/></button>
           <button type="button" className="zmina-logout-btn" onClick={logout} aria-label="Вийти" title="Вийти"><LogOut size={18}/></button>

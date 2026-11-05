@@ -1384,3 +1384,45 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
 .day-status-correction{padding:13px 14px 0}
 .day-status-correction .btn{font-size:13px;min-height:43px;justify-content:center;gap:9px}
 @media(max-width:700px){.day-status-correction .btn{font-size:15px;min-height:46px}}
+
+/* One-tap calendar return in the main header, outside the collapsible mobile nav. */
+.zmina-header-tools .zmina-calendar-return{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  min-height:42px;
+  padding:10px 14px;
+  border:1px solid var(--zmina-deep);
+  border-radius:12px;
+  background:var(--zmina-deep);
+  color:var(--zmina-lime);
+  font-size:13px;
+  font-weight:800;
+  line-height:1.15;
+  white-space:nowrap;
+  cursor:pointer;
+  transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.zmina-header-tools .zmina-calendar-return:hover{
+  transform:translateY(-1px);
+  box-shadow:0 5px 14px rgba(16,28,51,.18);
+}
+.zmina-header-tools .zmina-calendar-return:active{transform:translateY(0)}
+.zmina-header-tools .zmina-calendar-return svg{flex:0 0 auto}
+@media(max-width:880px){
+  .zmina-header-tools .zmina-calendar-return{
+    width:42px;
+    min-height:42px;
+    padding:0;
+    border-radius:11px;
+  }
+  .zmina-header-tools .zmina-calendar-return span{display:none}
+}
+@media(max-width:390px){
+  .zmina-header-tools .zmina-calendar-return{width:40px;min-height:40px}
+}
+@media(prefers-reduced-motion:reduce){
+  .zmina-header-tools .zmina-calendar-return{transition:none}
+  .zmina-header-tools .zmina-calendar-return:hover{transform:none}
+}
