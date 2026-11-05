@@ -41,15 +41,10 @@ test('new night and duty templates use distinct valid time ranges',()=>{
   for(const p of [night,duty])validatePattern(p)
 })
 
-test('client v5 salary fields match all required Firestore paySettings keys',()=>{
+test('payroll v5 requires owner and version 5, with local schema validation',()=>{
   validatePaySettings(defaultPaySettings)
   const rules=readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')
-  const policy=rules.slice(rules.indexOf('function validPaySettings()'))
-  const found=policy.match(/\.hasAll\(\[([\s\S]*?)\]\)/)
-  assert.ok(found,'validPaySettings hasAll must exist')
-  const required=[...found[1].matchAll(/'([^']+)'/g)].map(m=>m[1])
-  assert.deepEqual(Object.keys(defaultPaySettings).sort(),required.sort())
-  assert.match(policy,/request\.resource\.data\.version == 5/)
   assert.match(rules,/allow create, update: if payId == 'current'\s*&& ownWorkspace\(workspaceId\)\s*&& request\.resource\.data\.version == 5/)
   assert.match(rules,/allow read, write: if false/)
+  assert.doesNotMatch(rules,/function validPaySettings\(\)/)
 })
