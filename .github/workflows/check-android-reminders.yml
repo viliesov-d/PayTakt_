@@ -1,4 +1,4 @@
-name: Check Android native notifications
+name: Check Android native build
 
 on:
   pull_request:
@@ -9,12 +9,17 @@ on:
       - 'src/lib/reminderPlan.ts'
       - 'src/components/NotificationSettings.tsx'
       - '.github/workflows/check-android-reminders.yml'
+      - '.github/workflows/android-release.yml'
+      - 'scripts/set-android-version.mjs'
+      - 'mobile-version.json'
+      - 'src/lib/appUpdates.ts'
+      - 'src/components/AppUpdatesPanel.tsx'
 
 permissions:
   contents: read
 
 jobs:
-  compile-debug-apk:
+  compile-android-apks:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -40,12 +45,32 @@ jobs:
         run: npm ci
       - name: Build PayTakt and link Android Local Notifications
         run: npm run android:setup
-      - name: Verify native Local Notifications plugin exists
+      - name: Verify native notification/update plugins and shared app version
+        shell: bash
         run: |
+          set -euo pipefail
           test -d node_modules/@capacitor/local-notifications
-          grep -R -l 'LocalNotifications' android/app/src/main/assets/capacitor.plugins.json
-      - name: Compile debug APK (native Java + Gradle)
+          test -d node_modules/@capacitor/app
+          test -d node_modules/@capacitor/browser
+          for plugin in LocalNotifications AppPlugin BrowserPlugin; do
+            grep -q "$plugin" android/app/src/main/assets/capacitor.plugins.json
+          done
+          CODE=$(node -p "require('./mobile-version.json').versionCode")
+          VERSION=$(node -p "require('./mobile-version.json').version")
+          grep -q "versionCode $CODE" android/app/build.gradle
+          grep -q "versionName \"$VERSION\"" android/app/build.gradle
+      - name: Compile debug and unsigned release APK (native Java + Gradle)
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug
+          ./gradlew --no-daemon assembleDebug assembleRelease
+      - name: Verify Android package identity and increasing release code
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOOLS="$ANDROID_HOME/build-tools/36.0.0"
+          VERSION=$(node -p "require('./mobile-version.json').version")
+          CODE=$(node -p "require('./mobile-version.json').versionCode")
+          APK="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -f "$APK"
+          "$TOOLS/aapt" dump badging "$APK" | grep -E "^package: name='ua.paytakt.mobile' versionCode='$CODE' versionName='$VERSION'"
