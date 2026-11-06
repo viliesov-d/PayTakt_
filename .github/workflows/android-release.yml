@@ -28,10 +28,6 @@ jobs:
       VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
       VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
       VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       RELEASE_VERSION: ${{ inputs.version }}
     steps:
       - name: Checkout main
@@ -72,12 +68,16 @@ jobs:
               process.exit(1)
             }
           '
-          for key in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+          for key in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID; do
             if [[ -z "${!key:-}" ]]; then
-              echo "::error title=Missing release secret::Configure $key in GitHub Actions secrets before building a signed APK."
+              echo "::error title=Missing Firebase secret::Configure $key in GitHub Actions secrets."
               exit 1
             fi
           done
+          if [[ "$ANDROID_SIGNING_SECRETS_READY" != "true" ]]; then
+            echo "::error title=Missing signing key::Configure all four ANDROID_KEY* secrets before running a signed release."
+            exit 1
+          fi
           if gh release view "v${RELEASE_VERSION}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
             echo "::error::Release v${RELEASE_VERSION} already exists. Increment mobile-version.json for the next release."
             exit 1
@@ -88,6 +88,7 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ github.token }}
+          ANDROID_SIGNING_SECRETS_READY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
 
       - name: Install web dependencies
         run: npm ci
@@ -107,9 +108,14 @@ jobs:
 
       - name: Align and sign release APK with permanent key
         shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          trap 'rm -f "$RUNNER_TEMP/paytakt-release.jks"' EXIT
+          trap 'rm -f "$RUNNER_TEMP/paytakt-release.jks" "$RUNNER_TEMP/paytakt-aligned.apk"' EXIT
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/paytakt-release.jks"
           chmod 600 "$RUNNER_TEMP/paytakt-release.jks"
           test -s "$RUNNER_TEMP/paytakt-release.jks"
