@@ -10,8 +10,9 @@ type Props={
   onCheck:()=>void
   onOpen:(url:string)=>void
   hasPendingOffline:boolean
+  openError:string
 }
-export function AppUpdatesPanel({native,currentVersion,result,checking,onCheck,onOpen,hasPendingOffline}:Props){
+export function AppUpdatesPanel({native,currentVersion,result,checking,onCheck,onOpen,hasPendingOffline,openError}:Props){
   return <section className="panel settings-panel settings-wide paytakt-updates-panel">
     <div className="settings-heading"><Smartphone size={22}/><div>
       <h3>{tr('Оновлення PayTakt')}</h3>
@@ -36,7 +37,7 @@ export function AppUpdatesPanel({native,currentVersion,result,checking,onCheck,o
           <p>{tr('Перевіряємо наявність нової версії…')}</p>}
       </div>
       {result?.status==='available'&&<button className="btn btn-primary paytakt-update-action" type="button"
-        onClick={()=>onOpen(result.release.apkUrl)}>
+        disabled={hasPendingOffline} onClick={()=>onOpen(result.release.apkUrl)}>
         <Download size={18}/>{tr('Завантажити оновлення')} v{result.release.version}
       </button>}
       <button type="button" className="btn btn-outline paytakt-update-check"
@@ -49,6 +50,7 @@ export function AppUpdatesPanel({native,currentVersion,result,checking,onCheck,o
     {native&&<button type="button" className="paytakt-update-release-link" onClick={()=>onOpen(RELEASES_URL)}>
       <ExternalLink size={15}/>{tr('Відкрити всі релізи GitHub')}
     </button>}
+    {openError&&<p className="paytakt-update-error" role="alert"><AlertCircle size={15}/>{openError}</p>}
     {hasPendingOffline&&<p className="paytakt-update-danger"><AlertCircle size={16}/>
       {tr('Спочатку синхронізуй усі локальні зміни. Не видаляй застосунок, поки є непередані записи.')}
     </p>}
