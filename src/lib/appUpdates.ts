@@ -1,7 +1,7 @@
 /** Public GitHub Releases is the only trusted source for PayTakt APK updates.
  * This module never downloads or installs an APK silently.
  */
-import mobileVersion from '../../mobile-version.json'
+import mobileVersion from '../../mobile-version.json' with {type:'json'}
 
 export const MOBILE_VERSION=mobileVersion.version
 export const MOBILE_VERSION_CODE=mobileVersion.versionCode
