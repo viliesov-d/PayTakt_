@@ -81,5 +81,13 @@ test('release workflow requires permanent signing secrets and verifies certifica
   assert.match(flow,/apksigner/)
   assert.match(flow,/zipalign/)
   assert.match(flow,/gh release create/)
+  // A malformed workflow can pass source/web build yet fail when publishing APK.
+  const uploads=flow.match(/- name: Upload signed APK as workflow artifact/g)??[]
+  const publish=flow.match(/- name: Publish latest GitHub Release with APK/g)??[]
+  assert.equal(uploads.length,1)
+  assert.equal(publish.length,1)
+  assert.match(flow,/PACKAGE_LINE=\$\(printf/)
+  assert.match(flow,/apksigner.*verify/)
+  assert.doesNotMatch(flow,/\\n'\*\}/)
   assert.doesNotMatch(flow,/keytool -genkeypair/)
 })
