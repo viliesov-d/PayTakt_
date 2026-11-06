@@ -133,7 +133,56 @@ jobs:
             "$RUNNER_TEMP/paytakt-aligned.apk"
           "$TOOLS/apksigner" verify --verbose --print-certs "signed/PayTakt-Android-release.apk"
           "$TOOLS/zipalign" -c -v 4 "signed/PayTakt-Android-release.apk"
-          PACKAGE_LINE=$("$TOOLS/aapt" dump badging "signed/PayTakt-Android-release.apk" | head -n 1)
+          PACKAGE_INFO=$("$TOOLS/aapt" dump badging "signed/PayTakt-Android-release.apk")
+          PACKAGE_LINE="${PACKAGE_INFO%%
+          CODE=$(node -p "require('./mobile-version.json').versionCode")
+          [[ "$PACKAGE_LINE" == *"name='ua.paytakt.mobile'"* ]]
+          [[ "$PACKAGE_LINE" == *"versionCode='$CODE'"* ]]
+          [[ "$PACKAGE_LINE" == *"versionName='$RELEASE_VERSION'"* ]]
+
+      - name: Upload signed APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PayTakt-Android-signed-v${{ inputs.version }}
+          path: signed/PayTakt-Android-release.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publish latest GitHub Release with APK
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          HASH=$(sha256sum signed/PayTakt-Android-release.apk | awk '{print $1}')
+          CODE=$(node -p "require('./mobile-version.json').versionCode")
+          cat > "$RUNNER_TEMP/paytakt-release-notes.md" <<EOF
+          PayTakt Mobile v${RELEASE_VERSION} — official signed Android APK.
+
+          Package: ua.paytakt.mobile
+          Version code: ${CODE}
+          SHA-256: ${HASH}
+
+          Download **PayTakt-Android-release.apk** and open it on Android.
+          You can install this and future APKs over each other only when they
+          share the original signing key and the next versionCode is higher.
+
+          **Moving from previous debug APKs:** these may use a different signing
+          certificate, so direct updating may be blocked. Sync all PayTakt data
+          with Firebase first, resolve offline queue items, then (if necessary)
+          uninstall the old debug APK before installing this stable one. Uninstalling
+          clears only device-local app data; cloud-synced account data remains.
+
+          Signed APK keys are stored as GitHub Actions secrets, never in Git.
+          EOF
+          gh release create "v${RELEASE_VERSION}" \
+            "signed/PayTakt-Android-release.apk#PayTakt Android release APK" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "PayTakt Mobile v${RELEASE_VERSION}" \
+            --notes-file "$RUNNER_TEMP/paytakt-release-notes.md" \
+            --latest
+\n'*}"
           echo "$PACKAGE_LINE"
           CODE=$(node -p "require('./mobile-version.json').versionCode")
           [[ "$PACKAGE_LINE" == *"name='ua.paytakt.mobile'"* ]]
