@@ -2167,6 +2167,90 @@ const translations: Record<string, { en: string; ru: string }> = {
   "Дозвіл запитується лише під час увімкнення. Плануємо події на найближчі 28 днів і оновлюємо їх при відкритті застосунку. Android може показати нагадування із затримкою.": {
     "en": "Permission is requested only when enabled. Upcoming 28 days are scheduled and renewed on app open. Android may delay delivery.",
     "ru": "Разрешение запрашивается при включении. Планируются ближайшие 28 дней, обновляются при запуске. Android может доставлять с задержкой."
+  },
+  "Ви впевнені?": {
+    "en": "Are you sure?",
+    "ru": "Вы уверены?"
+  },
+  "Так, видалити": {
+    "en": "Yes, delete",
+    "ru": "Да, удалить"
+  },
+  "Оновлення PayTakt": {
+    "en": "PayTakt updates",
+    "ru": "Обновления PayTakt"
+  },
+  "Перевіряй нові безпечні версії Android-застосунку.": {
+    "en": "Check for new, safely signed Android app versions.",
+    "ru": "Проверяйте новые безопасно подписанные версии приложения Android."
+  },
+  "Встановлена версія": {
+    "en": "Installed version",
+    "ru": "Установленная версия"
+  },
+  "Доступна нова версія": {
+    "en": "New version available",
+    "ru": "Доступна новая версия"
+  },
+  "Опубліковано офіційний підписаний APK на GitHub Releases.": {
+    "en": "An officially signed APK is available on GitHub Releases.",
+    "ru": "Официальный подписанный APK доступен на GitHub Releases."
+  },
+  "У тебе актуальна версія": {
+    "en": "You have the latest version",
+    "ru": "У вас актуальная версия"
+  },
+  "Стабільний APK ще не опублікований на GitHub Releases.": {
+    "en": "No stable APK has been published on GitHub Releases yet.",
+    "ru": "Стабильный APK ещё не опубликован на GitHub Releases."
+  },
+  "Перевіряємо наявність нової версії…": {
+    "en": "Checking for a new version…",
+    "ru": "Проверяем наличие новой версии…"
+  },
+  "Завантажити оновлення": {
+    "en": "Download update",
+    "ru": "Скачать обновление"
+  },
+  "Перевіряємо…": {
+    "en": "Checking…",
+    "ru": "Проверяем…"
+  },
+  "Перевірити оновлення": {
+    "en": "Check for updates",
+    "ru": "Проверить обновления"
+  },
+  "Вебверсія оновлюється через сайт. Перевірка APK доступна лише в Android-застосунку.": {
+    "en": "The web version updates on the website. APK updates are only checked in the Android app.",
+    "ru": "Вебверсия обновляется на сайте. Проверка APK доступна только в Android-приложении."
+  },
+  "Відкрити всі релізи GitHub": {
+    "en": "Open GitHub releases",
+    "ru": "Открыть релизы GitHub"
+  },
+  "Спочатку синхронізуй усі локальні зміни. Не видаляй застосунок, поки є непередані записи.": {
+    "en": "Sync local changes first. Do not uninstall the app while records are pending.",
+    "ru": "Сначала синхронизируйте локальные изменения. Не удаляйте приложение, пока есть неотправленные записи."
+  },
+  "Для встановлення поверх старої версії потрібен однаковий Android-підпис. Перший перехід із debug APK на release APK може потребувати перевстановлення. Перед цим збережи всі дані у Firebase.": {
+    "en": "Updating in place requires the same Android signing key. Moving from a debug APK to a release APK may require one reinstall. Sync everything to Firebase first.",
+    "ru": "Для обновления поверх предыдущей версии нужен тот же ключ подписи. Переход с debug APK на release APK может потребовать переустановки. Сначала сохраните все данные в Firebase."
+  },
+  "Не вдалося перевірити оновлення. Перевір інтернет і повтори спробу.": {
+    "en": "Could not check for updates. Check your connection and try again.",
+    "ru": "Не удалось проверить обновления. Проверьте интернет и повторите попытку."
+  },
+  "У GitHub Release немає перевіреного APK PayTakt.": {
+    "en": "No verified PayTakt APK was found in the GitHub release.",
+    "ru": "В релизе GitHub нет проверенного APK PayTakt."
+  },
+  "Не вдалося визначити встановлену версію.": {
+    "en": "Could not determine the installed version.",
+    "ru": "Не удалось определить установленную версию."
+  },
+  "Спочатку синхронізуй локальні зміни.": {
+    "en": "Sync your local changes first.",
+    "ru": "Сначала синхронизируйте локальные изменения."
   }
 }
 
