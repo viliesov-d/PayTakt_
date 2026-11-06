@@ -1052,12 +1052,10 @@ function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(ki
 function DeleteWorkspaceDialog({workspace,onClose,onDelete}:{
   workspace:Workspace;onClose:()=>void;onDelete:(value:Workspace)=>Promise<void>
 }){
-  const [typed,setTyped]=useState('')
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
-  const submit=async(e:FormEvent)=>{
-    e.preventDefault()
-    if(typed.trim()!==workspace.name)return
+  const submit=async()=>{
+    if(busy)return
     setBusy(true);setError('')
     try{await onDelete(workspace);onClose()}
     catch(err){setError(friendlyError(err))}
@@ -1071,18 +1069,14 @@ function DeleteWorkspaceDialog({workspace,onClose,onDelete}:{
       <h2 id="delete-workspace-title">{tr('Видалити робочий простір')}</h2>
       <p>{tr('Усі записи календаря, каса, нарахування, плани, шаблони та налаштування цього простору будуть видалені назавжди. Інші робочі простори не постраждають.')}</p>
       <p className="paytakt-delete-name">{workspace.name} · {workspace.currency??'UAH'}</p>
-      <form onSubmit={submit} className="paytakt-delete-form">
-        <label>{tr('Для підтвердження введи точну назву простору')}
-          <input autoFocus autoComplete="off" value={typed} disabled={busy} onChange={e=>setTyped(e.target.value)}/>
-        </label>
-        {error&&<p className="form-error" role="alert">{error}<br/>{tr('Якщо видалення перервалося, повтори спробу, щоб завершити очищення.')}</p>}
-        <div className="paytakt-delete-actions">
-          <button type="button" className="btn btn-outline" disabled={busy} onClick={onClose}>{tr('Скасувати')}</button>
-          <button type="submit" className="btn paytakt-danger-button" disabled={busy||typed.trim()!==workspace.name}>
-            <Trash2 size={17}/>{busy?tr('Видаляємо…'):tr('Видалити назавжди')}
-          </button>
-        </div>
-      </form>
+      <p className="paytakt-delete-question"><strong>{tr('Ви впевнені?')}</strong></p>
+      {error&&<p className="form-error" role="alert">{error}<br/>{tr('Якщо видалення перервалося, повтори спробу, щоб завершити очищення.')}</p>}
+      <div className="paytakt-delete-actions">
+        <button type="button" className="btn btn-outline" disabled={busy} onClick={onClose}>{tr('Скасувати')}</button>
+        <button type="button" className="btn paytakt-danger-button" disabled={busy} onClick={()=>void submit()}>
+          <Trash2 size={17}/>{busy?tr('Видаляємо…'):tr('Так, видалити')}
+        </button>
+      </div>
     </div>
   </div>
 }
