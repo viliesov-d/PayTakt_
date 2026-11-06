@@ -153,7 +153,7 @@ jobs:
           cat > "$RUNNER_TEMP/paytakt-release-notes.md" <<EOF
           PayTakt Mobile v${RELEASE_VERSION} — official signed Android APK.
 
-          Package: `ua.paytakt.mobile`
+          Package: ua.paytakt.mobile
           Version code: ${CODE}
           SHA-256: ${HASH}
 
