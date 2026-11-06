@@ -106,8 +106,8 @@ export async function installedVersion():Promise<string>{
 }
 export async function openOfficialUpdate(url:string):Promise<void>{
   // Prevent untrusted URLs from being opened if a release payload is modified.
-  if(!url.startsWith(`${RELEASES_URL}/`)||
-     !/^https:\/\/github\.com\/viliesov-d\/PayTakt_\/releases\/(?:tag\/v\d+\.\d+\.\d+|download\/v\d+\.\d+\.\d+\/PayTakt-Android-release\.apk)$/.test(url))
+  if(!(url===RELEASES_URL||url.startsWith(`${RELEASES_URL}/`))||
+     !/^https:\/\/github\.com\/viliesov-d\/PayTakt_\/releases(?:|\/tag\/v\d+\.\d+\.\d+|\/download\/v\d+\.\d+\.\d+\/PayTakt-Android-release\.apk)$/.test(url))
     throw Error('Посилання на APK не належить офіційному GitHub PayTakt.')
   const browser=nativeCapacitor()?.Plugins?.Browser
   if(browser){await browser.open({url});return}
