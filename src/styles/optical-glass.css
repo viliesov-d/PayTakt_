@@ -304,3 +304,16 @@
     -webkit-backdrop-filter:none!important;
   }
 }
+
+
+/* Adjustable outer-dock blur only. At 50% the original native 18px fallback
+   remains unchanged. An SVG-ready dock takes its optical blur from the
+   --pt-dock-optical-blur variable inside OpticalGlass, without changing
+   displacement, refraction, thumb, border, or shadow. */
+@media(max-width:880px){
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass']
+  .app-shell .paytakt-mobile-tabs.pt-slider-nav > .pt-dock-glass{
+    -webkit-backdrop-filter:blur(var(--pt-dock-frost-blur,18px)) saturate(1.16);
+    backdrop-filter:blur(var(--pt-dock-frost-blur,18px)) saturate(1.16);
+  }
+}

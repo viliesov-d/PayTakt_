@@ -22,7 +22,7 @@ test('preset gradients select safe colors and retain style and angle',()=>{
 })
 
 test('editable colors are validated and cannot inject CSS',()=>{
-  const input={style:'soft',gradient:'custom',from:'#aabbcc',to:'#112233',angle:315,dockTransparency:55}
+  const input={style:'soft',gradient:'custom',from:'#aabbcc',to:'#112233',angle:315,dockTransparency:55,dockBlur:50}
   assert.deepEqual(normalizeAppearance(input),input)
   assert.equal(gradientCss(input),'linear-gradient(315deg, #aabbcc, #112233)')
   const escaped=normalizeAppearance({...input,from:'red);background:url(https://example.com)',angle:Infinity})
@@ -38,7 +38,7 @@ test('device appearance round-trips and recovers from invalid storage',()=>{
     setItem:(key,value)=>storage.set(key,value),
   }
   try{
-    const custom={style:'glass',gradient:'custom',from:'#123456',to:'#abcdef',angle:45,dockTransparency:25}
+    const custom={style:'glass',gradient:'custom',from:'#123456',to:'#abcdef',angle:45,dockTransparency:25,dockBlur:50}
     assert.deepEqual(saveAppearance(custom),custom)
     assert.equal(storage.has(APPEARANCE_STORAGE_KEY),true)
     assert.deepEqual(readAppearance(),custom)
@@ -67,7 +67,7 @@ test('blocked device storage never crashes the app',()=>{
 
 test('existing stored appearance gets the default transparency without losing style or gradient',()=>{
   const legacy={style:'glass',gradient:'ocean',from:'#075985',to:'#5b4bc4',angle:225}
-  assert.deepEqual(normalizeAppearance(legacy),{...legacy,dockTransparency:90})
+  assert.deepEqual(normalizeAppearance(legacy),{...legacy,dockTransparency:90,dockBlur:50})
 })
 
 test('dock transparency is bounded and cannot inject CSS',()=>{

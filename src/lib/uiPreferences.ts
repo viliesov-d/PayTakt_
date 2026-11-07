@@ -7,14 +7,16 @@ export type AppearancePreferences = {
   from: string
   to: string
   angle: number
-  /** Android Liquid Glass dock overlay transparency (0 = opaque, 100 = clearest). */
+  /** Liquid Glass dock overlay transparency (0 = opaque, 100 = clearest). */
   dockTransparency: number
+  /** Liquid Glass dock blur strength (0..100, 50 = original appearance). */
+  dockBlur: number
 }
 
 export const APPEARANCE_STORAGE_KEY = 'paytakt-appearance-v1'
 export const DEFAULT_APPEARANCE: AppearancePreferences = {
   style: 'classic', gradient: 'none',
-  from: '#117f6b', to: '#1b486d', angle: 135, dockTransparency: 90,
+  from: '#117f6b', to: '#1b486d', angle: 135, dockTransparency: 90, dockBlur: 50,
 }
 
 export const GRADIENT_COLORS: Record<Exclude<GradientPreset, 'none' | 'custom'>, {from:string;to:string}> = {
@@ -44,7 +46,9 @@ export function normalizeAppearance(input:unknown):AppearancePreferences {
     data.angle>=0 && data.angle<=360 ? data.angle : DEFAULT_APPEARANCE.angle
   const dockTransparency=typeof data.dockTransparency==='number' && Number.isInteger(data.dockTransparency) &&
     data.dockTransparency>=0 && data.dockTransparency<=100 ? data.dockTransparency : DEFAULT_APPEARANCE.dockTransparency
-  return {style,gradient,from,to,angle,dockTransparency}
+  const dockBlur=typeof data.dockBlur==='number' && Number.isInteger(data.dockBlur) &&
+    data.dockBlur>=0 && data.dockBlur<=100 ? data.dockBlur : DEFAULT_APPEARANCE.dockBlur
+  return {style,gradient,from,to,angle,dockTransparency,dockBlur}
 }
 
 /** Transparency changes the tint, not the optical distortion or the click targets.
@@ -53,6 +57,21 @@ export function normalizeAppearance(input:unknown):AppearancePreferences {
 export function dockOverlayAlpha(transparency:number):number {
   const safe=Number.isFinite(transparency)?Math.min(100,Math.max(0,transparency)):DEFAULT_APPEARANCE.dockTransparency
   return Math.round((0.75-0.73*safe/100)*1000)/1000
+}
+
+/** The normal 50% position preserves the original platform-specific fallback.
+ * The stronger half lets users visibly change the frosted result without
+ * altering the dock's geometry, displacement map or optical edge strength. */
+export function dockFrostBlurPx(blur:number,web=false):number{
+  const safe=Number.isFinite(blur)?Math.min(100,Math.max(0,blur)):DEFAULT_APPEARANCE.dockBlur
+  return Math.round(safe*(web?19:18)/50)
+}
+/** The SVG-refracted backdrop uses a lower blur to keep refraction visible.
+ * At 50% this remains exactly the old 0.65px setting. */
+export function dockOpticalBlurPx(blur:number):number{
+  const safe=Number.isFinite(blur)?Math.min(100,Math.max(0,blur)):DEFAULT_APPEARANCE.dockBlur
+  const value=safe<=50?safe*.65/50:.65+(safe-50)*.13
+  return Math.round(value*100)/100
 }
 
 export function selectGradient(current:AppearancePreferences, gradient:GradientPreset):AppearancePreferences {
