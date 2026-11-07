@@ -1,6 +1,7 @@
 import {inputCurrencyLabel,getAccountingCurrency} from '../lib/presentation'
 import {useEffect,useState} from 'react'
 import {ChevronDown,Target,Save,Sparkles,Plus,Trash2} from 'lucide-react'
+import {SmoothPayAccordion} from './SmoothPayAccordion'
 import {validatePerformanceSettings,type PerformanceSettings,type PlanMetric} from '../lib/performance'
 import {moneyUA} from '../lib/salary'
 
@@ -26,7 +27,7 @@ export function PerformanceRulesEditor({settings,onSave,onApplyZmina,demo}:Props
     catch(e){setError(e instanceof Error?e.message:'Не вдалося застосувати шаблон. Частина налаштувань могла зберегтися — перевір їх.')}
     finally{setBusy(false)}
   }
-  return <details className="panel pay-collapse performance-editor">
+  return <SmoothPayAccordion className="panel pay-collapse performance-editor">
     <summary className="pay-collapse-summary"><div className="pay-block-heading"><Target size={21}/><div><h3>План і премії</h3><p>Ціль за касою, заробітком або кількістю виконаних робіт</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary>
     <div className="pay-collapse-body">
       <div className="performance-toolbar"><div><strong>Готовий шаблон «Система Зміна»</strong><p>{getAccountingCurrency()==='UAH'?'План за касою: премія 2 000 ₴ при 100%. Зарплата — 25-го та 10-го, премія — 15-го наступного місяця. Твої ставки не зміняться.':'Цей шаблон із премією 2 000 грн доступний лише для гривневого простору. Для іншої валюти створи власні правила.'}</p></div><button type="button" className="btn btn-outline" disabled={busy||getAccountingCurrency()!=='UAH'} onClick={()=>void apply()}><Sparkles size={17}/> Застосувати</button></div>
@@ -46,5 +47,5 @@ export function PerformanceRulesEditor({settings,onSave,onApplyZmina,demo}:Props
       <div className="performance-bottom"><span>При {draft.tiers[0]?.thresholdBasisPoints/100}% плану: {moneyUA(draft.tiers[0]?.bonus??0)} · джерело — {name(draft.metric)}</span><button type="button" className="btn btn-primary" disabled={busy} onClick={()=>void save()}><Save size={17}/>{busy?'Зберігаємо…':'Зберегти план'}</button></div>
       {error&&<p className="form-error" role="alert">{error}</p>}{message&&<p className="form-success" role="status">{message}</p>}
     </div>
-  </details>
+  </SmoothPayAccordion>
 }
