@@ -55,5 +55,5 @@ test('native and browser outer panels expose distinct blur values without affect
   assert.match(nativeCss,/\.pt-dock-glass\{\s*-webkit-backdrop-filter:blur\(var\(--pt-dock-frost-blur,18px\)\)/)
   assert.match(browserCss,/\.pt-dock-glass\{\s*-webkit-backdrop-filter:blur\(var\(--pt-dock-frost-blur,19px\)\)/)
   assert.match(browserCss,/\[data-ui-style='glass'\]/)
-  assert.doesNotMatch(browserCss,/\.pt-web-slider\.pt-optical-host > \.pt-nav-thumb\{[\s\S]*?blur\(var\(--pt-dock-frost-blur/)
+  assert.match(browser,/\{glass&&<OpticalGlass radius=\{21\} strength=\{15\} dock\/>\}/)
 })
