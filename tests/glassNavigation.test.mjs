@@ -54,5 +54,5 @@ test('Android dock disables only its white optical halo layers',()=>{
   assert.ok(override.includes('display:none!important;'))
   // The previous fixed dock rule and 3 tap targets must remain unchanged.
   assert.match(css,/position:fixed;/)
-  assert.match(css,/grid-template-columns:repeat\\(3,minmax\\(0,1fr\\)\\)/)
+  assert.ok(css.includes('grid-template-columns:repeat(3,minmax(0,1fr))'))
 })
