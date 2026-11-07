@@ -240,3 +240,25 @@
     transition:none!important
   }
 }
+
+/* v0.9.6 — remove the broad pale halo from the Android Liquid Glass dock.
+   The previous transparent borders were not enough: white gradient fills and
+   pseudo-element highlights still painted a visible frosted frame.
+   Keep the host's fixed positioning, grid, safe area, tap targets, and lens blur. */
+@media(max-width:880px){
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass,
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass-ready{
+    background:rgba(25,64,82,.08)!important;
+    border-color:transparent!important;
+    box-shadow:none!important;
+  }
+  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass,
+  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass-ready{
+    background:rgba(175,205,228,.06)!important;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::before,
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::after{
+    content:none!important;
+    display:none!important;
+  }
+}
