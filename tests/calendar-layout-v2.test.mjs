@@ -30,7 +30,7 @@ test('workspace preferences persist without backend writes',()=>{
 })
 test('calendar schedule lives in work settings; mobile editor comes first; plan is below calendar',()=>{
  assert.match(app,/scheduleOnly&&<>[\s\S]*Графік під твої правила/)
- assert.match(app,/page==='settings'&&<CalendarPage scheduleOnly/)
+ assert.match(app,/page==='settings'&&settingsSection==='schedule'&&<CalendarPage scheduleOnly/)
  assert.match(styles,/\.calendar-day-slot\{order:-1/)
  assert.match(app,/className="panel calendar-plan-panel"/)
 })

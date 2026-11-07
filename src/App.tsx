@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import {AuthScreen} from './components/AuthScreen'
 import {AppearanceSettings} from './components/AppearanceSettings'
+import {SettingsHome, SettingsSectionHeader, isSettingsSection, type SettingsSection} from './components/SettingsHome'
 import {OpticalGlass} from './components/OpticalGlass'
 import {MobileNavigation} from './components/MobileNavigation'
 import {gradientCss, readAppearance, saveAppearance, type AppearancePreferences} from './lib/uiPreferences'
@@ -794,7 +795,7 @@ function TeamPage({workspace}:{workspace:Workspace}) {
   return <><SectionHeading eyebrow="КОМАНДА" title="Співробітники компанії" detail={`Простір «${workspace.name}» · зараз доступний власнику акаунта.`}/><div className="panel team-owner"><div className="avatar large"><UserRound size={24}/></div><div><h3>Власник простору</h3><p>Повний доступ до власних налаштувань і календаря</p></div><span className="pill mint-pill">Власник</span></div><Placeholder icon={UsersRound} title="Запрошення співробітників — наступний етап" detail="Після налаштування корпоративних ролей тут з’являться запрошення, відділи та доступи. Зараз ніхто інший не може переглядати дані вашого простору."/></>
 }
 
-function SettingsPage({ session, workspace, workspaces, theme, setTheme, appearance, setAppearance, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates, syncPanel, remindersPanel, updatesPanel }: {
+function SettingsPage({ session, workspace, workspaces, theme, setTheme, appearance, setAppearance, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates, syncPanel, remindersPanel, updatesPanel, section, onSectionChange, onGoRules, remindersEnabled }: {
   session: Session; workspace: Workspace; workspaces: Workspace[]; theme: ThemeChoice;
   setTheme: (v:ThemeChoice)=>void; appearance:AppearancePreferences; setAppearance:(next:AppearancePreferences)=>void;
   onCreate:()=>void; onDeleteRequest:(w:Workspace)=>void;
@@ -802,6 +803,7 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, appeara
   onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>;
   presentation: PresentationSettings; onPresentationChange: (next:PresentationSettings)=>void;
   fxRates:NbuRateCache|null; syncPanel:ReactNode; remindersPanel:ReactNode; updatesPanel:ReactNode;
+  section:SettingsSection;onSectionChange:(section:SettingsSection)=>void;onGoRules:()=>void;remindersEnabled:boolean;
 }) {
   const nativeCurrency=workspace.currency??'UAH'
   const [currencyDraft,setCurrencyDraft]=useState<DisplayCurrency>(presentation.currency)
@@ -825,8 +827,13 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, appeara
     onPresentationChange({...presentation,currency:currencyDraft,uahPerUnit:rate,fxMode:fxModeDraft})
   }
   return <>
-    <SectionHeading eyebrow="ПЕРСОНАЛІЗАЦІЯ" title="Налаштування" detail="Зовнішній вигляд, профіль та робочі простори."/>
-    {!session.demo&&<div className={`verification-card ${emailVerified?'verified':''}`}>
+    {section==='home'&&<SettingsHome
+      language={presentation.language} appearance={appearance} theme={theme}
+      workspaceName={workspace.name} workspacesCount={workspaces.length}
+      remindersEnabled={remindersEnabled} onOpen={onSectionChange} onGoRules={onGoRules}/>}
+    {section!=='home'&&<SettingsSectionHeader section={section}
+      language={presentation.language} onBack={()=>onSectionChange('home')}/>}
+    {section==='account'&&!session.demo&&<div className={`verification-card ${emailVerified?'verified':''}`}>
       <div><div className="verification-title"><ShieldCheck size={19}/><strong>{tr(emailVerified?'Електронну пошту підтверджено':'Підтвердь електронну пошту')}</strong></div>
       <p>{emailVerified?'Твій акаунт має підтверджену email-адресу.':'Ми рекомендуємо підтвердити email, щоб захистити доступ до акаунта й відновлення пароля.'}</p></div>
       {!emailVerified&&<div className="verification-actions">
@@ -834,21 +841,10 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, appeara
         <button className="btn btn-outline" type="button" onClick={()=>void onRefreshVerification()}><Check size={16}/>{tr('Я підтвердив')}</button>
       </div>}
     </div>}
-    <div className="settings-grid">
-      <AppearanceSettings value={appearance} onChange={setAppearance} theme={theme} onThemeChange={setTheme} language={presentation.language}/>
-      {syncPanel}
-      {updatesPanel}
-      {remindersPanel}
-      <section className="panel settings-panel">
-        <div className="settings-heading"><UserRound size={22}/><div><h3>{tr('Мій профіль')}</h3><p>{tr('Акаунт PayTakt')}</p></div></div>
-        <div className="setting-info"><span>{tr('Ім’я')}</span><strong>{session.name}</strong></div>
-        <div className="setting-info"><span>{tr('Електронна пошта')}</span><strong>{session.email || tr('Деморежим')}</strong></div>
-        <div className="setting-info"><span>{tr('Тип входу')}</span><strong>{session.demo?tr('Демонстрація'):tr('Електронна пошта')}</strong></div>
-        <button type="button" className="btn btn-outline paytakt-signout-button" onClick={onSignOut}>
-          <LogOut size={18}/>{tr('Вийти з акаунта')}
-        </button>
-      </section>
-      <section className="panel settings-panel settings-wide paytakt-locale-settings">
+    <div className="settings-grid pt-settings-detail-grid">
+      {section==='appearance'&&<>
+        <AppearanceSettings value={appearance} onChange={setAppearance} theme={theme} onThemeChange={setTheme} language={presentation.language}/>
+        <section className="panel settings-panel settings-wide paytakt-locale-settings">
         <div className="settings-heading"><Monitor size={22}/><div><h3>{tr('Мова застосунку')}</h3><p>Українська · English · Русский</p></div></div>
         <div className="paytakt-language-options" role="group" aria-label={tr('Мова застосунку')}>
           {([['uk','Українська'],['en','English'],['ru','Русский']] as const).map(([value,label])=>
@@ -858,7 +854,20 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, appeara
           )}
         </div>
       </section>
-      <section className="panel settings-panel settings-wide paytakt-accounting-currency">
+      </>}
+      {section==='account'&&<>
+<section className="panel settings-panel">
+        <div className="settings-heading"><UserRound size={22}/><div><h3>{tr('Мій профіль')}</h3><p>{tr('Акаунт PayTakt')}</p></div></div>
+        <div className="setting-info"><span>{tr('Ім’я')}</span><strong>{session.name}</strong></div>
+        <div className="setting-info"><span>{tr('Електронна пошта')}</span><strong>{session.email || tr('Деморежим')}</strong></div>
+        <div className="setting-info"><span>{tr('Тип входу')}</span><strong>{session.demo?tr('Демонстрація'):tr('Електронна пошта')}</strong></div>
+        <button type="button" className="btn btn-outline paytakt-signout-button" onClick={onSignOut}>
+          <LogOut size={18}/>{tr('Вийти з акаунта')}
+        </button>
+      </section>
+      </>}
+      {section==='finance'&&<>
+<section className="panel settings-panel settings-wide paytakt-accounting-currency">
         <div className="settings-heading"><Wallet size={22}/><div>
           <h3>{tr('Валюта зарплати')}</h3>
           <p>{tr('Гроші в цьому робочому просторі зберігаються без перерахунку у вибраній валюті.')}</p>
@@ -867,7 +876,7 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, appeara
           <small>{tr('Валюта закріплена за простором. Для іншої валюти створи окремий робочий простір; старі суми залишаться без змін.')}</small>
         </div>
       </section>
-      {nativeCurrency==='UAH'&&<>
+{nativeCurrency==='UAH'&&<>
       <section className="panel settings-panel settings-wide paytakt-currency-settings">
         <div className="settings-heading"><Wallet size={22}/><div><h3>{tr('Валюта відображення')}</h3><p>{tr('Зарплата обліковується у гривнях. Інша валюта показує лише орієнтовний еквівалент за вказаним тобою курсом. Введення сум залишається у гривнях.')}</p></div></div>
         <form className="paytakt-currency-form" onSubmit={updateCurrency}>
@@ -907,7 +916,11 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, appeara
         </form>
       </section>
       </>}
-      <section className="panel settings-panel settings-wide">
+      </>}
+      {section==='notifications'&&remindersPanel}
+      {section==='data'&&<>{syncPanel}{updatesPanel}</>}
+      {section==='workspaces'&&<>
+<section className="panel settings-panel settings-wide">
         <div className="settings-heading"><BriefcaseBusiness size={22}/><div><h3>{tr('Робочі простори')}</h3><p>{tr('Особисті записи та компанії не змішуються.')}</p></div></div>
         <div className="workspace-rows">{workspaces.map(w=><div className="workspace-row paytakt-workspace-row" key={w.id}>
           <div className="workspace-symbol">{w.kind==='company'?<Building2 size={19}/>:<UserRound size={19}/>}</div>
@@ -926,6 +939,7 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, appeara
         {workspaces.length===1&&<p className="paytakt-only-workspace-note">{tr('Не можна видалити єдиний простір. Спочатку створи інший.')}</p>}
         <button type="button" className="btn btn-outline" onClick={onCreate}><Plus size={17}/>{tr('Додати робочий простір')}</button>
       </section>
+      </>}
     </div>
   </>
 }
@@ -1145,6 +1159,8 @@ export default function App(){
   const [unitsLoaded,setUnitsLoaded]=useState(false)
   const [unitsError,setUnitsError]=useState('')
   const [page,setPage]=useState<Page>('calendar')
+  const [settingsSection,setSettingsSection]=useState<SettingsSection>('home')
+  useEffect(()=>{if(page!=='settings')setSettingsSection('home')},[page])
   const [suggestedPreset,setSuggestedPreset]=useState<TemplatePreset>('2/2')
   const [setupPayDraft,setSetupPayDraft]=useState<PaySettings|null>(null)
   const [mobileMenu,setMobileMenu]=useState(false)
@@ -1638,6 +1654,8 @@ export default function App(){
       } else {
         setPage('calendar')
       }
+      const candidateSection=(event.state as {paytaktSettingsSection?:unknown}|null)?.paytaktSettingsSection
+      setSettingsSection(candidate==='settings'&&isSettingsSection(candidateSection)?candidateSection:'home')
       setMobileMenu(false)
       setWorkspaceMenu(false)
       window.scrollTo({ top: 0 })
@@ -1648,8 +1666,12 @@ export default function App(){
 
   const navigate=(p:Page)=>{
     if (p !== page) {
-      window.history.pushState({ ...window.history.state, paytaktPage: p }, '')
+      window.history.pushState({ ...window.history.state, paytaktPage: p, paytaktSettingsSection: 'home' }, '')
       setPage(p)
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    } else if(p==='settings') {
+      window.history.replaceState({ ...window.history.state, paytaktSettingsSection: 'home' }, '')
+      setSettingsSection('home')
       window.scrollTo({ top: 0, behavior: 'auto' })
     }
     setMobileMenu(false)
@@ -1756,8 +1778,19 @@ export default function App(){
         {page==='pay'&&<PayPageV5 key={workspace.id} workspaceName={workspace.name} shifts={shifts} settings={paySettings} performance={performance} targets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} loaded={payLoaded&&salesLoaded&&unitsLoaded&&cashLoaded&&performanceLoaded&&targetsLoaded&&wagesLoaded} salesFromCash={cashPrefs.enabled&&cashPrefs.useForSales} salesByMonth={effectiveSales} onSaveMonthlySales={onSaveMonthlySales} unitsByMonth={unitsByMonth} onSaveMonthlyUnits={onSaveMonthlyUnits} demo={session.demo} goToRules={()=>navigate('rules')}/>}
         {page==='rules'&&<RulesPageV5 key={workspace.id} shifts={shifts} workspaceName={workspace.name} settings={setupPayDraft??paySettings} loaded={payLoaded} demo={session.demo} onSave={onSavePay} performance={performance} onSavePerformance={onSavePerformance} onApplyZmina={onApplyZmina}/>}
         {page==='team'&&workspace.kind==='company'&&<TeamPage workspace={workspace}/>}
-        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} appearance={appearance} setAppearance={setAppearanceChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates} syncPanel={syncPanel} remindersPanel={remindersPanel} updatesPanel={updatesPanel}/>}
-        {page==='settings'&&<section className="panel v2-settings-actions">
+        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} appearance={appearance} setAppearance={setAppearanceChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates} section={settingsSection} onSectionChange={next=>{
+          const state=window.history.state as {paytaktPage?:string;paytaktSettingsSection?:string}|null
+          if(next==='home'&&settingsSection!=='home'&&state?.paytaktPage==='settings'&&state.paytaktSettingsSection===settingsSection){
+            window.history.back()
+          }else if(next!=='home'&&next!==settingsSection){
+            window.history.pushState({...state,paytaktPage:'settings',paytaktSettingsSection:next},'')
+            setSettingsSection(next)
+          }else{
+            setSettingsSection(next)
+          }
+          window.scrollTo({top:0,behavior:'auto'})
+        }} onGoRules={()=>navigate('rules')} remindersEnabled={reminderPrefs.enabled} syncPanel={syncPanel} remindersPanel={remindersPanel} updatesPanel={updatesPanel}/>}
+        {page==='settings'&&settingsSection==='schedule'&&<section className="panel v2-settings-actions">
           <div className="v2-settings-head"><div><h3>{tr("Налаштування твоєї роботи")}</h3><p>Персональний майстер або точні правила — обирай зручний спосіб.</p></div></div>
           <div className="v2-settings-links">
             <button type="button" className="btn btn-primary" onClick={()=>setForceWizard(true)}><Sparkles size={17}/> {tr("Пройти майстер")}</button>
@@ -1779,7 +1812,7 @@ export default function App(){
             </div>
           </details>
         </section>}
-        {page==='settings'&&<CalendarPage scheduleOnly key={`${workspace.id}-schedule-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
+        {page==='settings'&&settingsSection==='schedule'&&<CalendarPage scheduleOnly key={`${workspace.id}-schedule-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
         
         </div>
         <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>{isNativeAndroid?`PayTakt Mobile v${installedAppVersion}`:'Версія 2.0.0 beta 4'}</span></footer>
