@@ -51,10 +51,13 @@
 .pt-optical-defs{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
 
 /* Give the glass layer an unobstructed backdrop and keep every control above it. */
+/* Do not change the host position: the Android bottom dock MUST stay fixed,
+   while popovers preserve absolute positioning. This caused the v0.9.3 bug. */
 :root[data-ui-style='glass'] .app-shell .pt-optical-host{
-  position:relative;isolation:isolate;
+  isolation:isolate;
   background:transparent!important;
 }
+:root[data-ui-style='glass'] .modal.pt-optical-host{position:relative}
 :root[data-ui-style='glass'] .pt-optical-host > :not(.pt-optical-glass):not(.pt-optical-defs){
   position:relative;z-index:1;
 }
@@ -120,4 +123,110 @@
 @media(prefers-reduced-motion:reduce){
   :root[data-ui-style='glass'] .paytakt-mobile-tabs.pt-optical-host > button{transition:none}
   :root[data-ui-style='glass'] .paytakt-mobile-tabs.pt-optical-host > button:active{transform:none}
+}
+
+/* Stage B glass correction: refraction belongs to Android only.
+   On the website, retain a lightweight frosted pane and normal document flow. */
+:root:not(.paytakt-native-android)[data-ui-style='glass'] .zmina-primary-nav,
+:root:not(.paytakt-native-android)[data-ui-style='glass'] .workspace-popover,
+:root:not(.paytakt-native-android)[data-ui-style='glass'] .modal{
+  background:var(--panel);
+  border:1px solid var(--border);
+  box-shadow:0 12px 32px rgba(22,48,70,.1);
+}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  :root:not(.paytakt-native-android)[data-ui-style='glass'] .zmina-primary-nav,
+  :root:not(.paytakt-native-android)[data-ui-style='glass'] .workspace-popover,
+  :root:not(.paytakt-native-android)[data-ui-style='glass'] .modal{
+    background:color-mix(in srgb,var(--panel) 84%,transparent);
+    backdrop-filter:blur(16px) saturate(1.22);
+    -webkit-backdrop-filter:blur(16px) saturate(1.22)
+  }
+}
+@media(prefers-reduced-transparency:reduce){
+  :root:not(.paytakt-native-android)[data-ui-style='glass'] .zmina-primary-nav,
+  :root:not(.paytakt-native-android)[data-ui-style='glass'] .workspace-popover,
+  :root:not(.paytakt-native-android)[data-ui-style='glass'] .modal{
+    background:var(--panel);
+    backdrop-filter:none;-webkit-backdrop-filter:none
+  }
+}
+
+/* Restored and polished floating Android navigation.
+   High-specificity fixed position prevents a future generic glass skin from
+   moving the dock into the document flow. Leave all three buttons as grid items. */
+@media(max-width:880px){
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host{
+    position:fixed;
+    inset-inline:12px;
+    top:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px));
+    width:auto;
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+    align-items:stretch;gap:5px;
+    padding:7px;
+    border:1px solid rgba(222,244,255,.53);
+    border-radius:28px;
+    background:transparent!important;
+    backdrop-filter:none;-webkit-backdrop-filter:none;
+    box-shadow:0 12px 36px rgba(15,42,65,.22),0 2px 8px rgba(7,25,50,.08);
+    overflow:hidden;isolation:isolate;
+    z-index:65;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass{
+    position:absolute;inset:0;
+    border-radius:inherit;
+    border:1px solid rgba(255,255,255,.58);
+    background:linear-gradient(156deg,rgba(255,255,255,.27),rgba(255,255,255,.06) 49%,rgba(125,202,226,.09)),
+      color-mix(in srgb,var(--panel) 60%,transparent);
+    box-shadow:inset 0 2px 1px rgba(255,255,255,.68),
+      inset 0 -1px 1px rgba(64,111,146,.18);
+    pointer-events:none;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass-ready{
+    background:linear-gradient(155deg,rgba(255,255,255,.18),transparent 55%,rgba(112,190,225,.08)),
+      color-mix(in srgb,var(--panel) 29%,transparent);
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button{
+    z-index:2;position:relative;
+    min-width:0;min-height:61px;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    gap:5px;padding:8px 4px;
+    font-size:10.5px;font-weight:750;line-height:1.15;
+    color:var(--text);background:transparent;
+    border:1px solid transparent;border-radius:21px;
+    box-shadow:none;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button svg{
+    width:23px;height:23px;flex:0 0 auto;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+    background:linear-gradient(150deg,rgba(255,255,255,.76),rgba(255,255,255,.21) 85%);
+    color:#163a4e;
+    border-color:rgba(255,255,255,.72);
+    box-shadow:inset 0 1px 1px rgba(255,255,255,.92),
+      inset 0 -1px 1px rgba(52,95,128,.13),0 3px 14px rgba(16,53,85,.1);
+  }
+  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+    color:#f6fbff;
+    background:linear-gradient(146deg,rgba(232,247,255,.27),rgba(139,193,226,.1));
+    border-color:rgba(238,250,255,.29);
+  }
+  html.paytakt-native-android[data-ui-style='glass'][data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+    background-image:linear-gradient(rgba(10,24,43,.30),rgba(10,24,43,.30)),var(--pt-gradient);
+    color:#fff;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .main-content{
+    padding-bottom:calc(116px + env(safe-area-inset-bottom,0px));
+  }
+}
+@media(max-width:880px) and (prefers-reduced-transparency:reduce){
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass{
+    background:var(--panel)!important;
+    backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  }
+}
+@media(max-width:880px) and (prefers-reduced-motion:reduce){
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button{
+    transition:none!important
+  }
 }
