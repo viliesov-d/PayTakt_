@@ -2,15 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import {AuthScreen} from './components/AuthScreen'
 import {
   ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, BriefcaseBusiness, Building2, CalendarDays,
-  Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clock3,
-  LayoutDashboard, LockKeyhole, LogOut, Mail, Menu, Monitor, Moon, Plus, Save, TrendingUp, AlertTriangle, CloudUpload,
+  Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3,
+  LayoutDashboard, LogOut, Mail, Menu, Monitor, Moon, Plus, Save, TrendingUp, AlertTriangle, CloudUpload,
   RotateCcw, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Target, Trash2, UserRound,
   UsersRound, Wallet, X, ReceiptText,
 } from 'lucide-react'
 import {
   onAuthStateChanged, sendEmailVerification, reload, signOut,
 } from 'firebase/auth'
-import { auth, db } from './lib/firebase'
+import { auth, firebaseReady } from './lib/firebase'
 import {
   createWorkspace, deleteWorkspace, demoShifts, ensureProfile, loadWorkspaces, subscribeTemplates, saveTemplate, deleteTemplate,
   applyMonthlyPattern, shiftHours, shiftCount, validateDay, subscribeShifts, toDateKey, updateProfileTheme,
