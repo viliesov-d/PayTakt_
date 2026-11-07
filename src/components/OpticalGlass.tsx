@@ -1,13 +1,13 @@
 import {useEffect,useId,useRef,useState} from 'react'
 import {makeGlassDisplacementMap,type GlassMap} from '../lib/glassOptics'
 
-type Props={radius:number;strength?:number;dock?:boolean}
+type Props={radius:number;strength?:number;dock?:boolean;reflectiveRim?:boolean}
 
 /** A purely visual material layer: buttons and form inputs stay normal DOM controls.
  * Chromium's SVG backdrop filter refracts live content; other engines use frosted CSS.
  * ResizeObserver rebuilds the displacement map only when the surface changes shape.
  */
-export function OpticalGlass({radius,strength=30,dock=false}:Props){
+export function OpticalGlass({radius,strength=30,dock=false,reflectiveRim=false}:Props){
   const id='pt-lens-'+useId().replace(/[^a-zA-Z0-9_-]/g,'')
   const surface=useRef<HTMLSpanElement|null>(null)
   const [map,setMap]=useState<GlassMap|null>(null)
@@ -34,7 +34,7 @@ export function OpticalGlass({radius,strength=30,dock=false}:Props){
       const width=Math.round(box.width),height=Math.round(box.height)
       if(width===measuredW&&height===measuredH)return
       measuredW=width;measuredH=height
-      try{setMap(makeGlassDisplacementMap(width,height,radius,undefined,dock,strength))}
+      try{setMap(makeGlassDisplacementMap(width,height,radius,undefined,dock,strength,reflectiveRim))}
       catch{setMap(null)} // The frosted fallback still works on weak WebViews.
     }
     const schedule=()=>{
@@ -67,7 +67,7 @@ export function OpticalGlass({radius,strength=30,dock=false}:Props){
       host.removeEventListener('pointermove',pointer)
       host.removeEventListener('pointerleave',reset)
     }
-  },[radius,dock,strength])
+  },[radius,dock,strength,reflectiveRim])
 
   const svgFilter=map?`url("#${id}") blur(${dock?0.65:3}px) saturate(1.3)`:null
   return <>

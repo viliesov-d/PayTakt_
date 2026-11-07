@@ -11,6 +11,8 @@ export function MobileNavigation<T extends string>({items,activeId,glass,dockTra
   const host=useRef<HTMLElement>(null)
   const gesture=useRef<{id:number;startX:number;dragged:boolean}|null>(null)
   const [preview,setPreview]=useState<number|null>(null)
+  const [pressed,setPressed]=useState(false)
+  const [dragging,setDragging]=useState(false)
   const active=items.findIndex(item=>item.id===activeId)
   const position=preview??Math.max(0,active)
   const sample=(clientX:number)=>{
@@ -20,17 +22,29 @@ export function MobileNavigation<T extends string>({items,activeId,glass,dockTra
     const last=buttons[buttons.length-1].getBoundingClientRect()
     return navigationPosition(clientX,first.left+first.width/2,last.left+last.width/2,items.length)
   }
-  const reset=()=>{gesture.current=null;setPreview(null)}
+  const reset=()=>{
+    gesture.current=null
+    setPreview(null)
+    setPressed(false)
+    setDragging(false)
+  }
   const down=(event:PointerEvent<HTMLElement>)=>{
     if(!event.isPrimary||event.button!==0||gesture.current)return
     gesture.current={id:event.pointerId,startX:event.clientX,dragged:false}
     event.currentTarget.setPointerCapture(event.pointerId)
+    // Expand immediately under the finger. Keep the position continuous,
+    // including between all three tab centers, until the pointer is released.
+    setPressed(glass)
+    if(glass)setPreview(sample(event.clientX))
   }
   const move=(event:PointerEvent<HTMLElement>)=>{
     const current=gesture.current
     if(!current||current.id!==event.pointerId)return
-    if(Math.abs(event.clientX-current.startX)>5)current.dragged=true
-    if(current.dragged)setPreview(sample(event.clientX))
+    if(!current.dragged&&Math.abs(event.clientX-current.startX)>(glass?4:5)){
+      current.dragged=true
+      setDragging(true)
+    }
+    if(glass||current.dragged)setPreview(sample(event.clientX))
   }
   const up=(event:PointerEvent<HTMLElement>)=>{
     const current=gesture.current
@@ -48,12 +62,12 @@ export function MobileNavigation<T extends string>({items,activeId,glass,dockTra
     onSelect(items[next].id)
   }
   return <nav ref={host} className={`paytakt-mobile-tabs pt-slider-nav ${glass?'pt-optical-host':''}`}
-    aria-label="Навігація PayTakt Mobile" data-dragging={preview!==null}
+    aria-label="Навігація PayTakt Mobile" data-dragging={dragging} data-pressed={pressed}
     style={{'--pt-tab-count':items.length,'--pt-tab-position':position,
       '--pt-dock-tint-alpha':dockOverlayAlpha(dockTransparency)} as CSSProperties}
     onPointerDown={down} onPointerMove={move} onPointerUp={up}
     onPointerCancel={reset} onLostPointerCapture={reset}>
-    {glass&&<OpticalGlass radius={27} strength={24} dock/>}
+    {glass&&<OpticalGlass radius={27} strength={24} dock reflectiveRim/>}
     <span className="pt-nav-thumb" aria-hidden="true" hidden={active<0&&preview===null}>
       {glass&&<OpticalGlass radius={21} strength={15} dock/>}
     </span>
