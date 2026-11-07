@@ -10,9 +10,9 @@ const appearance=readFileSync(new URL('../src/components/AppearanceSettings.tsx'
 const optical=readFileSync(new URL('../src/components/OpticalGlass.tsx',import.meta.url),'utf8')
 
 test('two independent optical lenses exist without changing the original dock lens',()=>{
-  assert.match(nav, /glass&&<OpticalGlass radius=\{27\} strength=\{24\} dock\/>/)
+  assert.match(nav, /glass&&<OpticalGlass radius=\{27\} strength=\{24\} dock reflectiveRim\/>/)
   assert.match(nav, /<span className="pt-nav-thumb"[^>]*>[\s\S]*?glass&&<OpticalGlass radius=\{21\} strength=\{15\} dock\/>/)
-  assert.match(optical, /makeGlassDisplacementMap\(width,height,radius,undefined,dock,strength\)/)
+  assert.match(optical, /makeGlassDisplacementMap\(width,height,radius,undefined,dock,strength,reflectiveRim\)/)
   assert.match(nav, /onPointerDown=\{down\} onPointerMove=\{move\} onPointerUp=\{up\}/)
   assert.match(nav, /onKeyDown=\{event=>key\(event,index\)\}/)
 })
