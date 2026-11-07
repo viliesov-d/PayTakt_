@@ -7,6 +7,7 @@ import {AppearanceSettings} from './components/AppearanceSettings'
 import {SettingsHome, SettingsSectionHeader, isSettingsSection, type SettingsSection} from './components/SettingsHome'
 import {OpticalGlass} from './components/OpticalGlass'
 import {MobileNavigation} from './components/MobileNavigation'
+import {WebMobileNavigation} from './components/WebMobileNavigation'
 import {PwaInstallCard} from './components/PwaInstallCard'
 import {setAndroidSystemBarContrast} from './lib/nativeSystemBars'
 import {gradientCss, readAppearance, saveAppearance, type AppearancePreferences} from './lib/uiPreferences'
@@ -1855,7 +1856,7 @@ export default function App(){
         return {id:item.id,label:tr(item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування'),
           icon:<Icon size={22} strokeWidth={2.2} aria-hidden="true"/>}
       })}/>}
-    {platform==='web'&&<MobileNavigation activeId={page} glass={true} dockTransparency={appearance.dockTransparency} onSelect={navigate}
+    {platform==='web'&&<WebMobileNavigation activeId={page} dockTransparency={appearance.dockTransparency} onSelect={navigate}
       items={allowedNav.map(item=>{
         const Icon=item.icon
         return {id:item.id,label:tr(item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування'),
