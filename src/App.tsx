@@ -4,6 +4,7 @@ import {AppearanceSettings} from './components/AppearanceSettings'
 import {SettingsHome, SettingsSectionHeader, isSettingsSection, type SettingsSection} from './components/SettingsHome'
 import {OpticalGlass} from './components/OpticalGlass'
 import {MobileNavigation} from './components/MobileNavigation'
+import {setAndroidSystemBarContrast} from './lib/nativeSystemBars'
 import {gradientCss, readAppearance, saveAppearance, type AppearancePreferences} from './lib/uiPreferences'
 import {
   ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, BriefcaseBusiness, Building2, CalendarDays,
@@ -1341,9 +1342,10 @@ export default function App(){
       const dark=theme==='dark'||(theme==='system'&&mq.matches)
       document.documentElement.dataset.theme=dark?'dark':'light'
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#0c1425':'#f4f7fb')
+      if(isNativeAndroid)setAndroidSystemBarContrast(dark)
     }
     apply();mq.addEventListener('change',apply);return()=>mq.removeEventListener('change',apply)
-  },[theme])
+  },[theme,isNativeAndroid])
   const setAppearanceChoice=useCallback((next:AppearancePreferences)=>{
     setAppearance(saveAppearance(next))
   },[])
