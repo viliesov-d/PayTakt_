@@ -84,7 +84,7 @@
   }
   html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
     background:transparent!important;background-image:none!important;
-    box-shadow:none!important;overflow:hidden;isolation:isolate;
+    box-shadow:none!important;overflow:hidden;
   }
   html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass{
     position:absolute;inset:0;border:0!important;border-radius:inherit;
@@ -112,6 +112,11 @@
   }
 }
 @media(max-width:880px) and (prefers-reduced-transparency:reduce){
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass,
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
+    background:var(--panel)!important;
+    backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  }
   html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass,
   html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass-ready{
     background:var(--panel)!important;
