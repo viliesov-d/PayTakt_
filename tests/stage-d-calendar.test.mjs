@@ -4,30 +4,28 @@ import {readFileSync} from 'node:fs'
 
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8')
 const main=readFileSync(new URL('../src/main.tsx',import.meta.url),'utf8')
-const css=readFileSync(new URL('../src/styles/calendar-refresh.css',import.meta.url),'utf8')
+const css=readFileSync(new URL('../src/styles/calendar-quick-jump.css',import.meta.url),'utf8')
 const baseStyles=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8')
 
-test('stage D keeps month switch, today jump and calendar filters functional',()=>{
+test('calendar returns to the pre-stage-D markup including old day badges',()=>{
+  assert.match(app,/<section className="panel calendar-panel"><div className="calendar-toolbar"><div><h3 key=\{monthKey\}/)
+  assert.match(app,/className="calendar-overtime" aria-label=/)
+  assert.match(app,/className="calendar-payout-marker"><Wallet/)
+  assert.match(app,/className="cal-legend"/)
+  assert.doesNotMatch(app,/cal-day-flags|cal-worked-check|cal-today-dot|calendar-month-kicker|calendar-period-note/)
+})
+
+test('today button, month navigation and filters remain available',()=>{
+  assert.match(app,/className="cal-today" onClick=\{jumpToToday\}/)
   assert.match(app,/onClick=\{\(\)=>moveMonth\(-1\)\}/)
-  assert.match(app,/onClick=\{jumpToToday\}/)
   assert.match(app,/onClick=\{\(\)=>moveMonth\(1\)\}/)
   assert.match(app,/onClick=\{\(\)=>setCalendarFilter\(id\)\}/)
   assert.match(app,/onChange=\{e=>setShowPayouts\(e\.target\.checked\)\}/)
   assert.match(app,/onClick=\{\(\)=>select\(day\)\}/)
-})
-
-test('stage D day cells remain keyboard accessible and announce useful details',()=>{
-  assert.match(app,/aria-current=\{date===toDateKey\(today\)\?'date':undefined\}/)
   assert.match(app,/aria-pressed=\{selected===date\}/)
-  assert.match(app,/cal-worked-check/)
-  assert.match(app,/cal-today-dot/)
-  assert.match(app,/className="cal-day-flags"/)
-  assert.match(app,/понаднормові/)
-  assert.match(app,/є запис каси/)
-  assert.match(app,/запланована виплата/)
 })
 
-test('selected date summary links back to the existing editable day form',()=>{
+test('quick jump remains tied to the selected day and the original editor',()=>{
   assert.match(app,/className="calendar-selection-bar"/)
   assert.match(app,/className="calendar-selection-copy"/)
   assert.match(app,/selectedDayStatus/)
@@ -36,17 +34,17 @@ test('selected date summary links back to the existing editable day form',()=>{
   assert.match(app,/id="calendar-day-editor" className="panel editor-panel day-editor-v2"/)
 })
 
-test('calendar refresh is scoped, responsive and keeps mobile editor first',()=>{
-  assert.match(main,/import '\.\/styles\/calendar-refresh\.css'/)
-  assert.match(css,/\.calendar-panel \.cal-day/)
-  assert.match(css,/@media\(max-width:700px\)/)
-  assert.match(css,/@media\(max-width:430px\)/)
+test('only quick jump styles are imported; original calendar and Liquid Glass remain intact',()=>{
+  assert.match(main,/import '\.\/styles\/calendar-quick-jump\.css'/)
+  assert.doesNotMatch(main,/calendar-refresh\.css/)
+  assert.match(css,/\.calendar-selection-bar/)
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)/)
-  assert.doesNotMatch(css,/pt-optical-glass|backdrop-filter|feDisplacementMap/i)
+  assert.doesNotMatch(css,/\.cal-day|\.cal-grid|\.cal-arrows|\.calendar-toolbar|pt-optical-glass|backdrop-filter|feDisplacementMap/i)
   assert.match(baseStyles,/\.calendar-day-slot\{order:-1/)
+  assert.match(main,/import '\.\/styles\/optical-glass\.css'/)
 })
 
-test('calendar refresh leaves payroll actions and storage wiring in place',()=>{
+test('return to classic calendar does not change payroll actions',()=>{
   assert.match(app,/const quickSave = async/)
   assert.match(app,/const quickType = \(type:DayType\)/)
   assert.match(app,/const quickStatus = \(\)/)

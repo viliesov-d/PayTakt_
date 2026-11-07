@@ -1,0 +1,33 @@
+/* Restored 0.9.11 calendar: only the selected-date quick jump is new.
+   No calendar grid, day, theme, or Liquid Glass rules are overridden. */
+.calendar-selection-bar{
+  display:flex;align-items:center;gap:11px;min-width:0;
+  padding:14px 0 0;margin:17px 0 0;
+  border-top:1px solid var(--border)
+}
+.calendar-selection-icon{
+  display:grid;place-items:center;flex:0 0 40px;height:40px;
+  border-radius:12px;background:var(--mint-soft);color:var(--mint)
+}
+.calendar-selection-copy{flex:1;min-width:0;display:grid;gap:4px}
+.calendar-selection-copy strong{font-size:13px;line-height:1.3;overflow-wrap:anywhere}
+.calendar-selection-copy small{font-size:11px;color:var(--muted-deep)}
+.calendar-editor-jump{
+  min-height:40px;display:inline-flex;align-items:center;justify-content:center;
+  gap:5px;padding:8px 12px;border:1px solid var(--border);
+  border-radius:11px;color:var(--mint);background:var(--panel-soft);
+  font-size:12px;font-weight:800;white-space:nowrap
+}
+.calendar-editor-jump:hover{background:var(--mint-soft);border-color:var(--mint)}
+.calendar-editor-jump:focus-visible{outline:3px solid var(--zmina-purple);outline-offset:2px}
+#calendar-day-editor{scroll-margin-top:22px}
+@media(max-width:700px){
+  .calendar-selection-bar{margin-top:14px;padding-top:13px}
+}
+@media(max-width:390px){
+  .calendar-selection-icon{flex-basis:34px;height:34px}
+  .calendar-editor-jump{padding:7px 9px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  .calendar-editor-jump{transition:none!important}
+}
