@@ -7,12 +7,14 @@ export type AppearancePreferences = {
   from: string
   to: string
   angle: number
+  /** Android Liquid Glass dock overlay transparency (0 = opaque, 100 = clearest). */
+  dockTransparency: number
 }
 
 export const APPEARANCE_STORAGE_KEY = 'paytakt-appearance-v1'
 export const DEFAULT_APPEARANCE: AppearancePreferences = {
   style: 'classic', gradient: 'none',
-  from: '#117f6b', to: '#1b486d', angle: 135,
+  from: '#117f6b', to: '#1b486d', angle: 135, dockTransparency: 90,
 }
 
 export const GRADIENT_COLORS: Record<Exclude<GradientPreset, 'none' | 'custom'>, {from:string;to:string}> = {
@@ -40,7 +42,9 @@ export function normalizeAppearance(input:unknown):AppearancePreferences {
   const to=isColor(data.to)?data.to.toLowerCase():DEFAULT_APPEARANCE.to
   const angle=typeof data.angle==='number' && Number.isInteger(data.angle) &&
     data.angle>=0 && data.angle<=360 ? data.angle : DEFAULT_APPEARANCE.angle
-  return {style,gradient,from,to,angle}
+  const dockTransparency=typeof data.dockTransparency==='number' && Number.isInteger(data.dockTransparency) &&
+    data.dockTransparency>=0 && data.dockTransparency<=100 ? data.dockTransparency : DEFAULT_APPEARANCE.dockTransparency
+  return {style,gradient,from,to,angle,dockTransparency}
 }
 
 export function selectGradient(current:AppearancePreferences, gradient:GradientPreset):AppearancePreferences {
