@@ -16,11 +16,11 @@ const clamp=(n:number,low:number,high:number)=>Math.min(high,Math.max(low,n))
  * Output is normalized to +/-1 so a CSS/ SVG pixel scale controls strength.
  */
 export function glassEdgeVector(
-  x:number,y:number,width:number,height:number,radius:number,bezel=22,
+  x:number,y:number,width:number,height:number,radius:number,bezel=22,softEdge=false,
 ):{x:number;y:number}{
   if(width<=0||height<=0||bezel<=0)return {x:0,y:0}
   const dist=roundedRectDistance(x,y,width,height,radius)
-  if(dist>=1||dist<=-bezel)return {x:0,y:0}
+  if(dist>=(softEdge?0:1)||dist<=-bezel)return {x:0,y:0}
   const delta=0.8
   const gx=roundedRectDistance(x+delta,y,width,height,radius)-
     roundedRectDistance(x-delta,y,width,height,radius)
@@ -29,7 +29,10 @@ export function glassEdgeVector(
   const length=Math.hypot(gx,gy)
   if(length<1e-5)return {x:0,y:0}
   const near=clamp(1+dist/bezel,0,1)
-  const intensity=near*near*(3-2*near) // smoothstep: no hard inner ring
+  // A dock lens has no displacement at its silhouette, avoiding a hard refractive rim.
+  const intensity=softEdge
+    ? Math.sin(Math.PI*clamp(-dist/bezel,0,1))**2
+    : near*near*(3-2*near) // smoothstep: no hard inner ring
   return {x:gx/length*intensity,y:gy/length*intensity}
 }
 
@@ -39,6 +42,7 @@ export type GlassMap={width:number;height:number;dataUrl:string}
 export function makeGlassDisplacementMap(
   width:number,height:number,radius:number,
   createCanvas:()=>HTMLCanvasElement=()=>document.createElement('canvas'),
+  softEdge=false,
 ):GlassMap|null{
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<15||height<15)return null
   const ratio=Math.min(1,Math.sqrt(125000/(width*height)))
@@ -55,7 +59,7 @@ export function makeGlassDisplacementMap(
   for(let py=0;py<h;py++){
     for(let px=0;px<w;px++){
       const {x,y}=glassEdgeVector(
-        (px+.5)*width/w,(py+.5)*height/h,width,height,radius,bezel,
+        (px+.5)*width/w,(py+.5)*height/h,width,height,radius,bezel,softEdge,
       )
       const idx=(py*w+px)*4
       data[idx]=Math.round(clamp(128+x*117,0,255))

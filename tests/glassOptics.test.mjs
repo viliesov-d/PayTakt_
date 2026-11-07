@@ -49,3 +49,15 @@ test('invalid dimensions never make an optical map',()=>{
   assert.equal(makeGlassDisplacementMap(0,50,20),null)
   assert.equal(makeGlassDisplacementMap(NaN,70,20),null)
 })
+
+test('dock lens fades at the boundary but still refracts inside the bezel',()=>{
+  assert.deepEqual(glassEdgeVector(180,0,360,80,27,18,true),{x:0,y:0})
+  assert.ok(Math.abs(glassEdgeVector(180,.01,360,80,27,18,true).y)<.001)
+  assert.ok(glassEdgeVector(180,9,360,80,27,18,true).y<-.9)
+  assert.deepEqual(glassEdgeVector(180,20,360,80,27,18,true),{x:0,y:0})
+  // At the dock's scale, sampling must not cross the straight outer edge.
+  for(let depth=.1;depth<18;depth+=.1){
+    const v=glassEdgeVector(180,depth,360,80,27,18,true)
+    assert.ok(Math.abs(v.y)*12*117/255<=depth)
+  }
+})
