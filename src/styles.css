@@ -1997,3 +1997,21 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
     min-height:0;
   }
 }
+
+
+/* The pay rules disclosures use a measured-height Web Animations transition
+   for both opening and closing. Remove the old children-only reveal and
+   intrinsic-size transitions on this page to prevent double animation,
+   flicker and visual snapping. All other <details> stay untouched. */
+.salary-rules-page details:is(.pay-collapse,.pay-optional)[open] > :not(summary){
+  animation:none!important;
+  transform:none!important;
+}
+@supports selector(details::details-content){
+  .salary-rules-page details:is(.pay-collapse,.pay-optional)::details-content{
+    block-size:auto!important;
+    opacity:1!important;
+    transition:none!important;
+    animation:none!important;
+  }
+}
