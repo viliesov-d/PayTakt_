@@ -1,6 +1,6 @@
 import {
   Bell, BriefcaseBusiness, CalendarDays, ChevronRight, CloudUpload, Coins,
-  Palette, ShieldCheck, SlidersHorizontal, Sparkles, UserRound, Wallet,
+  Palette, ShieldCheck, SlidersHorizontal, UserRound, Wallet,
   type LucideIcon,
 } from 'lucide-react'
 import type {Language} from '../lib/presentation'
