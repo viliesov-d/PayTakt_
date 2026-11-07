@@ -38,5 +38,5 @@ test('stage C styles are isolated from the optical dock',()=>{
   assert.match(main,/import '\.\/styles\/settings-hub\.css'/)
   assert.match(css,/\.pt-settings-quick-grid/)
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)/)
-  assert.match(app,/glass=\{nativeOpticalGlass\} onSelect=\{navigate\}/)
+  assert.match(app,/glass=\{nativeOpticalGlass\} dockTransparency=\{appearance\.dockTransparency\} onSelect=\{navigate\}/)
 })
