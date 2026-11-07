@@ -10,10 +10,11 @@ const optics=readFileSync(new URL('../src/components/OpticalGlass.tsx',import.me
 test('press expands instantly while dragging tracks every pointer move continuously',()=>{
   assert.match(nav,/const \[pressed,setPressed\]=useState\(false\)/)
   assert.match(nav,/const \[dragging,setDragging\]=useState\(false\)/)
-  assert.match(nav,/setPressed\(true\)[\s\S]*?setPreview\(sample\(event\.clientX\)\)/)
+  assert.match(nav,/setPressed\(glass\)[\s\S]*?if\(glass\)setPreview\(sample\(event\.clientX\)\)/)
   assert.match(nav,/const move=\(event:PointerEvent<HTMLElement>\)=>\{[\s\S]*?setPreview\(sample\(event\.clientX\)\)/)
   assert.match(nav,/data-dragging=\{dragging\} data-pressed=\{pressed\}/)
   assert.match(css,/\.pt-slider-nav\[data-pressed='true'\]>\.pt-nav-thumb\{[\s\S]*?scale\(1\.075,1\.105\)/)
+  assert.match(css,/html\.paytakt-native-android\[data-ui-style='glass'\].*?\[data-pressed='true'\]/)
   assert.match(css,/\.pt-slider-nav\[data-dragging='true'\]>\.pt-nav-thumb\{\s*transition:none!important;/)
 })
 
