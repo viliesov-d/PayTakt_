@@ -47,6 +47,14 @@ export function normalizeAppearance(input:unknown):AppearancePreferences {
   return {style,gradient,from,to,angle,dockTransparency}
 }
 
+/** Transparency changes the tint, not the optical distortion or the click targets.
+ * The default of 90% maps close to the existing v0.9.13 dock tint (~0.10).
+ */
+export function dockOverlayAlpha(transparency:number):number {
+  const safe=Number.isFinite(transparency)?Math.min(100,Math.max(0,transparency)):DEFAULT_APPEARANCE.dockTransparency
+  return Math.round((0.75-0.73*safe/100)*1000)/1000
+}
+
 export function selectGradient(current:AppearancePreferences, gradient:GradientPreset):AppearancePreferences {
   const next=normalizeAppearance({...current,gradient})
   if(gradient==='none'||gradient==='custom')return next
