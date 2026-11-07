@@ -9,6 +9,11 @@ import type {ThemeChoice} from '../lib/data'
 
 export type SettingsSection='home'|'appearance'|'schedule'|'finance'|'notifications'|'data'|'account'|'workspaces'
 
+export function isSettingsSection(value:unknown):value is SettingsSection{
+  return value==='home'||value==='appearance'||value==='schedule'||value==='finance'||
+    value==='notifications'||value==='data'||value==='account'||value==='workspaces'
+}
+
 const translations={
   uk:{
     title:'Налаштування',subtitle:'Усе важливе — на своєму місці.',
