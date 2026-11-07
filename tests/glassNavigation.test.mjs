@@ -3,12 +3,13 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8')
+const navigation=readFileSync(new URL('../src/components/MobileNavigation.tsx',import.meta.url),'utf8')
 const css=readFileSync(new URL('../src/styles/optical-glass.css',import.meta.url),'utf8')
 const version=JSON.parse(readFileSync(new URL('../mobile-version.json',import.meta.url),'utf8'))
 
 test('optical refraction only mounts in the installed Android application',()=>{
   assert.match(app,/const nativeOpticalGlass=isNativeAndroid&&appearance\.style==='glass'/)
-  assert.match(app,/nativeOpticalGlass&&<OpticalGlass radius=\{27\} strength=\{12\} dock/)
+  assert.match(navigation,/glass&&<OpticalGlass radius=\{27\} strength=\{12\} dock/)
   assert.doesNotMatch(app,/<OpticalGlass radius=\{35\}/)
   assert.match(css,/:root:not\(\.paytakt-native-android\)\[data-ui-style='glass'\] \.zmina-primary-nav/)
 })
@@ -58,7 +59,7 @@ test('Android dock disables only its white optical halo layers',()=>{
 })
 
 test('Android dock restores a soft lens without the refractive rim or white glow',()=>{
-  const nav=app.slice(app.indexOf('aria-label="Навігація PayTakt Mobile"'))
+  const nav=navigation
   assert.match(nav,/<OpticalGlass radius=\{27\} strength=\{12\} dock/)
   const marker=css.indexOf('Dock refraction uses a lens')
   assert.ok(marker>0)

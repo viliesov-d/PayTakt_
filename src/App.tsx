@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import {AuthScreen} from './components/AuthScreen'
 import {AppearanceSettings} from './components/AppearanceSettings'
 import {OpticalGlass} from './components/OpticalGlass'
+import {MobileNavigation} from './components/MobileNavigation'
 import {gradientCss, readAppearance, saveAppearance, type AppearancePreferences} from './lib/uiPreferences'
 import {
   ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, BriefcaseBusiness, Building2, CalendarDays,
@@ -1784,17 +1785,12 @@ export default function App(){
         <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>{isNativeAndroid?`PayTakt Mobile v${installedAppVersion}`:'Версія 2.0.0 beta 4'}</span></footer>
       </main>
     </div>
-    {isNativeAndroid&&<nav className={`paytakt-mobile-tabs ${nativeOpticalGlass?'pt-optical-host':''}`} aria-label="Навігація PayTakt Mobile">
-      {nativeOpticalGlass&&<OpticalGlass radius={27} strength={12} dock/>}
-      {allowedNav.map(item=>{
+    {isNativeAndroid&&<MobileNavigation activeId={page} glass={nativeOpticalGlass} onSelect={navigate}
+      items={allowedNav.map(item=>{
         const Icon=item.icon
-        return <button type="button" key={item.id} onClick={()=>navigate(item.id)}
-          className={page===item.id?'active':''} aria-current={page===item.id?'page':undefined}>
-          <Icon size={22} strokeWidth={2.2} aria-hidden="true"/>
-          <span>{tr(item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування')}</span>
-        </button>
-      })}
-    </nav>}
+        return {id:item.id,label:tr(item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування'),
+          icon:<Icon size={22} strokeWidth={2.2} aria-hidden="true"/>}
+      })}/>}
     {createOpen&&<CreateWorkspaceDialog onClose={()=>setCreateOpen(false)} onCreate={createCompany} glass={nativeOpticalGlass}/>}
     {deleteTarget&&<DeleteWorkspaceDialog workspace={deleteTarget} onClose={()=>setDeleteTarget(null)} onDelete={removeWorkspace} glass={nativeOpticalGlass}/>}
   </div>
