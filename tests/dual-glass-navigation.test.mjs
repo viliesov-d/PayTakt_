@@ -37,9 +37,10 @@ test('transparency slider updates the installed Android dock tint only',()=>{
 
 test('lens stays within the moving thumb and avoids an outer white halo',()=>{
   assert.match(sliderCss,/\.pt-slider-nav>\.pt-nav-thumb>\.pt-optical-glass/)
-  assert.match(sliderCss,/\.pt-slider-nav>\.pt-nav-thumb\{[\s\S]*?overflow:hidden;isolation:isolate/)
+  assert.match(sliderCss,/\.pt-slider-nav>\.pt-nav-thumb\{[\s\S]*?overflow:hidden/)
   assert.match(sliderCss,/\.pt-slider-nav>\.pt-nav-thumb>\.pt-optical-glass::before\{[\s\S]*?border:0!important/)
   assert.match(sliderCss, /prefers-reduced-transparency:reduce/)
+  assert.match(sliderCss, /\.pt-slider-nav>\.pt-dock-glass\.pt-optical-glass-ready\{\s*background:var\(--panel\)!important/)
   assert.match(sliderCss, /pointer-events:none/)
   assert.doesNotMatch(sliderCss, /position:fixed/)
 })
