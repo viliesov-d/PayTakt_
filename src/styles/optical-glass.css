@@ -62,7 +62,6 @@
   border:0;box-shadow:0 12px 34px rgba(17,44,68,.12);
   border-radius:999px;overflow-x:auto;overflow-y:hidden;
 }
-:root[data-ui-style='glass'] .zmina-primary-nav.pt-optical-host .pt-optical-glass{position:sticky;left:0}
 :root[data-ui-style='glass'] .zmina-primary-nav.pt-optical-host > button{position:relative;z-index:2}
 :root[data-ui-style='glass'] .workspace-popover.pt-optical-host,
 :root[data-ui-style='glass'] .modal.pt-optical-host{
