@@ -198,3 +198,23 @@
   .pt-pwa-install-top p,.pt-pwa-install-card p{font-size:12px;line-height:1.55;margin:0;color:var(--muted-deep)}
   .pt-pwa-install-card .btn{justify-self:start}
 }
+
+
+/* Web hotfix: the original native dock uses CSS calc multiplication for its
+   capsule translation. Browser builds use measured pixel values instead, so
+   older Safari and other mobile engines cannot leave the thumb at x=0.
+   These selectors never match native Android/iOS. */
+@media (max-width:880px){
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-slider-nav.pt-web-slider > .pt-nav-thumb {
+    position:absolute;
+    width:var(--pt-web-thumb-width,calc(33.333333% - 8px));
+    transform:translate3d(var(--pt-web-thumb-offset,0px),0,0);
+    will-change:transform;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-slider-nav.pt-web-slider[data-pressed='true'] > .pt-nav-thumb {
+    transform:translate3d(var(--pt-web-thumb-offset,0px),0,0) scale(1.075,1.105);
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-slider-nav.pt-web-slider[data-dragging='true'] > .pt-nav-thumb {
+    transition:none!important;
+  }
+}
