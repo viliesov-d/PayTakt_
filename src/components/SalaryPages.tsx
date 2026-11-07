@@ -61,7 +61,7 @@ export function RulesPageV5({workspaceName,shifts,settings,loaded,demo,onSave,pe
     catch(err){setError(err instanceof Error?err.message:'Помилка збереження.')}
     finally{setBusy(false)}
   }
-  return <div className="salary-page">
+  return <div className="salary-page salary-rules-page">
     <div className="section-head"><div><div className="eyebrow">{tr("КОНСТРУКТОР ОПЛАТИ")}</div><h2>{tr("Мої правила зарплати")}</h2><p>Оплата для будь-якої роботи: години, зміни, оклад, виробіток та власні правила · {workspaceName}</p></div></div>
     <div className="salary-note"><ShieldCheck size={20}/><div><strong>{tr("Прогноз, а не офіційна зарплатна відомість")}</strong><p>Правила діють для поточного робочого простору. Вони не замінюють положення про оплату праці, трудове законодавство чи розрахунок податків. Підсумки можуть перераховувати минулі місяці.</p></div></div>
     {!loaded?<div className="panel">{tr("Завантажуємо налаштування…")}</div>:<form className="salary-form" onSubmit={submit} noValidate>

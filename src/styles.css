@@ -1906,3 +1906,78 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
  .paytakt-delete-modal .paytakt-delete-actions{flex-direction:row}
  .paytakt-delete-modal .paytakt-delete-actions>.btn{min-width:0;font-size:12px}
 }
+
+
+/* Rules of pay: compact text rhythm inside accordion panels.
+   Scoped to RulesPageV5; salary calculations, calendar, dashboard and glass
+   navigation keep their original spacing. */
+.salary-rules-page .salary-form{gap:11px}
+.salary-rules-page .salary-form .pay-collapse-summary{
+  gap:11px;
+  padding:17px 21px;
+}
+.salary-rules-page .salary-form .pay-collapse-summary .pay-block-heading{gap:10px}
+.salary-rules-page .salary-form .pay-collapse-summary .pay-block-heading h3{
+  margin:0 0 3px;
+  line-height:1.32;
+}
+.salary-rules-page .salary-form .pay-collapse-summary .pay-block-heading p{
+  margin:0;
+  line-height:1.45;
+}
+.salary-rules-page .salary-form .pay-collapse-body{
+  padding:13px 21px 17px;
+}
+.salary-rules-page .salary-form .pay-collapse-body > p{
+  margin:4px 0 9px;
+  line-height:1.5;
+}
+.salary-rules-page .salary-form .pay-collapse-body > .pay-toggle{
+  margin:7px 0;
+}
+.salary-rules-page .salary-form .pay-collapse-body > :first-child{margin-top:0}
+.salary-rules-page .salary-form .pay-collapse-body .pay-field{
+  gap:10px;
+  padding:10px 0;
+}
+.salary-rules-page .salary-form .pay-collapse-body .pay-field > span:first-child{
+  gap:3px;
+}
+.salary-rules-page .salary-form .pay-collapse-body .pay-field small{
+  line-height:1.48;
+}
+.salary-rules-page .salary-form .pay-collapse-body .pay-methods{margin-bottom:12px}
+.salary-rules-page .salary-form .pay-collapse-body .monthly-salary-editor{
+  gap:9px;
+  margin-top:9px;
+}
+.salary-rules-page .salary-form .pay-collapse-body :is(
+  .advanced-pay-grid,.band-presets,.bands-editor,.band-example,.custom-rule
+){margin-block:10px}
+.salary-rules-page .salary-form .pay-collapse-body .custom-rule{gap:11px}
+.salary-rules-page .salary-form .pay-optional[open] > summary{margin-bottom:9px}
+.salary-rules-page .salary-form .pay-optional > p{
+  margin:0 0 10px;
+  line-height:1.5;
+}
+.salary-rules-page > .performance-editor > .pay-collapse-summary{padding:17px 21px}
+.salary-rules-page > .performance-editor > .pay-collapse-summary h3{margin-bottom:3px}
+.salary-rules-page > .performance-editor > .pay-collapse-summary p{
+  margin:0;
+  line-height:1.45;
+}
+.salary-rules-page > .performance-editor > .pay-collapse-body{
+  gap:12px;
+  padding:13px 21px 17px;
+}
+@media(max-width:700px){
+  .salary-rules-page .salary-form .pay-collapse-summary,
+  .salary-rules-page > .performance-editor > .pay-collapse-summary{padding:14px 15px}
+  .salary-rules-page .salary-form .pay-collapse-body,
+  .salary-rules-page > .performance-editor > .pay-collapse-body{padding:12px 15px 15px}
+  .salary-rules-page .salary-form .pay-collapse-summary .pay-block-heading h3,
+  .salary-rules-page > .performance-editor > .pay-collapse-summary h3{
+    margin-bottom:3px;
+    line-height:1.3;
+  }
+}
