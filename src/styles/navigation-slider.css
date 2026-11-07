@@ -68,3 +68,63 @@
 @media(prefers-reduced-transparency:reduce){
   html.paytakt-native-android .pt-dock-sheen{display:none}
 }
+
+
+/* v0.9.14: dual optical lens. The ORIGINAL outer dock refraction is unchanged.
+   The moving thumb is a second clipped surface with its own displacement map.
+   No new strokes are drawn outside either silhouette: avoid the old halo. */
+@media(max-width:880px){
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass,
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
+    background:rgba(28,62,77,var(--pt-dock-tint-alpha,.093))!important;
+  }
+  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass,
+  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
+    background:rgba(190,216,230,var(--pt-dock-tint-alpha,.093))!important;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
+    background:transparent!important;background-image:none!important;
+    box-shadow:none!important;overflow:hidden;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass{
+    position:absolute;inset:0;border:0!important;border-radius:inherit;
+    background:color-mix(in srgb,var(--mint-soft) 50%,transparent)!important;
+    box-shadow:inset 0 1px 1px rgba(255,255,255,.16),
+               inset 0 -1px 2px rgba(30,69,88,.1)!important;
+    backdrop-filter:blur(.8px) saturate(1.16);
+    -webkit-backdrop-filter:blur(.8px) saturate(1.16);
+    pointer-events:none;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass-ready{
+    background:color-mix(in srgb,var(--mint-soft) 28%,transparent)!important;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::before{
+    border:0!important;
+    background:linear-gradient(170deg,rgba(255,255,255,.27),transparent 29%,transparent 73%,rgba(40,95,130,.1));
+    opacity:.48;mix-blend-mode:normal;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::after{
+    box-shadow:inset 0 1px 1px rgba(255,255,255,.19),inset 0 -1px 2px rgba(25,60,91,.12)!important;
+  }
+  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass{
+    background:rgba(188,215,229,.11)!important;
+    box-shadow:inset 0 1px 1px rgba(250,253,255,.1),inset 0 -1px 2px rgba(0,12,35,.16)!important;
+  }
+}
+@media(max-width:880px) and (prefers-reduced-transparency:reduce){
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass,
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
+    background:var(--panel)!important;
+    backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass,
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass-ready{
+    background:var(--panel)!important;
+    backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+    box-shadow:none!important;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::before,
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::after{
+    content:none!important;
+  }
+}

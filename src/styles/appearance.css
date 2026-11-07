@@ -256,3 +256,23 @@
   :root[data-ui-gradient='on'] .app-shell .btn-primary,
   :root[data-ui-gradient='on'] .zmina-primary-nav button.active{background-image:none}
 }
+
+/* Android Liquid Glass dock transparency — saved in appearance preferences. */
+.appearance-dock-control{
+  margin:18px 0 10px;padding:15px 16px;
+  border:1px solid var(--border);border-radius:15px;background:var(--panel-soft)
+}
+.appearance-dock-title{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;color:var(--text);font-size:13px;font-weight:800
+}
+.appearance-dock-title>span{display:inline-flex;align-items:center;gap:8px}
+.appearance-dock-title svg{color:var(--mint);flex-shrink:0}
+.appearance-dock-title output{font-variant-numeric:tabular-nums;color:var(--mint);font-size:14px}
+.appearance-dock-control input[type=range]{
+  width:100%;accent-color:var(--mint);margin:15px 0 7px;padding:0;
+  cursor:pointer;min-height:26px;touch-action:pan-x
+}
+.appearance-dock-scale{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:var(--muted-deep)}
+.appearance-dock-hint{margin:10px 0 0;font-size:11px;color:var(--muted-deep);line-height:1.45}
+.appearance-dock-control input[type=range]:focus-visible{outline:3px solid var(--mint);outline-offset:3px}

@@ -1,12 +1,13 @@
 import {useRef,useState,type CSSProperties,type ReactNode,type PointerEvent,type KeyboardEvent} from 'react'
 import {OpticalGlass} from './OpticalGlass'
 import {navigationPosition,navigationKeyIndex} from '../lib/navigationSlider'
+import {dockOverlayAlpha} from '../lib/uiPreferences'
 
 type Item<T extends string>={id:T;label:string;icon:ReactNode}
-type Props<T extends string>={items:Item<T>[];activeId:T;glass:boolean;onSelect:(id:T)=>void}
+type Props<T extends string>={items:Item<T>[];activeId:T;glass:boolean;dockTransparency:number;onSelect:(id:T)=>void}
 
 /** One moving selection capsule; semantic controls preserve keyboard and screen-reader access. */
-export function MobileNavigation<T extends string>({items,activeId,glass,onSelect}:Props<T>){
+export function MobileNavigation<T extends string>({items,activeId,glass,dockTransparency,onSelect}:Props<T>){
   const host=useRef<HTMLElement>(null)
   const gesture=useRef<{id:number;startX:number;dragged:boolean}|null>(null)
   const [preview,setPreview]=useState<number|null>(null)
@@ -48,11 +49,14 @@ export function MobileNavigation<T extends string>({items,activeId,glass,onSelec
   }
   return <nav ref={host} className={`paytakt-mobile-tabs pt-slider-nav ${glass?'pt-optical-host':''}`}
     aria-label="Навігація PayTakt Mobile" data-dragging={preview!==null}
-    style={{'--pt-tab-count':items.length,'--pt-tab-position':position} as CSSProperties}
+    style={{'--pt-tab-count':items.length,'--pt-tab-position':position,
+      '--pt-dock-tint-alpha':dockOverlayAlpha(dockTransparency)} as CSSProperties}
     onPointerDown={down} onPointerMove={move} onPointerUp={up}
     onPointerCancel={reset} onLostPointerCapture={reset}>
     {glass&&<OpticalGlass radius={27} strength={24} dock/>}
-    <span className="pt-nav-thumb" aria-hidden="true" hidden={active<0&&preview===null}/>
+    <span className="pt-nav-thumb" aria-hidden="true" hidden={active<0&&preview===null}>
+      {glass&&<OpticalGlass radius={21} strength={15} dock/>}
+    </span>
     {items.map((item,index)=><button type="button" key={item.id}
       className={Math.round(position)===index&&(active>=0||preview!==null)?'active':''}
       aria-current={active===index?'page':undefined}

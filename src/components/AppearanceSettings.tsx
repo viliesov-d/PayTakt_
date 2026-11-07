@@ -22,6 +22,8 @@ const translations={
     gradient:'Градієнт',none:'Без градієнта',mint:'М’ята',ocean:'Океан',sunset:'Захід',violet:'Фіолет',custom:'Власний',
     from:'Перший колір',to:'Другий колір',angle:'Напрямок',reset:'Скинути оформлення',
     device:'Зберігається на цьому пристрої.',preview:'Попередній перегляд',
+    dockTransparency:'Прозорість панелі навігації',dockHint:'Для Liquid Glass у застосунку Android. Заломлення залишається.',
+    opaque:'Непрозора',clear:'Прозора',
   },
   en:{
     heading:'Appearance',subtitle:'Make PayTakt yours.',
@@ -30,6 +32,8 @@ const translations={
     gradient:'Gradient',none:'None',mint:'Mint',ocean:'Ocean',sunset:'Sunset',violet:'Violet',custom:'Custom',
     from:'First color',to:'Second color',angle:'Direction',reset:'Reset appearance',
     device:'Saved on this device.',preview:'Live preview',
+    dockTransparency:'Navigation panel transparency',dockHint:'For Liquid Glass in the Android app. Refraction stays enabled.',
+    opaque:'Opaque',clear:'Transparent',
   },
   ru:{
     heading:'Оформление',subtitle:'Настрой PayTakt под себя.',
@@ -38,6 +42,8 @@ const translations={
     gradient:'Градиент',none:'Без градиента',mint:'Мята',ocean:'Океан',sunset:'Закат',violet:'Фиолет',custom:'Свой',
     from:'Первый цвет',to:'Второй цвет',angle:'Направление',reset:'Сбросить оформление',
     device:'Сохраняется на этом устройстве.',preview:'Предпросмотр',
+    dockTransparency:'Прозрачность панели навигации',dockHint:'Для Liquid Glass в приложении Android. Преломление сохраняется.',
+    opaque:'Непрозрачная',clear:'Прозрачная',
   },
 }
 
@@ -75,6 +81,19 @@ export function AppearanceSettings({value,onChange,theme,onThemeChange,language}
         {value.style===id&&<Check className="appearance-style-check" size={16} aria-hidden="true"/>}
       </button>)}
     </div>
+
+
+    {value.style==='glass'&&<div className="appearance-dock-control">
+      <label htmlFor="appearance-dock-transparency" className="appearance-dock-title">
+        <span><Droplets size={18} aria-hidden="true"/>{t.dockTransparency}</span>
+        <output htmlFor="appearance-dock-transparency">{value.dockTransparency}%</output>
+      </label>
+      <input id="appearance-dock-transparency" type="range" min="0" max="100" step="5"
+        value={value.dockTransparency} aria-describedby="appearance-dock-hint"
+        onChange={e=>onChange({...value,dockTransparency:Number(e.target.value)})}/>
+      <div className="appearance-dock-scale"><span>{t.opaque}</span><span>{t.clear}</span></div>
+      <p id="appearance-dock-hint" className="appearance-dock-hint">{t.dockHint}</p>
+    </div>}
 
     <div className="appearance-theme-row">
       <div className="appearance-section-title">{t.theme}</div>
