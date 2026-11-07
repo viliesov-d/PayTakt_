@@ -24,7 +24,9 @@ test('mobile headings align left everywhere',()=>{
 })
 
 test('calendar overtime label is concise',()=>{
-  assert.match(app,/className="calendar-overtime" aria-label=/)
+  // The day button now announces overtime together with shift, cash and payday status.
+  assert.match(app,/aria-label=.*понаднормові/)
+  assert.match(app,/className="calendar-overtime" title=/)
   assert.doesNotMatch(app, /год понадн\.<\/span>/)
 })
 
