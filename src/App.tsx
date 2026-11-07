@@ -1836,7 +1836,7 @@ export default function App(){
         <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>{isNativeAndroid?`PayTakt Mobile v${installedAppVersion}`:'Версія 2.0.0 beta 4'}</span></footer>
       </main>
     </div>
-    {isNativeAndroid&&<MobileNavigation activeId={page} glass={nativeOpticalGlass} onSelect={navigate}
+    {isNativeAndroid&&<MobileNavigation activeId={page} glass={nativeOpticalGlass} dockTransparency={appearance.dockTransparency} onSelect={navigate}
       items={allowedNav.map(item=>{
         const Icon=item.icon
         return {id:item.id,label:tr(item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування'),
