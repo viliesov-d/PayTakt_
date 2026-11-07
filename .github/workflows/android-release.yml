@@ -60,7 +60,7 @@ jobs:
           node -e '
             const f=require("./mobile-version.json")
             if (process.env.RELEASE_VERSION !== f.version || !/^\d+\.\d+\.\d+$/.test(f.version)) {
-              console.error("Release input must match mobile-version.json exactly.")
+              console.error(`::error title=Version mismatch::Requested ${process.env.RELEASE_VERSION}, but mobile-version.json specifies ${f.version}. Run the workflow from main with version ${f.version}.`)
               process.exit(1)
             }
             if (f.applicationId !== "ua.paytakt.mobile" || !Number.isSafeInteger(f.versionCode) || f.versionCode < 1) {
