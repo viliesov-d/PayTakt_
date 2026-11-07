@@ -42,3 +42,17 @@ test('signed Android version is higher than the previous release',()=>{
   assert.ok(version.versionCode>90400)
   assert.equal(version.applicationId,'ua.paytakt.mobile')
 })
+
+test('Android dock disables only its white optical halo layers',()=>{
+  const start=css.indexOf('v0.9.6 — remove the broad pale halo')
+  assert.ok(start>0,'targeted halo override must exist')
+  const override=css.slice(start)
+  assert.ok(override.includes('.paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass'))
+  assert.ok(override.includes('background:rgba(25,64,82,.08)!important;'))
+  assert.ok(override.includes('box-shadow:none!important;'))
+  assert.ok(override.includes('content:none!important;'))
+  assert.ok(override.includes('display:none!important;'))
+  // The previous fixed dock rule and 3 tap targets must remain unchanged.
+  assert.match(css,/position:fixed;/)
+  assert.match(css,/grid-template-columns:repeat\\(3,minmax\\(0,1fr\\)\\)/)
+})
