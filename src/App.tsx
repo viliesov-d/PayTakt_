@@ -616,17 +616,8 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
     <div className={`calendar-layout calendar-custom-layout ${layout.dayTop?'day-top':''}`}>
       <div className="calendar-primary-stack">
         <div className="calendar-custom-block" style={{order:blockOrder('calendar')}}>
-      <section className="panel calendar-panel"><div className="calendar-toolbar">
-        <div className="calendar-period">
-          <span className="calendar-month-kicker">{tr("МІЙ КАЛЕНДАР")}</span>
-          <h3 key={monthKey} aria-live="polite" aria-atomic="true">{monthFormat.format(new Date(year,month,1))}</h3>
-          <p className="calendar-period-note">{tr("Обери дату для перегляду й редагування")}</p>
-        </div>
-        <div className="cal-arrows" role="group" aria-label="Перемикання місяців">
-          <button type="button" aria-label="Попередній місяць" onClick={()=>moveMonth(-1)}><ChevronLeft size={20}/></button>
-          <button type="button" aria-label="Повернутися до сьогодні" className="cal-today" onClick={jumpToToday}>{tr("Сьогодні")}</button>
-          <button type="button" aria-label="Наступний місяць" onClick={()=>moveMonth(1)}><ChevronRight size={20}/></button>
-        </div></div>
+      <section className="panel calendar-panel"><div className="calendar-toolbar"><div><h3 key={monthKey} aria-live="polite" aria-atomic="true">{monthFormat.format(new Date(year,month,1))}</h3></div>
+        <div className="cal-arrows"><button type="button" aria-label="Попередній місяць" onClick={()=>moveMonth(-1)}><ChevronLeft size={20}/></button><button type="button" aria-label="Поточний місяць" className="cal-today" onClick={jumpToToday}>{tr("Сьогодні")}</button><button type="button" aria-label="Наступний місяць" onClick={()=>moveMonth(1)}><ChevronRight size={20}/></button></div></div>
         <div className="calendar-view-options" role="group" aria-label="Фільтр днів календаря">
           {([['all','Усі дні'],['worked','Відпрацьовані'],...(visible.overtimeSettings||historicalOvertime?[['overtime','Понаднормові'] as const]:[])] as const).map(([id,label])=><button type="button" key={id} className={calendarFilter===id?'active':''} onClick={()=>setCalendarFilter(id)} aria-pressed={calendarFilter===id}>{label}</button>)}
           <label className="calendar-payout-switch"><input type="checkbox" checked={showPayouts} onChange={e=>setShowPayouts(e.target.checked)}/> {tr("Дати виплат")}</label>
@@ -642,32 +633,10 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
           const payouts=showPayouts?(paymentsByDay.get(date)??[]):[]
           const workedDay=shift&&(shift.status==='worked'||shift.additionalShifts?.some(e=>e.status==='worked'))
           const subdued=calendarFilter==='worked'?!workedDay:calendarFilter==='overtime'?overtime===0:false
-          return <button type="button" key={date}
-            className={`cal-day ${selected===date?'selected':''} ${date===toDateKey(today)?'today':''} ${shift?'has-shift':''} ${workedDay?'is-worked':''} ${off?'has-leave':''} ${subdued?'cal-day-muted':''} ${payouts.length?'cal-has-payout':''}`}
-            onClick={()=>select(day)} aria-pressed={selected===date}
-            aria-current={date===toDateKey(today)?'date':undefined}
-            aria-label={`${date}${date===toDateKey(today)?' · сьогодні':''}${label?' — '+label:''}${workedDay?' · відпрацьовано':''}${overtime>0?` · понаднормові ${(overtime/60).toLocaleString('uk-UA',{maximumFractionDigits:2})} год`:''}${performance.manualDailyPay&&dailyWages[date]!==undefined&&!off?' · є зарплата за день':''}${cashPrefs.enabled&&cashRecords.some(r=>r.date===date)&&!off?' · є запис каси':''}${payouts.length?' · запланована виплата':''}`}>
-            <span className="cal-day-top">
-              <span className="day-number">{day}</span>
-              {workedDay&&<Check size={13} strokeWidth={3} className="cal-worked-check" aria-hidden="true"/>}
-              {date===toDateKey(today)&&<span className="cal-today-dot" aria-hidden="true"/>}
-            </span>
-            {shift&&<span key={`${date}-${shift.status}-${shift.dayType??'work'}`} className={`shift-indicator ${off?'leave':shift.status==='worked'?'worked':''}`} title={label}>{label}</span>}
-            {(overtime>0||(performance.manualDailyPay&&dailyWages[date]!==undefined&&!off)||(cashPrefs.enabled&&cashRecords.some(r=>r.date===date)&&!off)||payouts.length>0)&&
-              <span className="cal-day-flags" aria-hidden="true">
-                {overtime>0&&<span key={`${date}-overtime-${overtime}`} className="calendar-overtime" title={`Понаднормові: ${(overtime/60).toLocaleString('uk-UA',{maximumFractionDigits:2})} годин`}>
-                  +{(overtime/60).toLocaleString('uk-UA',{maximumFractionDigits:2})}<span className="cal-overtime-unit"> год</span>
-                </span>}
-                {performance.manualDailyPay&&dailyWages[date]!==undefined&&!off&&<span className="calendar-wage-marker" title={`Заробіток: ${moneyUA(dailyWages[date])}`}><Wallet size={14}/></span>}
-                {cashPrefs.enabled&&cashRecords.some(r=>r.date===date)&&!off&&<span key={`${date}-cash`} className="calendar-cash-marker" title="Каса за день"><ReceiptText size={14}/></span>}
-                {payouts.length>0&&<span key={`${date}-payout-${payouts.length}`} className="calendar-payout-marker" title={payouts.length>1?`${payouts.length} заплановані виплати`:'Запланована виплата'}>
-                  <Wallet size={12}/><span className="cal-payout-label">{payouts.length>1?`${payouts.length} виплати`:'Виплата'}</span>
-                </span>}
-              </span>}
-          </button>
+          return <button type="button" key={date} className={`cal-day ${selected===date?'selected':''} ${date===toDateKey(today)?'today':''} ${shift?'has-shift':''} ${workedDay?'is-worked':''} ${off?'has-leave':''} ${subdued?'cal-day-muted':''} ${payouts.length?'cal-has-payout':''}`} onClick={()=>select(day)} aria-pressed={selected===date} aria-label={`${date}${label?' — '+label:''}${payouts.length?' · запланована виплата':''}`}><span className="day-number">{day}</span>{shift&&<span key={`${date}-${shift.status}-${shift.dayType??'work'}`} className={`shift-indicator ${off?'leave':shift.status==='worked'?'worked':''}`}>{label}</span>}{overtime>0&&<span key={`${date}-overtime-${overtime}`} className="calendar-overtime" aria-label={`Понаднормові: ${(overtime/60).toLocaleString('uk-UA',{maximumFractionDigits:2})} годин`} title={`Понаднормові: ${(overtime/60).toLocaleString('uk-UA',{maximumFractionDigits:2})} годин`}>+{(overtime/60).toLocaleString('uk-UA',{maximumFractionDigits:2})} год</span> }{performance.manualDailyPay&&dailyWages[date]!==undefined&&!off&&<span className="calendar-wage-marker" title={`Заробіток: ${moneyUA(dailyWages[date])}`}><Wallet size={14}/></span>}{cashPrefs.enabled&&cashRecords.some(r=>r.date===date)&&!off&&<span key={`${date}-cash`} className="calendar-cash-marker" title="Каса за день"><ReceiptText size={14}/></span>}{payouts.length>0&&<span key={`${date}-payout-${payouts.length}`} className="calendar-payout-marker"><Wallet size={12}/>{payouts.length>1?`${payouts.length} виплати`:'Виплата'}</span>}</button>
         })}</div>
         </div>
-        <div className="cal-legend" aria-label="Позначення календаря"><span><i className="legend-dot planned"/> {tr("Заплановано")}</span><span><i className="legend-dot worked"/> {tr("Відпрацьовано")}</span><span><i className="legend-dot leave"/> {tr("Вихідний / відсутність")}</span><span><i className="legend-border"/> {tr("Обрано")}</span><span><i className="legend-dot payout"/> {tr("Дата виплати")}</span></div>
+        <div className="cal-legend"><span><i className="legend-dot planned"/> {tr("Заплановано")}</span><span><i className="legend-dot worked"/> {tr("Відпрацьовано")}</span><span><i className="legend-dot leave"/> {tr("Вихідний / відсутність")}</span><span><i className="legend-border"/> {tr("Обрано")}</span><span><i className="legend-dot payout"/> {tr("Дата виплати")}</span></div>
         <div className="calendar-selection-bar" role="status" aria-live="polite" aria-atomic="true">
           <span className="calendar-selection-icon" aria-hidden="true"><CalendarDays size={19}/></span>
           <span className="calendar-selection-copy">
