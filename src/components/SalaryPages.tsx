@@ -1,10 +1,10 @@
 import {tr,inputCurrencyLabel} from '../lib/presentation'
-import {useEffect,useMemo,useRef,useState,type FormEvent} from 'react'
+import {useEffect,useMemo,useState,type FormEvent} from 'react'
 import {Clock3,Wallet,ShieldCheck,Save,CheckCircle2,Info,Sparkles,Moon,Timer,Target,TrendingUp,Plus,Trash2,ChevronDown} from 'lucide-react'
 import type {Shift} from '../lib/calendar'
 import {calculatePayWithPerformance,type PerformanceSettings} from '../lib/performance'
 import {PerformanceRulesEditor} from './PerformanceRulesEditor'
-import {bindPayRuleAccordions} from '../lib/payRuleAccordion'
+import {SmoothPayAccordion} from './SmoothPayAccordion'
 import {PaymentScheduleEditor} from './PaymentScheduleEditor'
 import {calculatePaymentForecast} from '../lib/payments'
 import {defaultPaySettings,moneyUA,validatePaySettings,validateMonthlySales,type PaySettings,type CustomRule,type MonthlySales,type MonthlyUnits,type BandPeriod,validateMonthlyUnits,allocateBands,calendarSalaryNorm} from '../lib/salary'
@@ -42,10 +42,6 @@ function PercentField({label,value,onChange}: {label:string;value:number;onChang
 }
 const newRule=():CustomRule=>({id:`rule_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,title:'Мій бонус',trigger:'hours_at_least',threshold:9600,bonus:0})
 export function RulesPageV5({workspaceName,shifts,settings,loaded,demo,onSave,performance,onSavePerformance,onApplyZmina}:RuleProps){
-  const rulesRoot=useRef<HTMLDivElement>(null)
-  useEffect(()=>{
-    if(rulesRoot.current)return bindPayRuleAccordions(rulesRoot.current)
-  },[])
   const [draft,setDraft]=useState<PaySettings>(settings??defaultPaySettings)
   const referenceMonth=currentMonth()
   const calendarNorm=calendarSalaryNorm(shifts,referenceMonth,draft)
@@ -66,11 +62,11 @@ export function RulesPageV5({workspaceName,shifts,settings,loaded,demo,onSave,pe
     catch(err){setError(err instanceof Error?err.message:'Помилка збереження.')}
     finally{setBusy(false)}
   }
-  return <div ref={rulesRoot} className="salary-page salary-rules-page">
+  return <div className="salary-page salary-rules-page">
     <div className="section-head"><div><div className="eyebrow">{tr("КОНСТРУКТОР ОПЛАТИ")}</div><h2>{tr("Мої правила зарплати")}</h2><p>Оплата для будь-якої роботи: години, зміни, оклад, виробіток та власні правила · {workspaceName}</p></div></div>
     <div className="salary-note"><ShieldCheck size={20}/><div><strong>{tr("Прогноз, а не офіційна зарплатна відомість")}</strong><p>Правила діють для поточного робочого простору. Вони не замінюють положення про оплату праці, трудове законодавство чи розрахунок податків. Підсумки можуть перераховувати минулі місяці.</p></div></div>
     {!loaded?<div className="panel">{tr("Завантажуємо налаштування…")}</div>:<form className="salary-form" onSubmit={submit} noValidate>
-      <details className="panel pay-collapse" open><summary className="pay-collapse-summary"><div className="pay-block-heading"><Wallet size={21}/><div><h3>{tr("Основна оплата")}</h3><p>{tr("Один спосіб нарахування базової суми за роботу")}</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
+      <SmoothPayAccordion className="panel pay-collapse" open><summary className="pay-collapse-summary"><div className="pay-block-heading"><Wallet size={21}/><div><h3>{tr("Основна оплата")}</h3><p>{tr("Один спосіб нарахування базової суми за роботу")}</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
         <div className="pay-methods">{([['hourly','Погодинна','За фактичні оплачувані хвилини'],['per_shift','Позмінна','За кожну відпрацьовану зміну'],['monthly','Оклад','За визначену норму робочих днів'],['per_unit','За виконану роботу','За доставку, виріб, послугу чи завдання']] as const).map(([mode,title,help])=><label key={mode} className={`pay-method ${draft.mode===mode?'is-selected':''}`}><input type="radio" name="payMode" checked={draft.mode===mode} onChange={()=>change('mode',mode)}/><strong>{title}</strong><small>{help}</small></label>)}</div>
         {moneyFields.filter(([key])=>(draft.mode==='hourly'&&key==='hourlyRate')||(draft.mode==='per_shift'&&key==='shiftRate')||(draft.mode==='monthly'&&key==='monthlySalary')||(draft.mode==='per_unit'&&key==='unitRate')).map(([key,label,help])=><MoneyField key={key} label={label} help={help} value={draft[key]} onChange={v=>change(key,v)}/>)}
         {draft.mode==='monthly'&&<div className="monthly-salary-editor">
@@ -84,19 +80,19 @@ export function RulesPageV5({workspaceName,shifts,settings,loaded,demo,onSave,pe
           {!draft.monthlyAutoHourlyRate&&<MoneyField label="Погодинна база для доплат" value={draft.hourlyRate} onChange={v=>change('hourlyRate',v)}/>}
           <div className="salary-calc-preview"><strong>Оклад за плановий день: {normDays?moneyUA(Math.round(draft.monthlySalary/normDays)):'Спочатку заповни графік'}</strong><span>Погодинна база: {normMinutes?moneyUA(Math.round((draft.monthlyAutoHourlyRate?draft.monthlySalary*60/normMinutes:draft.hourlyRate))):'—'}</span></div>
         </div>}
-      </div></details>
-      <details className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Sparkles size={21}/><div><h3>{tr("Постійні доплати")}</h3><p>{tr("Необов'язкові доплати за робочі дні, додаткові зміни та місяць")}</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
+      </div></SmoothPayAccordion>
+      <SmoothPayAccordion className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Sparkles size={21}/><div><h3>{tr("Постійні доплати")}</h3><p>{tr("Необов'язкові доплати за робочі дні, додаткові зміни та місяць")}</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
         <div className="pay-fields">{bonuses.map(([key,label,help])=><MoneyField key={key} label={label} help={help} value={draft[key]} onChange={v=>change(key,v)}/>)}</div>
-      </div></details>
-      <details className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Moon size={21}/><div><h3>{tr("Нічні години")}</h3><p>{tr("Додаткова виплата за оплачуваний час у вибраному інтервалі")}</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
+      </div></SmoothPayAccordion>
+      <SmoothPayAccordion className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Moon size={21}/><div><h3>{tr("Нічні години")}</h3><p>{tr("Додаткова виплата за оплачуваний час у вибраному інтервалі")}</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
         <label className="pay-toggle"><input type="checkbox" checked={draft.nightEnabled} onChange={e=>change('nightEnabled',e.target.checked)}/> {tr("Увімкнути нічну доплату")}</label>
         {draft.nightEnabled&&<div className="advanced-pay-grid"><label>{tr("Початок нічного періоду")}<input type="time" required value={draft.nightStart} onChange={e=>change('nightStart',e.target.value)}/></label><label>{tr("Завершення нічного періоду")}<input type="time" required value={draft.nightEnd} onChange={e=>change('nightEnd',e.target.value)}/></label><PercentField label="Додатковий відсоток" value={draft.nightBonusBasisPoints} onChange={v=>change('nightBonusBasisPoints',v)}/></div>}
-      </div></details>
-      <details className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Timer size={21}/><div><h3>{tr("Як визначати понаднормові")}</h3><p>Пороги або години всередині зміни. Окремі години, додані кнопкою календаря, оплачуються незалежно за власним тарифом.</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
+      </div></SmoothPayAccordion>
+      <SmoothPayAccordion className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Timer size={21}/><div><h3>{tr("Як визначати понаднормові")}</h3><p>Пороги або години всередині зміни. Окремі години, додані кнопкою календаря, оплачуються незалежно за власним тарифом.</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
         <label className="pay-field"><span><strong>{tr("Режим понаднормових")}</strong><small>{tr("Вручну — кількість годин у кожному дні календаря; автоматично — пороги нижче")}</small></span><select value={draft.overtimeEntryMode} onChange={e=>change('overtimeEntryMode',e.target.value as PaySettings['overtimeEntryMode'])}><option value="automatic">{tr("Автоматично за тарифними ступенями")}</option><option value="marked">{tr("Години, позначені в календарі")}</option></select></label>
         {draft.overtimeEntryMode==='marked'&&<><PercentField label="Оплата позначених понаднормових (%)" value={draft.markedOvertimeBasisPoints} onChange={v=>change('markedOvertimeBasisPoints',v)}/><p className="pay-hint">При погодинній оплаті базові 100% уже враховані: для 120% система додасть лише 20%. Для окладу в режимі повного тарифу буде додано 120% понад базовий оклад.</p>{draft.mode==='monthly'&&<label className="pay-field"><span><strong>{tr("Для окладу")}</strong></span><select value={draft.monthlyOvertimeMode} onChange={e=>change('monthlyOvertimeMode',e.target.value as PaySettings['monthlyOvertimeMode'])}><option value="full">{tr("Повні 120% понад оклад")}</option><option value="premium">{tr("Лише надбавка 20%")}</option></select></label>}</>}
-      </div></details>
-      <details className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Timer size={21}/><div><h3>{tr("Ступені оплати за години")}</h3><p>Встановлюй свої пороги та тарифи. Наприклад: перші 8 годин — 100%, з 9-ї — 120%, після 12-ї — 150%.</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
+      </div></SmoothPayAccordion>
+      <SmoothPayAccordion className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Timer size={21}/><div><h3>{tr("Ступені оплати за години")}</h3><p>Встановлюй свої пороги та тарифи. Наприклад: перші 8 годин — 100%, з 9-ї — 120%, після 12-ї — 150%.</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
         {draft.overtimeEntryMode==='automatic'&&<><label className="pay-toggle"><input type="checkbox" checked={draft.bandEnabled} onChange={e=>change('bandEnabled',e.target.checked)}/> {tr("Увімкнути ступінчасті тарифи")}</label>
         {draft.bandEnabled&&<>
           <div className="advanced-pay-grid"><label>{tr("Коли скидати лічильник годин")}<select value={draft.bandPeriod} onChange={e=>change('bandPeriod',e.target.value as BandPeriod)}><option value="shift">{tr("Кожна окрема зміна")}</option><option value="day">{tr("Кожен робочий день")}</option><option value="week">{tr("Календарний тиждень (з понеділка)")}</option><option value="month">{tr("Календарний місяць")}</option></select></label></div>
@@ -113,20 +109,20 @@ export function RulesPageV5({workspaceName,shifts,settings,loaded,demo,onSave,pe
           <div className="band-example"><strong>Приклад: 10 оплачених годин за один обліковий період</strong><span>{(()=>{try{const groups=allocateBands([600],draft.bands);return groups.map((mins,i)=>`${(mins/60).toLocaleString('uk-UA')} год × ${draft.bands[i].multiplierBasisPoints/100}%`).filter(x=>!x.startsWith('0 год')).join(' + ')}catch{return 'Виправ пороги для перегляду'}})()}</span><strong>{(()=>{try{return 'Разом (погодинна модель): '+moneyUA(allocateBands([600],draft.bands).reduce((sum,minutes,i)=>sum+Math.round(minutes*(draft.mode==='monthly'&&draft.monthlyAutoHourlyRate ? draft.monthlySalary*60/Math.max(1,normMinutes):draft.hourlyRate)*draft.bands[i].multiplierBasisPoints/600000),0))}catch{return 'Некоректні пороги'}})()}</strong><small>120% означає повну оплату 1,2 × ставку, а не додаткові 120%. Для окладу можна обрати повну додаткову ставку (120%) або лише надбавку (+20%).</small></div>
           {draft.bandPeriod==='week'&&<p className="pay-hint">Поки що тижневі пороги рахуються лише за години в обраному місяці. На межі місяців потрібен окремий облік повного тижня.</p>}
         </>}</>}
-      </div></details>
-      {draft.mode!=='hourly'&&draft.mode!=='monthly'&&<details className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Info size={20}/><div><h3>{tr("Погодинна база для доплат")}</h3><p>Для позмінної або відрядної оплати, коли додаються додаткові години</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body"><p className="pay-hint">Додаткові години з кнопки календаря оплачуються повним тарифом (наприклад, 120%) поверх основного заробітку.</p><MoneyField label="Погодинна база для доплат" value={draft.hourlyRate} onChange={v=>change('hourlyRate',v)}/></div></details>}
-      <details className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Target size={21}/><div><h3>{tr("Оплата за обсяг роботи")}</h3><p>Додаткова або основна оплата за доставку, замовлення, виріб, послугу чи виконане завдання.</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
+      </div></SmoothPayAccordion>
+      {draft.mode!=='hourly'&&draft.mode!=='monthly'&&<SmoothPayAccordion className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Info size={20}/><div><h3>{tr("Погодинна база для доплат")}</h3><p>Для позмінної або відрядної оплати, коли додаються додаткові години</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body"><p className="pay-hint">Додаткові години з кнопки календаря оплачуються повним тарифом (наприклад, 120%) поверх основного заробітку.</p><MoneyField label="Погодинна база для доплат" value={draft.hourlyRate} onChange={v=>change('hourlyRate',v)}/></div></SmoothPayAccordion>}
+      <SmoothPayAccordion className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Target size={21}/><div><h3>{tr("Оплата за обсяг роботи")}</h3><p>Додаткова або основна оплата за доставку, замовлення, виріб, послугу чи виконане завдання.</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
         <label className="pay-field"><span><strong>{tr("Назва одиниці роботи")}</strong><small>{tr("В однині: доставка, виріб, замовлення, послуга…")}</small></span><input required maxLength={40} value={draft.unitName} onChange={e=>change('unitName',e.target.value)}/></label>
         {draft.mode!=='per_unit'&&<label className="pay-toggle"><input type="checkbox" checked={draft.unitBonusEnabled} onChange={e=>change('unitBonusEnabled',e.target.checked)}/> {tr("Додавати оплату за виконану роботу поверх основної зарплати")}</label>}
         {draft.mode!=='per_unit'&&draft.unitBonusEnabled&&<MoneyField label={`За одну одиницю: ${draft.unitName}`} value={draft.unitRate} onChange={v=>change('unitRate',v)}/>}
         <div className="pay-fields"><label className="pay-field"><span><strong>{tr("План за місяць (одиниць)")}</strong><small>{tr("0 — вимкнути премію за план")}</small></span><input type="number" className="pay-number" min="0" max="1000000000" step="1" value={draft.unitPlan} onChange={e=>change('unitPlan',Number(e.target.value))}/></label><MoneyField label="Премія за виконання плану" value={draft.unitPlanBonus} onChange={v=>change('unitPlanBonus',v)}/></div>
-      </div></details>
-      <details className="panel pay-optional"><summary><TrendingUp size={21}/> {tr("Додатково: відсоток від виручки (необов'язково)")}</summary><p>Цей блок лише для робіт, де винагорода залежить від грошового обороту. Для решти професій залиш 0.</p>
+      </div></SmoothPayAccordion>
+      <SmoothPayAccordion className="panel pay-optional"><summary><TrendingUp size={21}/> {tr("Додатково: відсоток від виручки (необов'язково)")}</summary><p>Цей блок лише для робіт, де винагорода залежить від грошового обороту. Для решти професій залиш 0.</p>
         <PercentField label="Відсоток від виручки" value={draft.salesCommissionBasisPoints} onChange={v=>change('salesCommissionBasisPoints',v)}/>
         <MoneyField label="Місячний план виручки" value={draft.salesPlan} onChange={v=>change('salesPlan',v)}/>
         <MoneyField label="Бонус за виконання плану" value={draft.salesPlanBonus} onChange={v=>change('salesPlanBonus',v)}/>
-      </details>
-      <details className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Target size={21}/><div><h3>{tr("Власні правила")}</h3><p>До 10 разових місячних бонусів за умову: кількість годин, днів або змін</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
+      </SmoothPayAccordion>
+      <SmoothPayAccordion className="panel pay-collapse"><summary className="pay-collapse-summary"><div className="pay-block-heading"><Target size={21}/><div><h3>{tr("Власні правила")}</h3><p>До 10 разових місячних бонусів за умову: кількість годин, днів або змін</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
         {draft.customRules.map(rule=><div className="custom-rule" key={rule.id}>
           <div className="custom-rule-head"><strong>{tr("Бонус за умову")}</strong><button type="button" className="btn btn-outline" aria-label={`Видалити правило ${rule.title}`} onClick={()=>change('customRules',draft.customRules.filter(x=>x.id!==rule.id))}><Trash2 size={16}/></button></div>
           <label>{tr("Назва правила")}<input required maxLength={80} value={rule.title} onChange={e=>changeRule(rule.id,{title:e.target.value})}/></label>
@@ -135,7 +131,7 @@ export function RulesPageV5({workspaceName,shifts,settings,loaded,demo,onSave,pe
           <MoneyField label="Сума разового бонусу" value={rule.bonus} onChange={v=>changeRule(rule.id,{bonus:v})}/>
         </div>)}
         <button type="button" className="btn btn-outline" disabled={draft.customRules.length>=10} onClick={()=>change('customRules',[...draft.customRules,newRule()])}><Plus size={16}/> {tr("Додати власне правило")}</button>
-      </div></details>
+      </div></SmoothPayAccordion>
       <PaymentScheduleEditor value={draft.paymentRules} onChange={rules=>change('paymentRules',rules)}/>
       {error&&<p className="form-error" role="alert">{error}</p>}{message&&<p className="form-success" role="status">{message}</p>}
       <div className="pay-form-actions"><p><Info size={16}/> Нічні години приблизні, якщо невідоме розташування перерв. Тарифи за ступенями — персональна формула, а не автоматичне застосування законодавства.</p><button type="submit" className="btn btn-primary" disabled={busy}><Save size={17}/>{busy?'Зберігаємо…':'Зберегти правила'}</button></div>

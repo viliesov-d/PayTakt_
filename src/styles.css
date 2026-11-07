@@ -1999,19 +1999,88 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
 }
 
 
-/* The pay rules disclosures use a measured-height Web Animations transition
-   for both opening and closing. Remove the old children-only reveal and
-   intrinsic-size transitions on this page to prevent double animation,
-   flicker and visual snapping. All other <details> stay untouched. */
-.salary-rules-page details:is(.pay-collapse,.pay-optional)[open] > :not(summary){
-  animation:none!important;
-  transform:none!important;
+/* Pay Rules: one browser-native CSS-grid transition, no measured-height JS,
+   no native details toggling, and no competing intrinsic-size animations.
+   The inner clip stays mounted, so opening AND closing remain continuous. */
+.salary-rules-page .pay-smooth-accordion{
+  padding:0;
+  overflow:hidden;
+  min-width:0;
 }
-@supports selector(details::details-content){
-  .salary-rules-page details:is(.pay-collapse,.pay-optional)::details-content{
-    block-size:auto!important;
-    opacity:1!important;
+.salary-rules-page .pay-smooth-accordion > .pay-accordion-toggle{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  min-width:0;
+  border:0;
+  background:transparent;
+  color:var(--text);
+  text-align:left;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.salary-rules-page .pay-smooth-accordion > .pay-accordion-toggle:focus-visible{
+  outline:3px solid var(--mint);
+  outline-offset:-4px;
+  border-radius:14px;
+}
+.salary-rules-page .pay-smooth-accordion .pay-accordion-track{
+  display:grid;
+  grid-template-rows:0fr;
+  opacity:0;
+  transition:
+    grid-template-rows 700ms cubic-bezier(.18,.82,.22,1),
+    opacity 460ms ease;
+}
+.salary-rules-page .pay-smooth-accordion[data-expanded='true'] .pay-accordion-track{
+  grid-template-rows:1fr;
+  opacity:1;
+}
+.salary-rules-page .pay-smooth-accordion .pay-accordion-clip{
+  min-height:0;
+  min-width:0;
+  overflow:hidden;
+}
+.salary-rules-page .pay-smooth-accordion .pay-accordion-content{
+  min-width:0;
+}
+.salary-rules-page .pay-smooth-accordion[data-expanded='true'] > .pay-accordion-toggle{
+  border-bottom:1px solid var(--border);
+}
+.salary-rules-page .pay-smooth-accordion[data-expanded='true'] .pay-collapse-chevron{
+  transform:rotate(180deg);
+}
+.salary-rules-page .salary-form .pay-smooth-accordion:hover{
+  border-color:color-mix(in srgb,var(--mint) 40%,var(--border));
+}
+.salary-rules-page .pay-smooth-accordion.pay-optional > .pay-accordion-toggle{
+  padding:17px 21px;
+  gap:11px;
+  font-size:1.05rem;
+  font-weight:700;
+}
+.salary-rules-page .pay-smooth-accordion.pay-optional .pay-accordion-content{
+  padding:13px 21px 17px;
+}
+.salary-rules-page .pay-smooth-accordion.pay-optional .pay-accordion-content > p{
+  color:var(--muted);
+  margin:0 0 10px;
+  line-height:1.5;
+}
+@media(max-width:700px){
+  .salary-rules-page .pay-smooth-accordion.pay-optional > .pay-accordion-toggle{
+    padding:14px 15px;
+  }
+  .salary-rules-page .pay-smooth-accordion.pay-optional .pay-accordion-content{
+    padding:12px 15px 15px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .salary-rules-page .pay-smooth-accordion .pay-accordion-track{
     transition:none!important;
-    animation:none!important;
+  }
+  .salary-rules-page .pay-smooth-accordion .pay-collapse-chevron{
+    transition:none!important;
   }
 }

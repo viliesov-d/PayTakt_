@@ -1,5 +1,6 @@
 import {inputCurrencyLabel} from '../lib/presentation'
 import {CalendarClock,Plus,Trash2,ArrowUp,ArrowDown,Info,ChevronDown} from 'lucide-react'
+import {SmoothPayAccordion} from './SmoothPayAccordion'
 import {defaultPaymentRules,type PaymentRule,type PaymentSource,type PaymentMethod} from '../lib/salary'
 
 const fixedAdvance=(amount=1000000):PaymentRule[] => [
@@ -29,7 +30,7 @@ export function PaymentScheduleEditor({value,onChange}:{value:PaymentRule[];onCh
     if(other<0||other>=value.length||value[index].source!==value[other].source)return
     const next=[...value];[next[index],next[other]]=[next[other],next[index]];onChange(next)
   }
-  return <details className="panel payment-schedule-panel pay-collapse">
+  return <SmoothPayAccordion className="panel payment-schedule-panel pay-collapse">
     <summary className="pay-collapse-summary"><div className="pay-block-heading"><CalendarClock size={22}/><div><h3>Календар виплат</h3><p>Коли та з яких нарахувань приходять аванс, зарплата й премії. Порядок правил визначає розподіл суми.</p></div></div><ChevronDown className="pay-collapse-chevron" size={19} aria-hidden="true"/></summary><div className="pay-collapse-body">
     <div className="payment-presets">
       <button type="button" className="btn btn-outline" onClick={()=>onChange(defaultPaymentRules.map(x=>({...x})))}>За половинами</button>
@@ -61,5 +62,5 @@ export function PaymentScheduleEditor({value,onChange}:{value:PaymentRule[];onCh
     </div>)}</div>
     <div className="payment-add-buttons"><button type="button" className="btn btn-outline" disabled={value.length>=12} onClick={()=>add('earnings')}><Plus size={16}/> Додати аванс / частину зарплати</button><button type="button" className="btn btn-outline" disabled={value.length>=12} onClick={()=>add('bonus')}><Plus size={16}/> Додати частину премії</button></div>
     <p className="pay-hint">Якщо число 31 не існує в місяці виплати, обирається його останній день. Прогноз не є підтвердженням банківського переказу.</p>
-  </div></details>
+  </div></SmoothPayAccordion>
 }
