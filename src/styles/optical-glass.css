@@ -262,3 +262,43 @@
     display:none!important;
   }
 }
+
+/* v0.9.7 — final dock halo fix.
+   A refractive SVG filter can distort the edge itself in Android WebView,
+   even after the white highlights are removed. The fixed navigation therefore
+   uses a clean, stable frosted surface; optical refraction stays in Android
+   popovers and dialogs. No geometry or navigation-position properties change. */
+@media(max-width:880px){
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host{
+    box-shadow:none!important;
+    border-color:transparent!important;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass{
+    background:color-mix(in srgb,var(--panel) 73%,transparent)!important;
+    border:0!important;
+    box-shadow:none!important;
+    backdrop-filter:blur(18px) saturate(1.16)!important;
+    -webkit-backdrop-filter:blur(18px) saturate(1.16)!important;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+    border-color:transparent!important;
+    box-shadow:none!important;
+    background:color-mix(in srgb,var(--mint-soft) 68%,var(--panel) 32%);
+    color:var(--text);
+  }
+  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+    background:rgba(184,215,231,.16);
+    color:var(--text);
+  }
+  html.paytakt-native-android[data-ui-style='glass'][data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+    background-image:linear-gradient(rgba(10,24,43,.30),rgba(10,24,43,.30)),var(--pt-gradient);
+    color:#fff;
+  }
+}
+@media(max-width:880px) and (prefers-reduced-transparency:reduce){
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass{
+    background:var(--panel)!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+}
