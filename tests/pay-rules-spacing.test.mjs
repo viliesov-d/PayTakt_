@@ -27,3 +27,14 @@ test('rules accordion headers and accessible input layout stay present',()=>{
   assert.match(rules,/<PerformanceRulesEditor/)
   assert.match(css,/\.salary-form \.pay-collapse-summary:focus-visible/)
 })
+
+
+test('mobile pay-rule fields do not inherit a 180px vertical flex basis',()=>{
+  // Desktop: 180px flex basis still allows horizontal label/input layout.
+  assert.match(css,/\.salary-form \.pay-field>span\{min-width:0;flex:1 1 180px\}/)
+  // Mobile: that 180px must not become the height of the label above input.
+  assert.match(css,/@media\(max-width:900px\)\{\s*\.salary-rules-page \.salary-form \.pay-field\{\s*justify-content:flex-start;/)
+  assert.match(css,/\.salary-rules-page \.salary-form \.pay-field > span:first-child\{\s*flex:0 0 auto;\s*width:100%;\s*min-height:0;/)
+  // Only rules section; never change the floating glass dock selectors.
+  assert.doesNotMatch(css.slice(css.lastIndexOf('/* Mobile pay rules:')),/pt-slider-nav|pt-dock-glass/)
+})

@@ -1981,3 +1981,19 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
     line-height:1.3;
   }
 }
+
+
+/* Mobile pay rules: a desktop flex-basis (180px) was becoming HEIGHT when
+   labels stack above inputs at <=900px. It created the giant empty regions
+   visible between "За відпрацьований день" and its amount input.
+   Keep the label only as tall as its actual text on web and Capacitor. */
+@media(max-width:900px){
+  .salary-rules-page .salary-form .pay-field{
+    justify-content:flex-start;
+  }
+  .salary-rules-page .salary-form .pay-field > span:first-child{
+    flex:0 0 auto;
+    width:100%;
+    min-height:0;
+  }
+}
