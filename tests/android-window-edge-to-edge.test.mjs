@@ -33,8 +33,8 @@ test('transparent Android bars use safe insets but preserve the OS status and ge
   assert.match(css,/--pt-safe-top:max\(env\(safe-area-inset-top,0px\),var\(--safe-area-inset-top,0px\)\)/)
   assert.match(css,/--pt-safe-bottom:max\(env\(safe-area-inset-bottom,0px\),var\(--safe-area-inset-bottom,0px\)\)/)
   assert.match(css,/\.zmina-site-header\{\s*padding-top:var\(--pt-safe-top\)/)
-  assert.match(css,/\.pt-slider-nav\{\s*bottom:calc\(10px \+ var\(--pt-safe-bottom\)\)/)
-  assert.match(css,/\.main-content\{\s*padding-bottom:calc\(116px \+ var\(--pt-safe-bottom\)\)/)
+  assert.match(css,/\.pt-slider-nav\.pt-optical-host\{\s*bottom:calc\(10px \+ var\(--pt-safe-bottom\)\)/)
+  assert.match(css,/\.app-shell \.main-content\{\s*padding-bottom:calc\(116px \+ var\(--pt-safe-bottom\)\)/)
   assert.doesNotMatch(css,/pt-optical-glass|pt-nav-thumb|glassReflectiveRimVector/)
 })
 
