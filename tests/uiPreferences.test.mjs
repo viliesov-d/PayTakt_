@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   APPEARANCE_STORAGE_KEY, DEFAULT_APPEARANCE, GRADIENT_COLORS,
-  gradientCss, normalizeAppearance, selectGradient, readAppearance, saveAppearance,
+  dockOverlayAlpha, gradientCss, normalizeAppearance, selectGradient, readAppearance, saveAppearance,
 } from '../src/lib/uiPreferences.ts'
 
 test('new and invalid preferences preserve Classic appearance',()=>{
@@ -22,7 +22,7 @@ test('preset gradients select safe colors and retain style and angle',()=>{
 })
 
 test('editable colors are validated and cannot inject CSS',()=>{
-  const input={style:'soft',gradient:'custom',from:'#aabbcc',to:'#112233',angle:315}
+  const input={style:'soft',gradient:'custom',from:'#aabbcc',to:'#112233',angle:315,dockTransparency:55}
   assert.deepEqual(normalizeAppearance(input),input)
   assert.equal(gradientCss(input),'linear-gradient(315deg, #aabbcc, #112233)')
   const escaped=normalizeAppearance({...input,from:'red);background:url(https://example.com)',angle:Infinity})
@@ -38,7 +38,7 @@ test('device appearance round-trips and recovers from invalid storage',()=>{
     setItem:(key,value)=>storage.set(key,value),
   }
   try{
-    const custom={style:'glass',gradient:'custom',from:'#123456',to:'#abcdef',angle:45}
+    const custom={style:'glass',gradient:'custom',from:'#123456',to:'#abcdef',angle:45,dockTransparency:25}
     assert.deepEqual(saveAppearance(custom),custom)
     assert.equal(storage.has(APPEARANCE_STORAGE_KEY),true)
     assert.deepEqual(readAppearance(),custom)
@@ -63,4 +63,23 @@ test('blocked device storage never crashes the app',()=>{
     if(previous===undefined)delete globalThis.localStorage
     else globalThis.localStorage=previous
   }
+})
+
+test('existing stored appearance gets the default transparency without losing style or gradient',()=>{
+  const legacy={style:'glass',gradient:'ocean',from:'#075985',to:'#5b4bc4',angle:225}
+  assert.deepEqual(normalizeAppearance(legacy),{...legacy,dockTransparency:90})
+})
+
+test('dock transparency is bounded and cannot inject CSS',()=>{
+  const current={...DEFAULT_APPEARANCE,style:'glass',dockTransparency:0}
+  assert.equal(normalizeAppearance(current).dockTransparency,0)
+  assert.equal(normalizeAppearance({...current,dockTransparency:100}).dockTransparency,100)
+  for(const invalid of [-1,101,NaN,Infinity,50.5,'50','100); color:red']){
+    assert.equal(normalizeAppearance({...current,dockTransparency:invalid}).dockTransparency,90)
+  }
+  assert.equal(dockOverlayAlpha(0),0.75)
+  assert.equal(dockOverlayAlpha(90),0.093)
+  assert.equal(dockOverlayAlpha(100),0.02)
+  assert.ok(dockOverlayAlpha(30)>dockOverlayAlpha(80))
+  assert.equal(dockOverlayAlpha(NaN),dockOverlayAlpha(DEFAULT_APPEARANCE.dockTransparency))
 })
