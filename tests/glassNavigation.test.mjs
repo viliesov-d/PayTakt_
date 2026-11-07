@@ -26,18 +26,18 @@ test('Android dock remains fixed, floating, with three navigation slots',()=>{
 })
 
 test('only the Android dock has a clear border, while remaining fixed',()=>{
-  const outer=css.match(/html\\.paytakt-native-android\\[data-ui-style='glass'\\] \\.app-shell \\.paytakt-mobile-tabs\\.pt-optical-host\\{([\\s\\S]*?)\\n  \\}/)
-  const inner=css.match(/html\\.paytakt-native-android\\[data-ui-style='glass'\\] \\.app-shell \\.paytakt-mobile-tabs\\.pt-optical-host>\\.pt-optical-glass\\{([\\s\\S]*?)\\n  \\}/)
+  const outer=css.match(/html\.paytakt-native-android\[data-ui-style='glass'\] \.app-shell \.paytakt-mobile-tabs\.pt-optical-host\{([\s\S]*?)\n  \}/)
+  const inner=css.match(/html\.paytakt-native-android\[data-ui-style='glass'\] \.app-shell \.paytakt-mobile-tabs\.pt-optical-host>\.pt-optical-glass\{([\s\S]*?)\n  \}/)
   assert.ok(outer,'floating dock CSS rule must exist')
   assert.ok(inner,'glass layer CSS rule must exist')
   assert.match(outer[1],/position:fixed;/)
   assert.match(outer[1],/border:1px solid transparent;/)
   assert.match(inner[1],/border:1px solid transparent;/)
-  assert.match(css,/\\.pt-optical-glass::before\\{\\s*border-color:transparent;/)
+  assert.match(css,/\.pt-optical-glass::before\{\s*border-color:transparent;/)
 })
 
 test('signed Android version is higher than the previous release',()=>{
-  assert.match(version.version,/^\\d+\\.\\d+\\.\\d+$/)
+  assert.match(version.version,/^\d+\.\d+\.\d+$/)
   assert.ok(Number.isInteger(version.versionCode))
   assert.ok(version.versionCode>90400)
   assert.equal(version.applicationId,'ua.paytakt.mobile')
