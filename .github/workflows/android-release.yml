@@ -2,11 +2,6 @@ name: Android signed release APK
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version in mobile-version.json (e.g. 0.9.0)'
-        required: true
-        type: string
 
 permissions:
   contents: write
@@ -28,7 +23,6 @@ jobs:
       VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
       VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
       VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-      RELEASE_VERSION: ${{ inputs.version }}
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -53,18 +47,26 @@ jobs:
       - name: Install Android SDK 36
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Validate requested release and configuration
+      - name: Validate release and configuration
         shell: bash
         run: |
           set -euo pipefail
+          # Read version directly from the committed manifest (single source of truth).
+          RELEASE_VERSION="$(node -p "require('./mobile-version.json').version")"
+          export RELEASE_VERSION
+          printf 'RELEASE_VERSION=%s\n' "$RELEASE_VERSION" >> "$GITHUB_ENV"
           node -e '
             const f=require("./mobile-version.json")
-            if (process.env.RELEASE_VERSION !== f.version || !/^\d+\.\d+\.\d+$/.test(f.version)) {
-              console.error(`::error title=Version mismatch::Requested ${process.env.RELEASE_VERSION}, but mobile-version.json specifies ${f.version}. Run the workflow from main with version ${f.version}.`)
+            const match=new RegExp("^([0-9]+)[.]([0-9]+)[.]([0-9]+)$").exec(f.version)
+            if(!match || process.env.RELEASE_VERSION!==f.version) {
+              console.error("::error title=Invalid release::Set a valid version in mobile-version.json on main.")
               process.exit(1)
             }
-            if (f.applicationId !== "ua.paytakt.mobile" || !Number.isSafeInteger(f.versionCode) || f.versionCode < 1) {
-              console.error("Unexpected application ID or versionCode.")
+            const [major,minor,patch]=match.slice(1).map(Number)
+            const expected=major*1000000+minor*10000+patch*100
+            if(minor>99||patch>99||!Number.isSafeInteger(expected)||f.versionCode!==expected||
+               f.applicationId!=="ua.paytakt.mobile"||f.assetName!=="PayTakt-Android-release.apk") {
+              console.error(`::error title=Invalid Android manifest::Expected versionCode ${expected} for ${f.version}. Check app ID and APK asset name.`)
               process.exit(1)
             }
           '
@@ -144,7 +146,7 @@ jobs:
       - name: Upload signed APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PayTakt-Android-signed-v${{ inputs.version }}
+          name: PayTakt-Android-signed-v${{ env.RELEASE_VERSION }}
           path: signed/PayTakt-Android-release.apk
           retention-days: 30
           if-no-files-found: error
