@@ -25,8 +25,20 @@ test('Android dock remains fixed, floating, with three navigation slots',()=>{
   assert.match(css,/bottom:calc\(10px \+ env\(safe-area-inset-bottom,0px\)\)/)
 })
 
-test('next signed version can update v0.9.3 without changing app identity',()=>{
-  assert.equal(version.version,'0.9.4')
-  assert.equal(version.versionCode,90400)
+test('only the Android dock has a clear border, while remaining fixed',()=>{
+  const outer=css.match(/html\.paytakt-native-android\[data-ui-style='glass'\] \.app-shell \.paytakt-mobile-tabs\.pt-optical-host\{([\s\S]*?)\n  \}/)
+  const inner=css.match(/html\.paytakt-native-android\[data-ui-style='glass'\] \.app-shell \.paytakt-mobile-tabs\.pt-optical-host>\.pt-optical-glass\{([\s\S]*?)\n  \}/)
+  assert.ok(outer,'floating dock CSS rule must exist')
+  assert.ok(inner,'glass layer CSS rule must exist')
+  assert.match(outer[1],/position:fixed;/)
+  assert.match(outer[1],/border:1px solid transparent;/)
+  assert.match(inner[1],/border:1px solid transparent;/)
+  assert.match(css,/\.pt-optical-glass::before\{\s*border-color:transparent;/)
+})
+
+test('signed Android version is higher than the previous release',()=>{
+  assert.match(version.version,/^\d+\.\d+\.\d+$/)
+  assert.ok(Number.isInteger(version.versionCode))
+  assert.ok(version.versionCode>90400)
   assert.equal(version.applicationId,'ua.paytakt.mobile')
 })
