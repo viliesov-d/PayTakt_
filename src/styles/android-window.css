@@ -23,10 +23,12 @@ html.paytakt-native-android .setup-page{
 }
 @media(max-width:880px){
   /* The floating navigation stays above Android's own gesture handle. */
-  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav{
+  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav,
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav.pt-optical-host{
     bottom:calc(10px + var(--pt-safe-bottom));
   }
-  html.paytakt-native-android .main-content{
+  html.paytakt-native-android .main-content,
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .main-content{
     padding-bottom:calc(116px + var(--pt-safe-bottom));
   }
 }
