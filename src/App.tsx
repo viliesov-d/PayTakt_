@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import {AuthScreen} from './components/AuthScreen'
+import {AppearanceSettings} from './components/AppearanceSettings'
+import {gradientCss, readAppearance, saveAppearance, type AppearancePreferences} from './lib/uiPreferences'
 import {
   ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, BriefcaseBusiness, Building2, CalendarDays,
   Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3,
@@ -790,9 +792,10 @@ function TeamPage({workspace}:{workspace:Workspace}) {
   return <><SectionHeading eyebrow="КОМАНДА" title="Співробітники компанії" detail={`Простір «${workspace.name}» · зараз доступний власнику акаунта.`}/><div className="panel team-owner"><div className="avatar large"><UserRound size={24}/></div><div><h3>Власник простору</h3><p>Повний доступ до власних налаштувань і календаря</p></div><span className="pill mint-pill">Власник</span></div><Placeholder icon={UsersRound} title="Запрошення співробітників — наступний етап" detail="Після налаштування корпоративних ролей тут з’являться запрошення, відділи та доступи. Зараз ніхто інший не може переглядати дані вашого простору."/></>
 }
 
-function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates, syncPanel, remindersPanel, updatesPanel }: {
+function SettingsPage({ session, workspace, workspaces, theme, setTheme, appearance, setAppearance, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates, syncPanel, remindersPanel, updatesPanel }: {
   session: Session; workspace: Workspace; workspaces: Workspace[]; theme: ThemeChoice;
-  setTheme: (v:ThemeChoice)=>void; onCreate:()=>void; onDeleteRequest:(w:Workspace)=>void;
+  setTheme: (v:ThemeChoice)=>void; appearance:AppearancePreferences; setAppearance:(next:AppearancePreferences)=>void;
+  onCreate:()=>void; onDeleteRequest:(w:Workspace)=>void;
   onSignOut:()=>void; emailVerified:boolean;
   onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>;
   presentation: PresentationSettings; onPresentationChange: (next:PresentationSettings)=>void;
@@ -830,13 +833,10 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
       </div>}
     </div>}
     <div className="settings-grid">
+      <AppearanceSettings value={appearance} onChange={setAppearance} theme={theme} onThemeChange={setTheme} language={presentation.language}/>
       {syncPanel}
       {updatesPanel}
       {remindersPanel}
-      <section className="panel settings-panel">
-        <div className="settings-heading"><Sun size={22}/><div><h3>{tr('Тема оформлення')}</h3><p>{tr('Обирай вигляд, який комфортний саме тобі.')}</p></div></div>
-        <div className="theme-card-grid">{([['light',Sun,'Денна','Світла й повітряна'],['dark',Moon,'Нічна','Глибокі темні відтінки'],['system',Monitor,'Авто','Як на твоєму пристрої']] as const).map(([value,Icon,label,sub])=><button type="button" key={value} className={`theme-card ${theme===value?'chosen':''}`} onClick={()=>setTheme(value)}><Icon size={24}/><strong>{tr(label)}</strong><span>{tr(sub)}</span>{theme===value&&<Check size={16} className="theme-check"/>}</button>)}</div>
-      </section>
       <section className="panel settings-panel">
         <div className="settings-heading"><UserRound size={22}/><div><h3>{tr('Мій профіль')}</h3><p>{tr('Акаунт PayTakt')}</p></div></div>
         <div className="setting-info"><span>{tr('Ім’я')}</span><strong>{session.name}</strong></div>
@@ -1079,6 +1079,7 @@ export default function App(){
     }
   },[isNativeAndroid,checkUpdates])
   const [theme,setTheme]=useState<ThemeChoice>(readTheme)
+  const [appearance,setAppearance]=useState<AppearancePreferences>(readAppearance)
   const [networkOnline,setNetworkOnline]=useState(()=>typeof navigator==='undefined'||navigator.onLine)
   useEffect(()=>{
     const update=()=>setNetworkOnline(navigator.onLine)
@@ -1305,6 +1306,15 @@ export default function App(){
     }
     apply();mq.addEventListener('change',apply);return()=>mq.removeEventListener('change',apply)
   },[theme])
+  const setAppearanceChoice=useCallback((next:AppearancePreferences)=>{
+    setAppearance(saveAppearance(next))
+  },[])
+  useEffect(()=>{
+    const root=document.documentElement
+    root.dataset.uiStyle=appearance.style
+    root.dataset.uiGradient=appearance.gradient==='none'?'off':'on'
+    root.style.setProperty('--pt-gradient',gradientCss(appearance))
+  },[appearance])
   useEffect(()=>{
     if(demo || !auth){setLoading(false);return}
     let live=true
@@ -1739,7 +1749,7 @@ export default function App(){
         {page==='pay'&&<PayPageV5 key={workspace.id} workspaceName={workspace.name} shifts={shifts} settings={paySettings} performance={performance} targets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} loaded={payLoaded&&salesLoaded&&unitsLoaded&&cashLoaded&&performanceLoaded&&targetsLoaded&&wagesLoaded} salesFromCash={cashPrefs.enabled&&cashPrefs.useForSales} salesByMonth={effectiveSales} onSaveMonthlySales={onSaveMonthlySales} unitsByMonth={unitsByMonth} onSaveMonthlyUnits={onSaveMonthlyUnits} demo={session.demo} goToRules={()=>navigate('rules')}/>}
         {page==='rules'&&<RulesPageV5 key={workspace.id} shifts={shifts} workspaceName={workspace.name} settings={setupPayDraft??paySettings} loaded={payLoaded} demo={session.demo} onSave={onSavePay} performance={performance} onSavePerformance={onSavePerformance} onApplyZmina={onApplyZmina}/>}
         {page==='team'&&workspace.kind==='company'&&<TeamPage workspace={workspace}/>}
-        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates} syncPanel={syncPanel} remindersPanel={remindersPanel} updatesPanel={updatesPanel}/>}
+        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} appearance={appearance} setAppearance={setAppearanceChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates} syncPanel={syncPanel} remindersPanel={remindersPanel} updatesPanel={updatesPanel}/>}
         {page==='settings'&&<section className="panel v2-settings-actions">
           <div className="v2-settings-head"><div><h3>{tr("Налаштування твоєї роботи")}</h3><p>Персональний майстер або точні правила — обирай зручний спосіб.</p></div></div>
           <div className="v2-settings-links">
