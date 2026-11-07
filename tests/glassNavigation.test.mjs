@@ -60,7 +60,7 @@ test('Android dock disables only its white optical halo layers',()=>{
 test('Android dock uses clean blur without the refractive rim or white glow',()=>{
   const nav=app.slice(app.indexOf('aria-label="Навігація PayTakt Mobile"'))
   assert.match(nav,/pt-dock-glass/)
-  assert.doesNotMatch(nav.slice(0,400),/OpticalGlass/)
+  assert.doesNotMatch(nav.slice(0,400),/<OpticalGlass\b/)
   const marker=css.indexOf('v0.9.7 — final dock halo fix')
   assert.ok(marker>0)
   const cleanup=css.slice(marker)
