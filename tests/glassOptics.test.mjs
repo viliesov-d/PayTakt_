@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {roundedRectDistance,glassEdgeVector,makeGlassDisplacementMap} from '../src/lib/glassOptics.ts'
+import {roundedRectDistance,glassEdgeVector,glassReflectiveRimVector,makeGlassDisplacementMap} from '../src/lib/glassOptics.ts'
 
 test('rounded rectangle distance is negative inside and positive outside',()=>{
   assert.ok(roundedRectDistance(180,40,360,80,27)<0)
@@ -80,4 +80,55 @@ test('strong dock refraction keeps samples inside straight and rounded edges',()
   // Stronger visible bending than the previous 12px-scale lens (~5.5px max).
   assert.ok(maximumOffset>7)
   assert.deepEqual(glassEdgeVector(180,39,width,height,radius,bezel,true,scale),{x:0,y:0})
+})
+
+
+test('a thin internal mirror band folds the moving backdrop before strong rim refraction',()=>{
+  const w=360,h=80,r=27,bezel=25.6,scale=24
+  const edge=glassReflectiveRimVector(180,0,w,h,r,bezel,scale)
+  const center=glassReflectiveRimVector(180,40,w,h,r,bezel,scale)
+  const mirror=glassReflectiveRimVector(180,5,w,h,r,bezel,scale)
+  const refraction=glassReflectiveRimVector(180,14,w,h,r,bezel,scale)
+  assert.deepEqual(edge,{x:0,y:0},'no pixels from outside the dock')
+  assert.deepEqual(center,{x:0,y:0},'the center must remain clear')
+  assert.ok(mirror.y>.35,'top rim briefly samples inward, producing a reflection-like echo')
+  assert.ok(refraction.y<-.75,'the adjacent band refracts more strongly outward')
+  const prior=glassEdgeVector(180,14,w,h,r,bezel,true,scale)
+  assert.ok(Math.abs(refraction.y)>Math.abs(prior.y),'rim refraction exceeds the earlier lens')
+})
+
+test('mirrored dock pixels never sample outside the rounded silhouette',()=>{
+  const w=360,h=80,r=27,bezel=25.6,scale=24
+  const pixelScale=scale*117/255
+  for(let y=.5;y<h;y+=2){
+    for(let x=.5;x<w;x+=2){
+      const distance=roundedRectDistance(x,y,w,h,r)
+      const vector=glassReflectiveRimVector(x,y,w,h,r,bezel,scale)
+      const px=x+vector.x*pixelScale
+      const py=y+vector.y*pixelScale
+      if(distance>=0)assert.deepEqual(vector,{x:0,y:0})
+      else assert.ok(roundedRectDistance(px,py,w,h,r)<=1e-7,
+        'the reflection must stay within the dock, including rounded corners')
+    }
+  }
+})
+
+test('reflection map is opt-in; normal cards and inner capsule retain original optics',()=>{
+  const samples=[]
+  const fakeCanvas={
+    width:0,height:0,
+    getContext(){return {
+      createImageData(w,h){const data=new Uint8ClampedArray(w*h*4);samples.push(data);return {data}},
+      putImageData(){},
+    }},
+    toDataURL(){return 'data:image/png;base64,mirror-test'},
+  }
+  const ordinary=makeGlassDisplacementMap(360,80,27,()=>fakeCanvas,true,24)
+  const reflective=makeGlassDisplacementMap(360,80,27,()=>fakeCanvas,true,24,true)
+  assert.ok(ordinary&&reflective)
+  assert.notDeepEqual(samples[0],samples[1])
+  // The closer-to-rim row samples in the opposite direction only for the dock.
+  const at=(data,x,y)=>(data[(y*360+x)*4+1]-128)
+  assert.ok(at(samples[0],180,5)<0)
+  assert.ok(at(samples[1],180,5)>0)
 })
