@@ -1,5 +1,13 @@
 {
   "appId": "ua.paytakt.mobile",
   "appName": "PayTakt",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover",
+      "style": "LIGHT",
+      "hidden": false
+    }
+  }
 }

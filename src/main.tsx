@@ -8,6 +8,7 @@ import './styles/optical-glass.css'
 import './styles/navigation-slider.css'
 import './styles/settings-hub.css'
 import './styles/calendar-quick-jump.css'
+import './styles/android-window.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode><App /></React.StrictMode>,

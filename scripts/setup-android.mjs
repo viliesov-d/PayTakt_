@@ -42,6 +42,10 @@ if (existsSync(resolve(root, 'android', 'app', 'build.gradle'))) {
   run('npx', ['cap', 'add', 'android'])
 }
 
+// Cap add/sync regenerates MainActivity. Keep the native system bars and
+// overscroll fix reproducible in every local and GitHub Actions APK.
+run('node', ['scripts/configure-android-window.mjs'])
+
 // Ensure Android's installed package version matches the app's update checker.
 run('node', ['scripts/set-android-version.mjs'])
 
