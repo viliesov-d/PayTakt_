@@ -42,13 +42,49 @@ export function glassEdgeVector(
   return {x:gx/length*intensity,y:gy/length*intensity}
 }
 
+/** Dock-only folded sampling near the inner rim.
+ * The first narrow band briefly samples further INTO the panel, then returns
+ * to the normal outward convex-lens profile. The sign reversal produces a
+ * small mirror-like echo of moving content without taking pixels from outside
+ * the rounded silhouette (which would create a pale halo).
+ * All values remain normalized for the existing feDisplacementMap.
+ */
+export function glassReflectiveRimVector(
+  x:number,y:number,width:number,height:number,radius:number,bezel:number,displacementScale:number,
+):{x:number;y:number}{
+  const baseline=glassEdgeVector(x,y,width,height,radius,bezel,true,displacementScale)
+  const dist=roundedRectDistance(x,y,width,height,radius)
+  if(dist>=0||dist<=-bezel||displacementScale<=0)return baseline
+  const depth=-dist
+  const delta=0.8
+  const gx=roundedRectDistance(x+delta,y,width,height,radius)-
+    roundedRectDistance(x-delta,y,width,height,radius)
+  const gy=roundedRectDistance(x,y+delta,width,height,radius)-
+    roundedRectDistance(x,y-delta,width,height,radius)
+  const length=Math.hypot(gx,gy)
+  if(length<1e-5)return baseline
+  const nx=gx/length,ny=gy/length
+  const pxPerUnit=displacementScale*117/255
+  const outward=(baseline.x*nx+baseline.y*ny)*pxPerUnit
+  const stripWidth=Math.min(11,bezel*.46)
+  const strip=depth<stripWidth ? Math.sin(Math.PI*depth/stripWidth)**2 : 0
+  // A folded backdrop sample reverses direction only inside this narrow
+  // internal-reflection strip; beyond it the ordinary lens grows stronger.
+  const echoed=Math.min(9,pxPerUnit*.83)*strip
+  const desired=outward*1.2*(1-.88*strip)-echoed
+  // Never sample beyond the silhouette. This also protects rounded corners.
+  const offset=Math.max(-Math.min(9,pxPerUnit*.95),Math.min(depth*.72,desired))
+  const amplitude=Math.max(-1,Math.min(1,offset/pxPerUnit))
+  return {x:nx*amplitude,y:ny*amplitude}
+}
+
 export type GlassMap={width:number;height:number;dataUrl:string}
 
 /** A small bounded map is stretched over the CSS-sized lens; scales on phones. */
 export function makeGlassDisplacementMap(
   width:number,height:number,radius:number,
   createCanvas:()=>HTMLCanvasElement=()=>document.createElement('canvas'),
-  softEdge=false,displacementScale=0,
+  softEdge=false,displacementScale=0,reflectiveRim=false,
 ):GlassMap|null{
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<15||height<15)return null
   const ratio=Math.min(1,Math.sqrt(125000/(width*height)))
@@ -66,9 +102,10 @@ export function makeGlassDisplacementMap(
     : Math.min(23,Math.max(12,Math.min(width,height)*0.22))
   for(let py=0;py<h;py++){
     for(let px=0;px<w;px++){
-      const {x,y}=glassEdgeVector(
-        (px+.5)*width/w,(py+.5)*height/h,width,height,radius,bezel,softEdge,displacementScale,
-      )
+      const sx=(px+.5)*width/w,sy=(py+.5)*height/h
+      const {x,y}=reflectiveRim&&softEdge
+        ? glassReflectiveRimVector(sx,sy,width,height,radius,bezel,displacementScale)
+        : glassEdgeVector(sx,sy,width,height,radius,bezel,softEdge,displacementScale)
       const idx=(py*w+px)*4
       data[idx]=Math.round(clamp(128+x*117,0,255))
       data[idx+1]=Math.round(clamp(128+y*117,0,255))
