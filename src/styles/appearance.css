@@ -1,0 +1,258 @@
+/* PayTakt v1 stage B: UI styles + editable gradients.
+   Classic without an enabled gradient keeps all legacy styles unchanged. */
+
+/* Shared appearance editor */
+.appearance-settings{min-width:0}
+.appearance-settings .appearance-heading{margin-bottom:18px}
+.appearance-section-title{font-size:13px;font-weight:850;color:var(--text);margin:15px 0 12px}
+.appearance-styles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.appearance-style-card{
+  display:flex;flex-direction:column;position:relative;align-items:stretch;text-align:left;min-width:0;
+  background:var(--panel-soft);border:1px solid var(--border);color:var(--text);
+  border-radius:18px;padding:10px;gap:7px;min-height:150px;
+  transition:transform .18s,border-color .18s,box-shadow .18s
+}
+.appearance-style-card:hover{transform:translateY(-2px);border-color:var(--mint)}
+.appearance-style-card.selected{border:2px solid var(--mint);padding:9px;box-shadow:0 0 0 3px color-mix(in srgb,var(--mint) 12%,transparent)}
+.appearance-style-check{
+  position:absolute;top:14px;right:15px;background:var(--mint);color:var(--accent-contrast);
+  padding:3px;box-sizing:content-box;border-radius:50%;z-index:1
+}
+.appearance-style-visual{height:66px;display:flex;flex-direction:column;gap:7px;border-radius:11px;padding:10px;overflow:hidden;background:#ecf2ee}
+.appearance-style-visual i,.appearance-faux-header{display:block}
+.appearance-faux-header{height:8px;width:42%;background:#35604d;border-radius:6px}
+.appearance-faux-content{display:flex;gap:5px;flex:1}
+.appearance-faux-content i{flex:1;border-radius:5px;background:#fff}
+.appearance-faux-content i:nth-child(2){background:#d8e6d9}
+.appearance-faux-dock{display:flex;gap:5px;height:8px;width:55%;margin:auto auto 0}
+.appearance-faux-dock i{flex:1;border-radius:999px;background:#b5cab8}
+.appearance-style-card.is-glass .appearance-style-visual{
+  background:linear-gradient(130deg,#dbeafd 5%,#c4f4e5 53%,#e6dafa 100%)
+}
+.appearance-style-card.is-glass .appearance-faux-content i{
+  background:rgba(255,255,255,.56);border:1px solid rgba(255,255,255,.83);
+  box-shadow:0 4px 10px rgba(38,65,101,.09)
+}
+.appearance-style-card.is-glass .appearance-faux-dock{
+  width:78%;height:11px;padding:2px;background:rgba(255,255,255,.6);border-radius:999px
+}
+.appearance-style-card.is-soft .appearance-style-visual{background:#f1ece6}
+.appearance-style-card.is-soft .appearance-faux-header{background:#8b9b78}
+.appearance-style-card.is-soft .appearance-faux-content i{background:#fffaf3;border-radius:9px}
+.appearance-style-card.is-soft .appearance-faux-dock i{background:#d0d8c7}
+.appearance-style-label{display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-width:0}
+.appearance-style-label svg{flex:0 0 auto;color:var(--mint)}
+.appearance-style-label strong{font-size:13px;line-height:1.25;overflow-wrap:anywhere}
+.appearance-style-card small{font-size:11px;line-height:1.25;color:var(--muted-deep)}
+.appearance-theme-row{margin:22px 0 17px}
+.appearance-theme-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:470px}
+.appearance-theme-options button{
+  min-height:43px;display:flex;align-items:center;justify-content:center;gap:8px;
+  color:var(--muted-deep);font-weight:750;font-size:12px;
+  background:var(--panel-soft);border:1px solid var(--border);border-radius:12px;padding:9px 6px
+}
+.appearance-theme-options button.selected{background:var(--mint-soft);border-color:var(--mint);color:var(--mint)}
+.appearance-gradient-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:15px}
+.appearance-reset{display:inline-flex;align-items:center;gap:6px;padding:6px 0;border:0;background:transparent;color:var(--muted-deep);font-size:11px;font-weight:750}
+.appearance-reset:hover{color:var(--mint)}
+.appearance-gradient-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+.appearance-gradient-option{
+  display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:flex-start;min-width:0;
+  border:1px solid transparent;border-radius:12px;padding:7px 3px;background:transparent;
+  color:var(--muted-deep);font-size:11px;font-weight:750
+}
+.appearance-gradient-option.selected{border-color:var(--mint);background:var(--mint-soft);color:var(--text)}
+.appearance-gradient-swatch{
+  display:grid;place-items:center;flex:0 0 auto;width:46px;height:46px;
+  border-radius:14px;border:1px solid rgba(84,108,122,.2);color:#fff;
+  box-shadow:0 3px 9px rgba(10,25,48,.1)
+}
+.appearance-gradient-swatch.is-none{
+  background:repeating-linear-gradient(45deg,var(--panel) 0,var(--panel) 7px,var(--panel-soft) 7px,var(--panel-soft) 14px);
+  border:1px dashed var(--border);color:var(--mint)
+}
+.appearance-gradient-option>span:last-child{text-align:center;line-height:1.2;overflow-wrap:anywhere}
+.appearance-gradient-edit{margin:14px 0;padding:13px 14px;background:var(--panel-soft);border:1px solid var(--border);border-radius:14px}
+.appearance-color-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin-bottom:11px}
+.appearance-color-fields label{display:flex;flex-direction:column;gap:7px;color:var(--muted-deep);font-size:12px;font-weight:750}
+.appearance-color-fields input[type=color]{padding:3px 5px;width:100%;height:44px;min-height:44px;cursor:pointer}
+.appearance-angle-label{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted-deep);font-size:12px}
+.appearance-angle-label strong{color:var(--text);font-variant-numeric:tabular-nums}
+.appearance-gradient-edit input[type=range]{width:100%;padding:0;margin:10px 0 0;accent-color:var(--mint);cursor:pointer}
+.appearance-preview{display:flex;align-items:center;gap:13px;min-height:53px;margin-top:16px;padding:8px 13px;border-radius:13px;background:var(--panel-soft);border:1px solid var(--border)}
+.appearance-preview-caption{font-size:12px;color:var(--muted-deep)}
+.appearance-preview-bar{display:block;flex:1;min-width:35px;height:25px;border:1px solid var(--border);border-radius:999px}
+.appearance-preview-label{font-size:12px;font-weight:850;letter-spacing:-.03em}
+.appearance-storage-note{margin:9px 0 0;font-size:11px;color:var(--muted)}
+
+/* Glass: translucent floating navigation and modal surfaces.
+   Opaque defaults are intentionally readable when blur isn't supported. */
+:root[data-ui-style='glass'][data-theme='light']{
+  --page:#eaf2f6;--panel:#f5f9fc;--panel-soft:#edf5f8;--input:#f4f8fc;
+  --border:#cddfe7;--shadow:0 18px 45px rgba(24,61,90,.1)
+}
+:root[data-ui-style='glass'][data-theme='dark']{
+  --page:#101a2b;--panel:#1e2c40;--panel-soft:#25394d;--input:#1e3248;
+  --border:#476079;--shadow:0 20px 50px rgba(0,0,0,.23)
+}
+:root[data-ui-style='glass'] body{
+  background:radial-gradient(ellipse 65% 47% at 5% 2%,rgba(87,175,171,.17),transparent 100%),
+  radial-gradient(ellipse 60% 45% at 95% 40%,rgba(143,132,216,.14),transparent 100%),var(--page);
+  background-attachment:fixed
+}
+:root[data-ui-style='glass'] .app-shell.zmina-shell{background:transparent}
+:root[data-ui-style='glass'] .app-shell .panel,
+:root[data-ui-style='glass'] .app-shell .stat-card,
+:root[data-ui-style='glass'] .app-shell .stat-summary-card,
+:root[data-ui-style='glass'] .app-shell .stat-panel,
+:root[data-ui-style='glass'] .app-shell .payment-rule-card,
+:root[data-ui-style='glass'] .app-shell .pay-block,
+:root[data-ui-style='glass'] .app-shell .settings-panel,
+:root[data-ui-style='glass'] .modal,
+:root[data-ui-style='glass'] .workspace-popover{
+  border:1px solid color-mix(in srgb,var(--border) 70%,#fff 30%);
+  border-radius:24px;box-shadow:var(--shadow);
+}
+:root[data-ui-style='glass'] .zmina-primary-nav{
+  border:1px solid var(--border);border-radius:999px;padding:6px 8px;
+  box-shadow:0 8px 27px rgba(30,59,85,.09);margin:0 auto 10px;max-width:calc(100% - 12px)
+}
+:root[data-ui-style='glass'] .zmina-primary-nav button{border-radius:999px}
+:root[data-ui-style='glass'] .zmina-primary-nav button.active{background:#234a62;color:#fff}
+:root[data-ui-style='glass'] .modal{max-height:calc(100dvh - 32px);overflow-y:auto}
+:root[data-ui-style='glass'] .modal-backdrop{background:rgba(9,20,39,.55)}
+:root[data-ui-style='glass'] .btn{border-radius:15px}
+:root[data-ui-style='glass'] .zmina-workspace-switcher .workspace-picker,
+:root[data-ui-style='glass'] .zmina-header-tools .theme-switch,
+:root[data-ui-style='glass'] .workspace-popover{border-radius:17px}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    :root[data-ui-style='glass'] .app-shell .panel,
+    :root[data-ui-style='glass'] .app-shell .stat-card,
+    :root[data-ui-style='glass'] .app-shell .stat-summary-card,
+    :root[data-ui-style='glass'] .app-shell .stat-panel,
+    :root[data-ui-style='glass'] .app-shell .payment-rule-card,
+    :root[data-ui-style='glass'] .app-shell .pay-block,
+    :root[data-ui-style='glass'] .modal,
+    :root[data-ui-style='glass'] .zmina-primary-nav,
+    :root[data-ui-style='glass'] .workspace-popover{
+      background:color-mix(in srgb,var(--panel) 80%,transparent);
+      backdrop-filter:blur(18px) saturate(1.25);
+      -webkit-backdrop-filter:blur(18px) saturate(1.25)
+    }
+}
+@media (prefers-reduced-transparency:reduce){
+  :root[data-ui-style='glass'] .app-shell .panel,
+  :root[data-ui-style='glass'] .app-shell .stat-card,
+  :root[data-ui-style='glass'] .app-shell .stat-summary-card,
+  :root[data-ui-style='glass'] .app-shell .stat-panel,
+  :root[data-ui-style='glass'] .app-shell .payment-rule-card,
+  :root[data-ui-style='glass'] .app-shell .pay-block,
+  :root[data-ui-style='glass'] .modal,
+  :root[data-ui-style='glass'] .zmina-primary-nav,
+  :root[data-ui-style='glass'] .workspace-popover{
+    background:var(--panel);backdrop-filter:none;-webkit-backdrop-filter:none
+  }
+}
+
+/* Soft Minimal: warmer surfaces, fewer outlines, gentle shadows. */
+:root[data-ui-style='soft'][data-theme='light']{
+  --page:#f7f6f1;--panel:#fffefb;--panel-soft:#f4f4ed;--input:#fafaf5;
+  --text:#28382f;--muted:#7e8a7b;--muted-deep:#607363;
+  --border:#e7e8dc;--mint:#557650;--mint-soft:#eaf0e5;
+  --shadow:0 7px 24px rgba(61,78,55,.045)
+}
+:root[data-ui-style='soft'][data-theme='dark']{
+  --page:#171d1b;--panel:#202924;--panel-soft:#27332b;--input:#26342c;
+  --text:#f1f4ec;--muted:#99ad9c;--muted-deep:#ced9cd;
+  --border:#3b4b40;--mint:#b3d59c;--mint-soft:#334735;
+  --shadow:0 8px 28px rgba(0,0,0,.12)
+}
+:root[data-ui-style='soft'] .app-shell .panel,
+:root[data-ui-style='soft'] .app-shell .stat-card,
+:root[data-ui-style='soft'] .app-shell .stat-summary-card,
+:root[data-ui-style='soft'] .app-shell .stat-panel,
+:root[data-ui-style='soft'] .app-shell .payment-rule-card,
+:root[data-ui-style='soft'] .modal{border-radius:23px;box-shadow:var(--shadow)}
+:root[data-ui-style='soft'] .app-shell .btn,
+:root[data-ui-style='soft'] .app-shell .workspace-picker{border-radius:15px}
+:root[data-ui-style='soft'] .zmina-primary-nav button.active{background:var(--mint-soft);color:var(--mint)}
+:root[data-ui-style='soft'] .zmina-primary-nav{border-block-color:transparent}
+:root[data-ui-style='soft'] .paytakt-mobile-tabs{box-shadow:0 -4px 24px rgba(0,0,0,.045)}
+
+/* Optional gradient is deliberately off for Classic by default. Darkening overlay
+   guarantees readable white text even with a very light custom color. */
+:root[data-ui-gradient='on'] .app-shell .btn-primary:not(.btn-danger),
+:root[data-ui-gradient='on'] .zmina-primary-nav button.active,
+:root[data-ui-gradient='on'] .app-shell .page-hero.zmina-hero,
+:root[data-ui-gradient='on'] .app-shell .zmina-hero{
+  background-image:linear-gradient(rgba(8,22,39,.42),rgba(8,22,39,.42)),var(--pt-gradient);
+  color:#fff
+}
+:root[data-ui-gradient='on'] .zmina-primary-nav button.active{border-color:transparent}
+:root[data-ui-gradient='on'] .app-shell .page-hero.zmina-hero{background-color:var(--zmina-deep)}
+:root[data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs button.active{
+  background-image:linear-gradient(rgba(8,22,39,.42),rgba(8,22,39,.42)),var(--pt-gradient);
+  color:#fff
+}
+:root[data-ui-gradient='on'] .auth-v1-art{
+  background-image:linear-gradient(rgba(8,22,39,.45),rgba(8,22,39,.45)),var(--pt-gradient)
+}
+
+/* Floating iOS-like navigation only on native mobile. */
+@media(max-width:880px){
+  html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs{
+    inset-inline:11px;bottom:calc(9px + env(safe-area-inset-bottom,0px));
+    padding:7px;gap:3px;border:1px solid var(--border);border-radius:25px;
+    box-shadow:0 10px 38px rgba(4,21,45,.19);
+    background:var(--panel)
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs button{
+    border-radius:19px;min-height:54px
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs button.active{
+    color:#fff;background:#2c546d
+  }
+  html.paytakt-native-android[data-ui-style='glass'][data-ui-gradient='on'] .paytakt-mobile-tabs button.active{
+    background-image:linear-gradient(rgba(8,22,39,.42),rgba(8,22,39,.42)),var(--pt-gradient)
+  }
+  html.paytakt-native-android[data-ui-style='soft'] .paytakt-mobile-tabs{
+    background:var(--panel);border-top-color:var(--border)
+  }
+  @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs{
+      background:color-mix(in srgb,var(--panel) 80%,transparent);
+      backdrop-filter:blur(22px) saturate(1.35);
+      -webkit-backdrop-filter:blur(22px) saturate(1.35)
+    }
+  }
+  @media(prefers-reduced-transparency:reduce){
+    html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs{
+      background:var(--panel);backdrop-filter:none;-webkit-backdrop-filter:none
+    }
+  }
+}
+@media(max-width:540px){
+  .appearance-settings{padding-inline:13px}
+  .appearance-styles{gap:7px}
+  .appearance-style-card{padding:7px;min-height:139px;border-radius:14px}
+  .appearance-style-card.selected{padding:6px}
+  .appearance-style-visual{padding:7px;min-height:57px}
+  .appearance-style-label{gap:3px}
+  .appearance-style-label strong{font-size:11px}
+  .appearance-style-card small{font-size:10px}
+  .appearance-gradient-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+  .appearance-gradient-swatch{width:46px;height:42px}
+  .appearance-theme-options button{font-size:11px;gap:4px}
+  .appearance-preview-caption{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  .appearance-style-card,.appearance-theme-options button{transition:none}
+  .appearance-style-card:hover{transform:none}
+}
+@media(forced-colors:active){
+  .appearance-style-card.selected,
+  .appearance-gradient-option.selected,
+  .appearance-theme-options button.selected{outline:2px solid Highlight;outline-offset:2px}
+  :root[data-ui-gradient='on'] .app-shell .btn-primary,
+  :root[data-ui-gradient='on'] .zmina-primary-nav button.active{background-image:none}
+}
