@@ -126,7 +126,6 @@
 :root[data-ui-style='glass'] .zmina-header-tools .theme-switch,
 :root[data-ui-style='glass'] .workspace-popover{border-radius:17px}
 @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  @media (prefers-reduced-transparency:no-preference){
     :root[data-ui-style='glass'] .app-shell .panel,
     :root[data-ui-style='glass'] .app-shell .stat-card,
     :root[data-ui-style='glass'] .app-shell .stat-summary-card,
@@ -140,6 +139,18 @@
       backdrop-filter:blur(18px) saturate(1.25);
       -webkit-backdrop-filter:blur(18px) saturate(1.25)
     }
+}
+@media (prefers-reduced-transparency:reduce){
+  :root[data-ui-style='glass'] .app-shell .panel,
+  :root[data-ui-style='glass'] .app-shell .stat-card,
+  :root[data-ui-style='glass'] .app-shell .stat-summary-card,
+  :root[data-ui-style='glass'] .app-shell .stat-panel,
+  :root[data-ui-style='glass'] .app-shell .payment-rule-card,
+  :root[data-ui-style='glass'] .app-shell .pay-block,
+  :root[data-ui-style='glass'] .modal,
+  :root[data-ui-style='glass'] .zmina-primary-nav,
+  :root[data-ui-style='glass'] .workspace-popover{
+    background:var(--panel);backdrop-filter:none;-webkit-backdrop-filter:none
   }
 }
 
@@ -183,6 +194,9 @@
   background-image:linear-gradient(rgba(8,22,39,.42),rgba(8,22,39,.42)),var(--pt-gradient);
   color:#fff
 }
+:root[data-ui-gradient='on'] .auth-v1-art{
+  background-image:linear-gradient(rgba(8,22,39,.45),rgba(8,22,39,.45)),var(--pt-gradient)
+}
 
 /* Floating iOS-like navigation only on native mobile. */
 @media(max-width:880px){
@@ -205,12 +219,15 @@
     background:var(--panel);border-top-color:var(--border)
   }
   @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-    @media(prefers-reduced-transparency:no-preference){
-      html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs{
-        background:color-mix(in srgb,var(--panel) 80%,transparent);
-        backdrop-filter:blur(22px) saturate(1.35);
-        -webkit-backdrop-filter:blur(22px) saturate(1.35)
-      }
+    html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs{
+      background:color-mix(in srgb,var(--panel) 80%,transparent);
+      backdrop-filter:blur(22px) saturate(1.35);
+      -webkit-backdrop-filter:blur(22px) saturate(1.35)
+    }
+  }
+  @media(prefers-reduced-transparency:reduce){
+    html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs{
+      background:var(--panel);backdrop-filter:none;-webkit-backdrop-filter:none
     }
   }
 }
