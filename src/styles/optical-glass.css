@@ -263,11 +263,9 @@
   }
 }
 
-/* v0.9.7 — final dock halo fix.
-   A refractive SVG filter can distort the edge itself in Android WebView,
-   even after the white highlights are removed. The fixed navigation therefore
-   uses a clean, stable frosted surface; optical refraction stays in Android
-   popovers and dialogs. No geometry or navigation-position properties change. */
+/* Dock refraction uses a lens that fades to zero at both edges of its bezel.
+   Keep the rim and active tab free of outlines/glow. Inline SVG filtering takes
+   over only after the map is ready; CSS blur remains the fallback. */
 @media(max-width:880px){
   html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host{
     box-shadow:none!important;
@@ -277,8 +275,11 @@
     background:color-mix(in srgb,var(--panel) 73%,transparent)!important;
     border:0!important;
     box-shadow:none!important;
-    backdrop-filter:blur(18px) saturate(1.16)!important;
-    -webkit-backdrop-filter:blur(18px) saturate(1.16)!important;
+    backdrop-filter:blur(18px) saturate(1.16);
+    -webkit-backdrop-filter:blur(18px) saturate(1.16);
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass.pt-optical-glass-ready{
+    background:color-mix(in srgb,var(--panel) 20%,transparent)!important;
   }
   html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
     border-color:transparent!important;
@@ -296,7 +297,8 @@
   }
 }
 @media(max-width:880px) and (prefers-reduced-transparency:reduce){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass{
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass,
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass.pt-optical-glass-ready{
     background:var(--panel)!important;
     backdrop-filter:none!important;
     -webkit-backdrop-filter:none!important;
