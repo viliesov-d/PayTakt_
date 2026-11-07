@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import {AuthScreen} from './components/AuthScreen'
 import {AppearanceSettings} from './components/AppearanceSettings'
-import {SettingsHome, SettingsSectionHeader, type SettingsSection} from './components/SettingsHome'
+import {SettingsHome, SettingsSectionHeader, isSettingsSection, type SettingsSection} from './components/SettingsHome'
 import {OpticalGlass} from './components/OpticalGlass'
 import {MobileNavigation} from './components/MobileNavigation'
 import {gradientCss, readAppearance, saveAppearance, type AppearancePreferences} from './lib/uiPreferences'
@@ -1654,6 +1654,8 @@ export default function App(){
       } else {
         setPage('calendar')
       }
+      const candidateSection=(event.state as {paytaktSettingsSection?:unknown}|null)?.paytaktSettingsSection
+      setSettingsSection(candidate==='settings'&&isSettingsSection(candidateSection)?candidateSection:'home')
       setMobileMenu(false)
       setWorkspaceMenu(false)
       window.scrollTo({ top: 0 })
@@ -1664,8 +1666,12 @@ export default function App(){
 
   const navigate=(p:Page)=>{
     if (p !== page) {
-      window.history.pushState({ ...window.history.state, paytaktPage: p }, '')
+      window.history.pushState({ ...window.history.state, paytaktPage: p, paytaktSettingsSection: 'home' }, '')
       setPage(p)
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    } else if(p==='settings') {
+      window.history.replaceState({ ...window.history.state, paytaktSettingsSection: 'home' }, '')
+      setSettingsSection('home')
       window.scrollTo({ top: 0, behavior: 'auto' })
     }
     setMobileMenu(false)
@@ -1772,7 +1778,18 @@ export default function App(){
         {page==='pay'&&<PayPageV5 key={workspace.id} workspaceName={workspace.name} shifts={shifts} settings={paySettings} performance={performance} targets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} loaded={payLoaded&&salesLoaded&&unitsLoaded&&cashLoaded&&performanceLoaded&&targetsLoaded&&wagesLoaded} salesFromCash={cashPrefs.enabled&&cashPrefs.useForSales} salesByMonth={effectiveSales} onSaveMonthlySales={onSaveMonthlySales} unitsByMonth={unitsByMonth} onSaveMonthlyUnits={onSaveMonthlyUnits} demo={session.demo} goToRules={()=>navigate('rules')}/>}
         {page==='rules'&&<RulesPageV5 key={workspace.id} shifts={shifts} workspaceName={workspace.name} settings={setupPayDraft??paySettings} loaded={payLoaded} demo={session.demo} onSave={onSavePay} performance={performance} onSavePerformance={onSavePerformance} onApplyZmina={onApplyZmina}/>}
         {page==='team'&&workspace.kind==='company'&&<TeamPage workspace={workspace}/>}
-        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} appearance={appearance} setAppearance={setAppearanceChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates} section={settingsSection} onSectionChange={next=>{setSettingsSection(next);window.scrollTo({top:0,behavior:'auto'})}} onGoRules={()=>navigate('rules')} remindersEnabled={reminderPrefs.enabled} syncPanel={syncPanel} remindersPanel={remindersPanel} updatesPanel={updatesPanel}/>}
+        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} appearance={appearance} setAppearance={setAppearanceChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates} section={settingsSection} onSectionChange={next=>{
+          const state=window.history.state as {paytaktPage?:string;paytaktSettingsSection?:string}|null
+          if(next==='home'&&settingsSection!=='home'&&state?.paytaktPage==='settings'&&state.paytaktSettingsSection===settingsSection){
+            window.history.back()
+          }else if(next!=='home'&&next!==settingsSection){
+            window.history.pushState({...state,paytaktPage:'settings',paytaktSettingsSection:next},'')
+            setSettingsSection(next)
+          }else{
+            setSettingsSection(next)
+          }
+          window.scrollTo({top:0,behavior:'auto'})
+        }} onGoRules={()=>navigate('rules')} remindersEnabled={reminderPrefs.enabled} syncPanel={syncPanel} remindersPanel={remindersPanel} updatesPanel={updatesPanel}/>}
         {page==='settings'&&settingsSection==='schedule'&&<section className="panel v2-settings-actions">
           <div className="v2-settings-head"><div><h3>{tr("Налаштування твоєї роботи")}</h3><p>Персональний майстер або точні правила — обирай зручний спосіб.</p></div></div>
           <div className="v2-settings-links">
