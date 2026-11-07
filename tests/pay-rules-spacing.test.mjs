@@ -60,6 +60,6 @@ test('all pay-rule panels use persistent CSS-grid animation, not native details 
   assert.match(css,/grid-template-rows 700ms cubic-bezier/)
   assert.match(css,/\.pay-accordion-clip\{\s*min-height:0;/)
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{\s*\.salary-rules-page \.pay-smooth-accordion/)
-  assert.doesNotMatch(smooth,/details.animate|getBoundingClientRect|requestAnimationFrame/)
+  assert.doesNotMatch(smooth,/\.animate\(|getBoundingClientRect\(|requestAnimationFrame\(/)
   assert.doesNotMatch(smooth,/pt-web-slider|backdrop-filter/)
 })
