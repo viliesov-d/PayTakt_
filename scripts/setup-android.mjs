@@ -32,7 +32,7 @@ if (
 // npm updates package.json and package-lock.json together, keeping them consistent.
 // Pin the v8 local-notifications plugin to Capacitor 8 to prevent a future
 // npm latest upgrade from pulling a different incompatible major version.
-run('npm', ['install', '--save', '@capacitor/core@^8', '@capacitor/android@^8', '@capacitor/local-notifications@8.3.1'])
+run('npm', ['install', '--save', '@capacitor/core@^8', '@capacitor/android@^8', '@capacitor/local-notifications@8.3.1', '@capacitor/app@^8', '@capacitor/browser@^8'])
 run('npm', ['install', '--save-dev', '@capacitor/cli@^8'])
 run('npm', ['run', 'build'])
 
@@ -41,6 +41,9 @@ if (existsSync(resolve(root, 'android', 'app', 'build.gradle'))) {
 } else {
   run('npx', ['cap', 'add', 'android'])
 }
+
+// Ensure Android's installed package version matches the app's update checker.
+run('node', ['scripts/set-android-version.mjs'])
 
 // Keep the launcher icon synchronized whenever Android is regenerated.
 run('java', ['scripts/GenerateAndroidIcon.java'])

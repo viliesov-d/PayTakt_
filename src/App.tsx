@@ -35,6 +35,8 @@ import {defaultPerformanceSettings,planTarget,performanceProgress,validatePerfor
 import {defaultCalendarLayout,readCalendarLayout,writeCalendarLayout,moveCalendarBlock,makeCalendarLayoutPreset,isCalendarLayoutPreset,type CalendarLayoutPreset,type CalendarBlockId,type CalendarLayout} from './lib/calendarLayout'
 import {StatisticsPage} from './components/StatisticsPage'
 import {NotificationSettings} from './components/NotificationSettings'
+import {AppUpdatesPanel} from './components/AppUpdatesPanel'
+import {MOBILE_VERSION,installedVersion,checkForUpdates,openOfficialUpdate,type ReleaseCheck} from './lib/appUpdates'
 import {defaultReminders,readReminderSettings,saveReminderSettings,type ReminderPreferences} from './lib/reminderPlan'
 import {reconcileReminders,requestRemindersPermission,cancelPayTaktReminders} from './lib/nativeReminders'
 import {OnboardingWizard} from './components/OnboardingWizard'
@@ -872,13 +874,13 @@ function TeamPage({workspace}:{workspace:Workspace}) {
   return <><SectionHeading eyebrow="КОМАНДА" title="Співробітники компанії" detail={`Простір «${workspace.name}» · зараз доступний власнику акаунта.`}/><div className="panel team-owner"><div className="avatar large"><UserRound size={24}/></div><div><h3>Власник простору</h3><p>Повний доступ до власних налаштувань і календаря</p></div><span className="pill mint-pill">Власник</span></div><Placeholder icon={UsersRound} title="Запрошення співробітників — наступний етап" detail="Після налаштування корпоративних ролей тут з’являться запрошення, відділи та доступи. Зараз ніхто інший не може переглядати дані вашого простору."/></>
 }
 
-function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates, syncPanel, remindersPanel }: {
+function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates, syncPanel, remindersPanel, updatesPanel }: {
   session: Session; workspace: Workspace; workspaces: Workspace[]; theme: ThemeChoice;
   setTheme: (v:ThemeChoice)=>void; onCreate:()=>void; onDeleteRequest:(w:Workspace)=>void;
   onSignOut:()=>void; emailVerified:boolean;
   onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>;
   presentation: PresentationSettings; onPresentationChange: (next:PresentationSettings)=>void;
-  fxRates:NbuRateCache|null; syncPanel:ReactNode; remindersPanel:ReactNode;
+  fxRates:NbuRateCache|null; syncPanel:ReactNode; remindersPanel:ReactNode; updatesPanel:ReactNode;
 }) {
   const nativeCurrency=workspace.currency??'UAH'
   const [currencyDraft,setCurrencyDraft]=useState<DisplayCurrency>(presentation.currency)
@@ -913,6 +915,7 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, onCreat
     </div>}
     <div className="settings-grid">
       {syncPanel}
+      {updatesPanel}
       {remindersPanel}
       <section className="panel settings-panel">
         <div className="settings-heading"><Sun size={22}/><div><h3>{tr('Тема оформлення')}</h3><p>{tr('Обирай вигляд, який комфортний саме тобі.')}</p></div></div>
@@ -1052,12 +1055,10 @@ function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(ki
 function DeleteWorkspaceDialog({workspace,onClose,onDelete}:{
   workspace:Workspace;onClose:()=>void;onDelete:(value:Workspace)=>Promise<void>
 }){
-  const [typed,setTyped]=useState('')
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
-  const submit=async(e:FormEvent)=>{
-    e.preventDefault()
-    if(typed.trim()!==workspace.name)return
+  const submit=async()=>{
+    if(busy)return
     setBusy(true);setError('')
     try{await onDelete(workspace);onClose()}
     catch(err){setError(friendlyError(err))}
@@ -1071,18 +1072,14 @@ function DeleteWorkspaceDialog({workspace,onClose,onDelete}:{
       <h2 id="delete-workspace-title">{tr('Видалити робочий простір')}</h2>
       <p>{tr('Усі записи календаря, каса, нарахування, плани, шаблони та налаштування цього простору будуть видалені назавжди. Інші робочі простори не постраждають.')}</p>
       <p className="paytakt-delete-name">{workspace.name} · {workspace.currency??'UAH'}</p>
-      <form onSubmit={submit} className="paytakt-delete-form">
-        <label>{tr('Для підтвердження введи точну назву простору')}
-          <input autoFocus autoComplete="off" value={typed} disabled={busy} onChange={e=>setTyped(e.target.value)}/>
-        </label>
-        {error&&<p className="form-error" role="alert">{error}<br/>{tr('Якщо видалення перервалося, повтори спробу, щоб завершити очищення.')}</p>}
-        <div className="paytakt-delete-actions">
-          <button type="button" className="btn btn-outline" disabled={busy} onClick={onClose}>{tr('Скасувати')}</button>
-          <button type="submit" className="btn paytakt-danger-button" disabled={busy||typed.trim()!==workspace.name}>
-            <Trash2 size={17}/>{busy?tr('Видаляємо…'):tr('Видалити назавжди')}
-          </button>
-        </div>
-      </form>
+      <p className="paytakt-delete-question"><strong>{tr('Ви впевнені?')}</strong></p>
+      {error&&<p className="form-error" role="alert">{error}<br/>{tr('Якщо видалення перервалося, повтори спробу, щоб завершити очищення.')}</p>}
+      <div className="paytakt-delete-actions">
+        <button type="button" className="btn btn-outline" disabled={busy} onClick={onClose}>{tr('Скасувати')}</button>
+        <button type="button" className="btn paytakt-danger-button" disabled={busy} onClick={()=>void submit()}>
+          <Trash2 size={17}/>{busy?tr('Видаляємо…'):tr('Так, видалити')}
+        </button>
+      </div>
     </div>
   </div>
 }
@@ -1130,6 +1127,41 @@ export default function App(){
     return () => document.documentElement.classList.remove('paytakt-native-android')
   }, [isNativeAndroid])
 
+  const [updateResult,setUpdateResult]=useState<ReleaseCheck|null>(null)
+  const [installedAppVersion,setInstalledAppVersion]=useState(MOBILE_VERSION)
+  const [updatesChecking,setUpdatesChecking]=useState(false)
+  const [updateOpenError,setUpdateOpenError]=useState('')
+  const updateCheckingRef=useRef(false)
+  const lastReleaseCheck=useRef(0)
+  const checkUpdates=useCallback(async(force=false)=>{
+    if(!isNativeAndroid||updateCheckingRef.current)return
+    if(!force&&Date.now()-lastReleaseCheck.current<6*60*60*1000)return
+    updateCheckingRef.current=true
+    lastReleaseCheck.current=Date.now()
+    setUpdatesChecking(true)
+    try{
+      const installed=await installedVersion()
+      setInstalledAppVersion(installed)
+      setUpdateResult(await checkForUpdates(installed))
+    }finally{
+      setUpdatesChecking(false)
+      updateCheckingRef.current=false
+    }
+  },[isNativeAndroid])
+  useEffect(()=>{
+    if(!isNativeAndroid)return
+    void checkUpdates()
+    const visible=()=>{if(document.visibilityState==='visible')void checkUpdates()}
+    const online=()=>void checkUpdates(true)
+    document.addEventListener('visibilitychange',visible)
+    window.addEventListener('online',online)
+    const interval=window.setInterval(visible,60*60*1000)
+    return()=>{
+      document.removeEventListener('visibilitychange',visible)
+      window.removeEventListener('online',online)
+      window.clearInterval(interval)
+    }
+  },[isNativeAndroid,checkUpdates])
   const [theme,setTheme]=useState<ThemeChoice>(readTheme)
   const [networkOnline,setNetworkOnline]=useState(()=>typeof navigator==='undefined'||navigator.onLine)
   useEffect(()=>{
@@ -1696,6 +1728,15 @@ export default function App(){
   const remindersPanel=<NotificationSettings supported={isNativeAndroid&&!session?.demo}
     prefs={reminderPrefs} scheduled={reminderCount} busy={reminderBusy} error={reminderError}
     onEnable={enableReminders} onChange={changeReminders}/>
+  const updatesPanel=<AppUpdatesPanel native={isNativeAndroid} currentVersion={installedAppVersion}
+    result={updateResult} checking={updatesChecking} hasPendingOffline={offlineQueue.length>0}
+    openError={updateOpenError}
+    onCheck={()=>{setUpdateOpenError('');void checkUpdates(true)}}
+    onOpen={url=>{
+      if(offlineQueue.length>0){setUpdateOpenError('Спочатку синхронізуй локальні зміни.');return}
+      setUpdateOpenError('')
+      void openOfficialUpdate(url).catch(e=>setUpdateOpenError(friendlyError(e)))
+    }}/>
   const networkStatus=offlineError?'Помилка':
     syncTotals.conflicts?'Конфлікт':
     syncTotals.errors?'Помилка':
@@ -1762,7 +1803,7 @@ export default function App(){
             <span>{tr("До календаря")}</span>
           </button>}
           <ThemeControls value={theme} onChange={setThemeChoice}/>
-          <button type="button" className="zmina-profile-btn" onClick={()=>navigate('settings')} aria-label="Налаштування профілю" title={session.name}><UserRound size={19}/></button>
+          <button type="button" className="zmina-profile-btn" onClick={()=>navigate('settings')} aria-label={updateResult?.status==='available'?'Доступне оновлення — налаштування':'Налаштування профілю'} title={updateResult?.status==='available'?'Доступне оновлення':session.name}><UserRound size={19}/>{updateResult?.status==='available'&&<span className="paytakt-update-dot" aria-hidden="true"/>}</button>
           <button type="button" className="zmina-logout-btn" onClick={logout} aria-label="Вийти" title="Вийти"><LogOut size={18}/></button>
           <button type="button" className="zmina-nav-toggle" onClick={()=>setMobileMenu(v=>!v)} aria-expanded={mobileMenu} aria-controls="zmina-primary-nav" aria-label={mobileMenu?'Згорнути меню':'Відкрити меню'}>{mobileMenu?<X size={22}/>:<Menu size={22}/>}</button>
         </div>
@@ -1782,7 +1823,7 @@ export default function App(){
         {page==='pay'&&<PayPageV5 key={workspace.id} workspaceName={workspace.name} shifts={shifts} settings={paySettings} performance={performance} targets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} loaded={payLoaded&&salesLoaded&&unitsLoaded&&cashLoaded&&performanceLoaded&&targetsLoaded&&wagesLoaded} salesFromCash={cashPrefs.enabled&&cashPrefs.useForSales} salesByMonth={effectiveSales} onSaveMonthlySales={onSaveMonthlySales} unitsByMonth={unitsByMonth} onSaveMonthlyUnits={onSaveMonthlyUnits} demo={session.demo} goToRules={()=>navigate('rules')}/>}
         {page==='rules'&&<RulesPageV5 key={workspace.id} shifts={shifts} workspaceName={workspace.name} settings={setupPayDraft??paySettings} loaded={payLoaded} demo={session.demo} onSave={onSavePay} performance={performance} onSavePerformance={onSavePerformance} onApplyZmina={onApplyZmina}/>}
         {page==='team'&&workspace.kind==='company'&&<TeamPage workspace={workspace}/>}
-        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates} syncPanel={syncPanel} remindersPanel={remindersPanel}/>}
+        {page==='settings'&&<SettingsPage session={session} workspace={workspace} workspaces={workspaces} theme={theme} setTheme={setThemeChoice} onCreate={()=>setCreateOpen(true)} onDeleteRequest={setDeleteTarget} onSignOut={()=>void logout()} emailVerified={emailVerified} onVerify={resendVerification} onRefreshVerification={refreshVerification} presentation={presentation} onPresentationChange={onPresentationChange} fxRates={fxRates} syncPanel={syncPanel} remindersPanel={remindersPanel} updatesPanel={updatesPanel}/>}
         {page==='settings'&&<section className="panel v2-settings-actions">
           <div className="v2-settings-head"><div><h3>{tr("Налаштування твоєї роботи")}</h3><p>Персональний майстер або точні правила — обирай зручний спосіб.</p></div></div>
           <div className="v2-settings-links">
@@ -1808,7 +1849,7 @@ export default function App(){
         {page==='settings'&&<CalendarPage scheduleOnly key={`${workspace.id}-schedule-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
         
         </div>
-        <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>Версія 2.0.0 beta 4</span></footer>
+        <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>{isNativeAndroid?`PayTakt Mobile v${installedAppVersion}`:'Версія 2.0.0 beta 4'}</span></footer>
       </main>
     </div>
     {isNativeAndroid&&<nav className="paytakt-mobile-tabs" aria-label="Навігація PayTakt Mobile">
