@@ -218,3 +218,83 @@
     transition:none!important;
   }
 }
+
+/* Web-only style isolation + continuous floating thumb (2026-11-07).
+   All rules are scoped away from Capacitor Android/iOS and desktop.
+   Important: optical-glass.css has a generic > :not(...) rule which uses
+   position:relative on optical-host descendants. Our browser thumb MUST stay
+   absolute, or it becomes a grid item and no longer follows the finger. */
+@media (max-width:880px){
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-web-slider.pt-optical-host > .pt-nav-thumb,
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-web-slider > .pt-nav-thumb {
+    position:absolute!important;
+    z-index:1!important;
+    left:7px;
+    top:7px;
+    bottom:7px;
+    width:var(--pt-web-thumb-width,calc(33.333333% - 8px));
+    transform:translate3d(var(--pt-web-thumb-offset,0px),0,0);
+    pointer-events:none;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-web-slider.pt-optical-host > .pt-nav-thumb[hidden],
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-web-slider > .pt-nav-thumb[hidden]{
+    display:none!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-web-slider[data-pressed='true'] > .pt-nav-thumb{
+    top:0;bottom:0;
+    transform:translate3d(var(--pt-web-thumb-offset,0px),0,0) scale(1.075,1.105);
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-web-slider[data-dragging='true'] > .pt-nav-thumb{
+    transition:none!important;
+  }
+  /* Optical surfaces are created only in Liquid Glass mode. The fallback
+     for Classic and Soft Minimal is fully opaque: no blur, refraction or sheen. */
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='classic']
+    .app-shell .paytakt-mobile-tabs.pt-slider-nav.pt-web-slider,
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='soft']
+    .app-shell .paytakt-mobile-tabs.pt-slider-nav.pt-web-slider{
+    background:var(--panel)!important;
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+    border:1px solid var(--border);
+    box-shadow:0 9px 24px rgba(15,35,54,.10)!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='classic']
+    .app-shell .pt-slider-nav.pt-web-slider > .pt-nav-thumb{
+    background:var(--mint-soft)!important;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--mint) 20%,transparent)!important;
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='soft']
+    .app-shell .paytakt-mobile-tabs.pt-slider-nav.pt-web-slider{
+    border-color:transparent;
+    border-radius:26px;
+    box-shadow:0 7px 20px rgba(23,39,36,.065)!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='soft']
+    .app-shell .pt-slider-nav.pt-web-slider > .pt-nav-thumb{
+    background:var(--mint-soft)!important;
+    box-shadow:none!important;
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='classic']
+    .app-shell .pt-web-slider > button.active{
+    color:var(--mint);
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='soft']
+    .app-shell .pt-web-slider > button.active{
+    color:var(--text);
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)):is([data-ui-style='classic'],[data-ui-style='soft'])
+    .app-shell .pt-web-slider > .pt-nav-thumb::after{
+    content:none!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)):is([data-ui-style='classic'],[data-ui-style='soft'])
+    .app-shell .pt-web-slider > .pt-dock-glass,
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)):is([data-ui-style='classic'],[data-ui-style='soft'])
+    .app-shell .pt-web-slider > .pt-nav-thumb > .pt-optical-glass{
+    display:none!important;
+  }
+}
