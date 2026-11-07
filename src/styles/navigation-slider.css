@@ -128,3 +128,25 @@
     content:none!important;
   }
 }
+
+
+/* Mobile dock interaction only: press expands the SAME moving glass capsule.
+   The panel frame, its colors, other themes, and every navigation button stay
+   unchanged. During a drag the capsule tracks the pointer without easing. */
+@media(max-width:880px){
+  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
+    transform-origin:center center;
+  }
+  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']>.pt-nav-thumb{
+    transform:translateX(calc(var(--pt-tab-position)*(100% + 5px))) scale(1.075,1.105);
+    transition:transform 155ms cubic-bezier(.2,.85,.2,1);
+  }
+  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-dragging='true']>.pt-nav-thumb{
+    transition:none!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']>.pt-nav-thumb{
+    transition:none!important;
+  }
+}
