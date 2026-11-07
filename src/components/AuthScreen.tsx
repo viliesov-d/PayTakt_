@@ -182,15 +182,15 @@ export function AuthScreen({onDemo, language, onLanguageChange, logo, theme, fri
               <input required type="email" inputMode="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder={copy.emailHint}/>
             </div>
           </label>
-          <label className="auth-v1-field">
-            <span>{copy.password}</span>
+          <div className="auth-v1-field">
+            <label htmlFor="paytakt-auth-password">{copy.password}</label>
             <div className="auth-v1-input-wrap"><LockKeyhole size={18} aria-hidden="true"/>
-              <input required type={passwordVisible?'text':'password'} minLength={6} autoComplete={variant==='login'?'current-password':'new-password'}
+              <input id="paytakt-auth-password" required type={passwordVisible?'text':'password'} minLength={6} autoComplete={variant==='login'?'current-password':'new-password'}
                 value={password} onChange={e=>setPassword(e.target.value)} placeholder={variant==='register'?copy.passwordHint:'••••••••'}/>
               <button type="button" className="auth-v1-eye" aria-label={passwordVisible?copy.hide:copy.show} aria-pressed={passwordVisible}
                 onClick={()=>setPasswordVisible(v=>!v)}>{passwordVisible?<EyeOff size={18}/>:<Eye size={18}/>}</button>
             </div>
-          </label>
+          </div>
           {variant==='login'&&<button type="button" className="link-button auth-v1-forgot" disabled={recoveryBusy} onClick={()=>void resetPassword()}>{copy.forgot}</button>}
           {error&&<p className="form-error" role="alert">{error}</p>}
           {notice&&<p className="form-success" role="status">{notice}</p>}
