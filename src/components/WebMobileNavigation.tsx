@@ -4,11 +4,11 @@ import {
 } from 'react'
 import {OpticalGlass} from './OpticalGlass'
 import {navigationKeyIndex,navigationPosition} from '../lib/navigationSlider'
-import {dockOverlayAlpha} from '../lib/uiPreferences'
+import {dockOverlayAlpha,type UIStyle} from '../lib/uiPreferences'
 
 type Item<T extends string>={id:T;label:string;icon:ReactNode}
 type Props<T extends string>={
-  items:Item<T>[];activeId:T;dockTransparency:number;onSelect:(id:T)=>void
+  items:Item<T>[];activeId:T;appearanceStyle:UIStyle;dockTransparency:number;onSelect:(id:T)=>void
 }
 type Gesture={id:number;startX:number;dragged:boolean}
 
@@ -21,7 +21,7 @@ type Gesture={id:number;startX:number;dragged:boolean}
  * keyboard and accessibility interactions independent of pointer capture.
  */
 export function WebMobileNavigation<T extends string>({
-  items,activeId,dockTransparency,onSelect,
+  items,activeId,appearanceStyle,dockTransparency,onSelect,
 }:Props<T>){
   const host=useRef<HTMLElement>(null)
   const gesture=useRef<Gesture|null>(null)
@@ -32,6 +32,7 @@ export function WebMobileNavigation<T extends string>({
   const [geometry,setGeometry]=useState({width:0,step:0})
   const active=items.findIndex(item=>item.id===activeId)
   const position=preview??Math.max(0,active)
+  const glass=appearanceStyle==='glass'
 
   useLayoutEffect(()=>{
     const node=host.current
@@ -73,18 +74,24 @@ export function WebMobileNavigation<T extends string>({
     gesture.current={id:event.pointerId,startX:event.clientX,dragged:false}
     setPressed(true)
     setPreview(sample(event.clientX))
-    // Do not capture here: a tap must still dispatch a native button click.
+    // Capture the originating BUTTON, not the nav. Capturing the parent during
+    // pointermove can emit a bubbling lostpointercapture on the touched button
+    // and prematurely reset the drag on Chrome/Safari. The button remains the
+    // click target, so short taps still work through its normal onClick.
+    const target=event.target instanceof Element?event.target.closest('button'):null
+    try{(target??event.currentTarget).setPointerCapture(event.pointerId)}
+    catch{/* Some browsers keep their own implicit touch capture. */}
   }
   const move=(event:PointerEvent<HTMLElement>)=>{
     const current=gesture.current
     if(!current||current.id!==event.pointerId)return
-    if(!current.dragged&&Math.abs(event.clientX-current.startX)>=5){
+    if(!current.dragged&&Math.abs(event.clientX-current.startX)>=4){
       current.dragged=true
       setDragging(true)
-      // Capture only an established drag, not the initial tap.
-      try{event.currentTarget.setPointerCapture(event.pointerId)}catch{/* non-capturing fallback */}
     }
-    if(current.dragged)setPreview(sample(event.clientX))
+    // Update continuously, not just when entering a different tab.
+    // CSS disables transition during drag, keeping the lens under the finger.
+    setPreview(sample(event.clientX))
   }
   const up=(event:PointerEvent<HTMLElement>)=>{
     const current=gesture.current
@@ -92,9 +99,8 @@ export function WebMobileNavigation<T extends string>({
     const target=current.dragged?items[Math.round(sample(event.clientX))]:null
     if(current.dragged)suppressClickUntil.current=Date.now()+350
     reset()
-    if(event.currentTarget.hasPointerCapture?.(event.pointerId)){
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    }
+    // Browser releases pointer capture on pointerup automatically. Do not
+    // transfer it to the nav: that can break subsequent taps.
     if(target)onSelect(target.id)
     // For a tap, the actual button onClick below handles navigation.
   }
@@ -110,8 +116,10 @@ export function WebMobileNavigation<T extends string>({
     onSelect(id)
   }
 
-  return <nav ref={host} className="paytakt-mobile-tabs pt-slider-nav pt-web-slider pt-optical-host"
+  return <nav ref={host}
+    className={`paytakt-mobile-tabs pt-slider-nav pt-web-slider ${glass?'pt-optical-host':''}`}
     aria-label="Навігація PayTakt" data-dragging={dragging} data-pressed={pressed}
+    data-glass={glass}
     style={{
       '--pt-tab-count':items.length,
       '--pt-tab-position':position,
@@ -120,10 +128,15 @@ export function WebMobileNavigation<T extends string>({
       '--pt-web-thumb-offset':(geometry.step*position).toFixed(2)+'px',
     } as CSSProperties}
     onPointerDown={down} onPointerMove={move} onPointerUp={up}
-    onPointerCancel={reset} onLostPointerCapture={()=>{if(gesture.current?.dragged)reset()}}>
-    <OpticalGlass radius={27} strength={24} dock reflectiveRim/>
+    onPointerCancel={reset}
+    onLostPointerCapture={event=>{
+      // Lost-capture events from descendants bubble. Only reset if the NAV's
+      // own capture is lost, never when a child button releases its capture.
+      if(event.target===event.currentTarget&&gesture.current?.id===event.pointerId)reset()
+    }}>
+    {glass&&<OpticalGlass radius={27} strength={24} dock reflectiveRim/>}
     <span className="pt-nav-thumb" aria-hidden="true" hidden={active<0&&preview===null}>
-      <OpticalGlass radius={21} strength={15} dock/>
+      {glass&&<OpticalGlass radius={21} strength={15} dock/>}
     </span>
     {items.map((item,index)=><button type="button" key={item.id}
       className={Math.round(position)===index&&(active>=0||preview!==null)?'active':''}
