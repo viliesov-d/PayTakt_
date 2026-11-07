@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import {AuthScreen} from './components/AuthScreen'
 import {AppearanceSettings} from './components/AppearanceSettings'
+import {OpticalGlass} from './components/OpticalGlass'
 import {gradientCss, readAppearance, saveAppearance, type AppearancePreferences} from './lib/uiPreferences'
 import {
   ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, BriefcaseBusiness, Building2, CalendarDays,
@@ -928,7 +929,7 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, appeara
   </>
 }
 
-function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(kind:WorkspaceKind,name:string,currency:AccountingCurrency)=>Promise<void>}){
+function CreateWorkspaceDialog({onClose,onCreate,glass}:{onClose:()=>void;onCreate:(kind:WorkspaceKind,name:string,currency:AccountingCurrency)=>Promise<void>;glass:boolean}){
   const [name,setName]=useState('')
   const [kind,setKind]=useState<WorkspaceKind>('company')
   const [currency,setCurrency]=useState<AccountingCurrency>('UAH')
@@ -940,7 +941,8 @@ function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(ki
     catch(err){setError(friendlyError(err))}finally{setBusy(false)}
   }
   return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
-    <div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div className={`modal ${glass?'pt-optical-host':''}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      {glass&&<OpticalGlass radius={23} strength={30}/>}
       <div className="modal-head"><div className="modal-icon"><Building2 size={22}/></div>
         <button className="icon-button" type="button" aria-label="Закрити" onClick={onClose}><X size={20}/></button></div>
       <h2 id="modal-title">{tr('Новий робочий простір')}</h2>
@@ -968,8 +970,8 @@ function CreateWorkspaceDialog({onClose,onCreate}:{onClose:()=>void;onCreate:(ki
   </div>
 }
 
-function DeleteWorkspaceDialog({workspace,onClose,onDelete}:{
-  workspace:Workspace;onClose:()=>void;onDelete:(value:Workspace)=>Promise<void>
+function DeleteWorkspaceDialog({workspace,onClose,onDelete,glass}:{
+  workspace:Workspace;onClose:()=>void;onDelete:(value:Workspace)=>Promise<void>;glass:boolean
 }){
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
@@ -981,7 +983,8 @@ function DeleteWorkspaceDialog({workspace,onClose,onDelete}:{
     finally{setBusy(false)}
   }
   return <div className="modal-backdrop" onMouseDown={e=>{if(!busy&&e.target===e.currentTarget)onClose()}}>
-    <div className="modal paytakt-delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-workspace-title">
+    <div className={`modal paytakt-delete-modal ${glass?'pt-optical-host':''}`} role="alertdialog" aria-modal="true" aria-labelledby="delete-workspace-title">
+      {glass&&<OpticalGlass radius={23} strength={30}/>}
       <div className="modal-head"><div className="modal-icon paytakt-danger-icon"><Trash2 size={22}/></div>
         <button type="button" className="icon-button" aria-label={tr('Скасувати')} disabled={busy} onClick={onClose}><X size={20}/></button>
       </div>
@@ -1716,7 +1719,7 @@ export default function App(){
             <span className="workspace-name"><strong>{workspace.name}</strong><small>{workspace.kind==='company'?'Компанія':'Особистий простір'}</small></span>
             <ChevronDown size={15}/>
           </button>
-          {workspaceMenu&&<div className="workspace-popover">{workspaces.map(w=><button type="button" key={w.id} className={workspace.id===w.id?'current':''} onClick={()=>selectWorkspace(w)}>{w.kind==='company'?<Building2 size={16}/>:<UserRound size={16}/>}<span>{w.name}</span>{workspace.id===w.id&&<Check size={15}/>}</button>)}<button type="button" className="create-space" onClick={()=>{setWorkspaceMenu(false);setCreateOpen(true)}}><Plus size={16}/> {tr("Новий робочий простір")}</button></div>}
+          {workspaceMenu&&<div className={`workspace-popover ${appearance.style==='glass'?'pt-optical-host':''}`}>{appearance.style==='glass'&&<OpticalGlass radius={17} strength={26}/>} {workspaces.map(w=><button type="button" key={w.id} className={workspace.id===w.id?'current':''} onClick={()=>selectWorkspace(w)}>{w.kind==='company'?<Building2 size={16}/>:<UserRound size={16}/>}<span>{w.name}</span>{workspace.id===w.id&&<Check size={15}/>}</button>)}<button type="button" className="create-space" onClick={()=>{setWorkspaceMenu(false);setCreateOpen(true)}}><Plus size={16}/> {tr("Новий робочий простір")}</button></div>}
         </div>
         <div className="zmina-header-tools">
           {page!=='calendar'&&<button
@@ -1734,7 +1737,7 @@ export default function App(){
           <button type="button" className="zmina-nav-toggle" onClick={()=>setMobileMenu(v=>!v)} aria-expanded={mobileMenu} aria-controls="zmina-primary-nav" aria-label={mobileMenu?'Згорнути меню':'Відкрити меню'}>{mobileMenu?<X size={22}/>:<Menu size={22}/>}</button>
         </div>
       </div>
-      <nav id="zmina-primary-nav" className={`zmina-primary-nav ${mobileMenu?'expanded':''}`} aria-label="Основна навігація">{allowedNav.map(item=>{const Icon=item.icon;return <button type="button" key={item.id} onClick={()=>navigate(item.id)} className={page===item.id?'active':''} aria-current={page===item.id?'page':undefined}><Icon size={17}/><span>{tr(item.title)}</span></button>})}</nav>
+      <nav id="zmina-primary-nav" className={`zmina-primary-nav ${mobileMenu?'expanded':''} ${appearance.style==='glass'?'pt-optical-host':''}`} aria-label="Основна навігація">{appearance.style==='glass'&&<OpticalGlass radius={35} strength={28}/>} {allowedNav.map(item=>{const Icon=item.icon;return <button type="button" key={item.id} onClick={()=>navigate(item.id)} className={page===item.id?'active':''} aria-current={page===item.id?'page':undefined}><Icon size={17}/><span>{tr(item.title)}</span></button>})}</nav>
     </header>
     <div className="main-column">
       <main className="main-content">{session.demo&&<div className="demo-banner"><Sparkles size={16}/><span><strong>Демоверсія.</strong> Зміни календаря й налаштування зарплати тут тимчасові.</span><button type="button" onClick={logout}>До реєстрації <ArrowRight size={15}/></button></div>}{error&&<div className="alert-banner" role="alert">{error}</div>}{overtimePresetError&&<div className="alert-banner" role="alert">Налаштування понаднормових: {overtimePresetError}</div>}{shiftsError&&<div className="alert-banner" role="alert">Не вдалося прочитати зміни: {shiftsError}</div>}{payError&&<div className="alert-banner" role="alert">Налаштування зарплати: {payError}</div>}{salesError&&<div className="alert-banner" role="alert">Показники продажів: {salesError}</div>}{cashError&&<div className="alert-banner" role="alert">Каса: {cashError}</div>}{verificationMessage&&<div className="alert-banner" role="status">{verificationMessage}<button className="small-dismiss" onClick={()=>setVerificationMessage('')} type="button" aria-label="Закрити повідомлення"><X size={16}/></button></div>}
@@ -1778,7 +1781,8 @@ export default function App(){
         <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>{isNativeAndroid?`PayTakt Mobile v${installedAppVersion}`:'Версія 2.0.0 beta 4'}</span></footer>
       </main>
     </div>
-    {isNativeAndroid&&<nav className="paytakt-mobile-tabs" aria-label="Навігація PayTakt Mobile">
+    {isNativeAndroid&&<nav className={`paytakt-mobile-tabs ${appearance.style==='glass'?'pt-optical-host':''}`} aria-label="Навігація PayTakt Mobile">
+      {appearance.style==='glass'&&<OpticalGlass radius={27} strength={34}/>}
       {allowedNav.map(item=>{
         const Icon=item.icon
         return <button type="button" key={item.id} onClick={()=>navigate(item.id)}
@@ -1788,7 +1792,7 @@ export default function App(){
         </button>
       })}
     </nav>}
-    {createOpen&&<CreateWorkspaceDialog onClose={()=>setCreateOpen(false)} onCreate={createCompany}/>}
-    {deleteTarget&&<DeleteWorkspaceDialog workspace={deleteTarget} onClose={()=>setDeleteTarget(null)} onDelete={removeWorkspace}/>}
+    {createOpen&&<CreateWorkspaceDialog onClose={()=>setCreateOpen(false)} onCreate={createCompany} glass={appearance.style==='glass'}/>}
+    {deleteTarget&&<DeleteWorkspaceDialog workspace={deleteTarget} onClose={()=>setDeleteTarget(null)} onDelete={removeWorkspace} glass={appearance.style==='glass'}/>}
   </div>
 }
