@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import {AuthScreen} from './components/AuthScreen'
 import {
   ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, BriefcaseBusiness, Building2, CalendarDays,
-  Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clock3,
-  LayoutDashboard, LockKeyhole, LogOut, Mail, Menu, Monitor, Moon, Plus, Save, TrendingUp, AlertTriangle, CloudUpload,
+  Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3,
+  LayoutDashboard, LogOut, Mail, Menu, Monitor, Moon, Plus, Save, TrendingUp, AlertTriangle, CloudUpload,
   RotateCcw, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Target, Trash2, UserRound,
   UsersRound, Wallet, X, ReceiptText,
 } from 'lucide-react'
 import {
-  createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification, reload,
-  signInWithEmailAndPassword, signOut, updateProfile,
+  onAuthStateChanged, sendEmailVerification, reload, signOut,
 } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
-import { auth, db, firebaseReady } from './lib/firebase'
+import { auth, firebaseReady } from './lib/firebase'
 import {
   createWorkspace, deleteWorkspace, demoShifts, ensureProfile, loadWorkspaces, subscribeTemplates, saveTemplate, deleteTemplate,
   applyMonthlyPattern, shiftHours, shiftCount, validateDay, subscribeShifts, toDateKey, updateProfileTheme,
@@ -87,89 +86,6 @@ function ThemeControls({ value, onChange }: { value: ThemeChoice; onChange: (v: 
         <Icon size={17}/>
       </button>
     ))}
-  </div>
-}
-
-function AuthScreen({ onDemo, language, onLanguageChange }: { onDemo: () => void; language: Language; onLanguageChange: (value:Language)=>void }) {
-  const [variant, setVariant] = useState<'login'|'register'>('register')
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError(''); setNotice('')
-    if (!auth || !db) { setError('Реєстрація зараз недоступна. Ти можеш переглянути демоверсію.'); return }
-    setBusy(true)
-    try {
-      if (variant === 'register') {
-        if (name.trim().length < 2) throw Error('Вкажи ім’я щонайменше з 2 символів.')
-        const created = await createUserWithEmailAndPassword(auth, email.trim(), password)
-        await updateProfile(created.user, { displayName: name.trim() })
-        await setDoc(doc(db, 'users', created.user.uid), {
-          email: created.user.email || '', displayName: name.trim(), theme: readTheme(),
-        }, { merge: true })
-        // Account creation succeeds even when the verification email temporarily fails.
-        try { await sendEmailVerification(created.user) } catch (mailError) { console.warn('Verification email could not be sent:', mailError) }
-        // Re-read the completed profile after the initial auth callback may have loaded a fallback name.
-        window.location.reload()
-      } else {
-        await signInWithEmailAndPassword(auth, email.trim(), password)
-      }
-    } catch (e) { setError(friendlyError(e)) }
-    finally { setBusy(false) }
-  }
-  const resetPassword = async () => {
-    setError(''); setNotice('')
-    if (!auth) { setError('Відновлення пароля зараз недоступне.'); return }
-    if (!email.trim()) { setError('Спочатку введи адресу електронної пошти.'); return }
-    try { await sendPasswordResetEmail(auth, email.trim()); setNotice('Якщо акаунт існує, на пошту надіслано лист для відновлення пароля.') }
-    catch (e) { setError(friendlyError(e)) }
-  }
-  return <div className="auth-layout">
-    <section className="auth-art">
-      <div className="auth-art-top"><Logo/><span className="auth-caption">{tr("НОВА ПЛАТФОРМА")}</span></div>
-      <div className="auth-art-main">
-        <div className="auth-art-glow"/>
-        <div className="auth-orbit orbit-one"/><div className="auth-orbit orbit-two"/>
-        <span className="auth-tag"><Sparkles size={15}/> {tr("Розумні графіки та зарплата")}</span>
-        <h1>{tr("Твій графік.")}<br/>{tr("Твої правила.")}<br/><span>{tr("Твій PayTakt.")}</span></h1>
-        <p>{tr("Керуйте робочим часом, створюйте власні графіки та працюйте із зарплатою в одному просторі.")}</p>
-        <div className="auth-visual">
-          <div className="visual-top"><span className="visual-dot"/> {tr("Мій робочий ритм")} <span className="visual-small">{tr("Листопад")}</span></div>
-          <div className="visual-bars">{[44,70,53,86,64,92,61,76,98,57].map((h,i)=><span key={i} style={{height:`${h}%`}} className={i===8?'highlight':''}/>)}</div>
-          <div className="visual-caption"><span>{tr("Плануйте зміни")}</span><span><ArrowUpRight size={14}/> {tr("Ваш час — ваші правила")}</span></div>
-        </div>
-      </div>
-      <div className="auth-art-bottom"><ShieldCheck size={17}/> {tr("Працює для особистого обліку та команд")}</div>
-    </section>
-    <section className="auth-panel">
-      <div className="auth-mobile-logo"><Logo/></div><div className="paytakt-auth-language"><label htmlFor="paytakt-auth-lang">{tr("Мова застосунку")}</label><select id="paytakt-auth-lang" value={language} onChange={e=>onLanguageChange(e.target.value as Language)}><option value="uk">Українська</option><option value="en">English</option><option value="ru">Русский</option></select></div>
-      <div className="auth-form-wrap">
-        <div className="eyebrow">{tr("ПОЧАТОК РОБОТИ")}</div>
-        <h2>{tr(variant === 'register' ? 'Створіть свій простір' : 'З поверненням!')}</h2>
-        <p className="auth-intro">{tr(variant === 'register' ? 'Новий акаунт для персонального обліку та управління командою.' : 'Увійдіть, щоб продовжити роботу з вашими графіками.')}</p>
-        <div className="auth-tabs">
-          <button type="button" className={variant==='register'?'selected':''} onClick={()=>{setVariant('register');setError('');setNotice('')}}>{tr("Реєстрація")}</button>
-          <button type="button" className={variant==='login'?'selected':''} onClick={()=>{setVariant('login');setError('');setNotice('')}}>{tr("Вхід")}</button>
-        </div>
-        <form onSubmit={submit} className="auth-form">
-          {variant === 'register' && <label>{tr("Ваше ім’я")}<input required value={name} maxLength={70} onChange={e=>setName(e.target.value)} placeholder="Наприклад, Олександр" autoComplete="name"/></label>}
-          <label>{tr("Електронна пошта")}<span className="field-icon"><Mail size={17}/></span><input required value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="you@example.com" autoComplete="email" className="with-icon"/></label>
-          <label>{tr("Пароль")}<span className="field-icon"><LockKeyhole size={17}/></span><input required minLength={6} value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Щонайменше 6 символів" autoComplete={variant==='register'?'new-password':'current-password'} className="with-icon"/></label>
-          {variant === 'login' && <button type="button" className="link-button forgot" onClick={resetPassword}>{tr("Забули пароль?")}</button>}
-          {error && <p className="form-error" role="alert">{error}</p>}
-          {notice && <p className="form-success" role="status">{notice}</p>}
-          <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>{tr(busy?'Опрацьовуємо…':variant==='register'?'Створити акаунт':'Увійти')} <ArrowRight size={18}/></button>
-        </form>
-        <div className="auth-divider"><span>{tr("або")}</span></div>
-        <button type="button" className="btn btn-outline demo-button" onClick={onDemo}>{tr("Переглянути демоверсію")} <ArrowUpRight size={17}/></button>
-        {!firebaseReady && <div className="firebase-note"><CircleHelp size={17}/><span><strong>{tr("Реєстрація тимчасово недоступна.")}</strong> {tr("Зараз можна переглянути демоверсію.")}</span></div>}
-      </div>
-      <div className="auth-footer">© {new Date().getFullYear()} PayTakt · Створено з турботою про ваш час</div>
-    </section>
   </div>
 }
 
@@ -1776,7 +1692,7 @@ export default function App(){
   </details>:null
 
   if(loading)return <div className="loading-screen"><Logo/><div className="spinner"/><p>Готуємо твій робочий простір…</p></div>
-  if(!session)return <AuthScreen onDemo={enterDemo} language={presentation.language} onLanguageChange={language=>onPresentationChange({...presentation,language})}/>
+  if(!session)return <AuthScreen onDemo={enterDemo} language={presentation.language} onLanguageChange={language=>onPresentationChange({...presentation,language})} logo={<Logo/>} theme={theme} friendlyError={friendlyError}/>
   if(!workspace)return <div className="loading-screen"><Logo/><div className="firebase-note wide">{error||'Не вдалося відкрити робочий простір. Перевір доступ до акаунта.'}</div><button type="button" className="btn btn-outline" onClick={logout}>{tr("Вийти з акаунта")}</button></div>
   if(!session.demo&&(!payLoaded||!shiftsLoaded))return <div className="loading-screen"><Logo/><div className="spinner"/><p>Завантажуємо графік і правила роботи…</p></div>
   if(forceWizard||newWorkspaceNeedsWizard)return <OnboardingWizard key={`${session.uid}:${workspace.id}`} workspaceKey={`${session.uid}:${workspace.id}`} workspaceName={workspace.name} isExisting={Boolean(paySettings||shifts.length)} onComplete={finishOnboarding} onCancel={forceWizard?()=>setForceWizard(false):undefined} onSignOut={()=>void logout()}/>
