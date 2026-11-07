@@ -164,7 +164,8 @@
     display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
     align-items:stretch;gap:5px;
     padding:7px;
-    border:1px solid rgba(222,244,255,.53);
+    /* Transparent 1px keeps the same box geometry without a white halo. */
+    border:1px solid transparent;
     border-radius:28px;
     background:transparent!important;
     backdrop-filter:none;-webkit-backdrop-filter:none;
@@ -175,12 +176,21 @@
   html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass{
     position:absolute;inset:0;
     border-radius:inherit;
-    border:1px solid rgba(255,255,255,.58);
+    border:1px solid transparent;
     background:linear-gradient(156deg,rgba(255,255,255,.27),rgba(255,255,255,.06) 49%,rgba(125,202,226,.09)),
       color-mix(in srgb,var(--panel) 60%,transparent);
-    box-shadow:inset 0 2px 1px rgba(255,255,255,.68),
-      inset 0 -1px 1px rgba(64,111,146,.18);
+    box-shadow:inset 0 2px 3px rgba(255,255,255,.13),
+      inset 0 -1px 1px rgba(64,111,146,.12);
     pointer-events:none;
+  }
+  /* Only the Android dock loses the stark white pseudo-element outline.
+     Other optical surfaces retain their highlights and materials. */
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::before{
+    border-color:transparent;
+  }
+  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::after{
+    box-shadow:inset 0 1px 2px rgba(255,255,255,.08),
+      inset 0 -1px 2px rgba(29,61,95,.1);
   }
   html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass-ready{
     background:linear-gradient(155deg,rgba(255,255,255,.18),transparent 55%,rgba(112,190,225,.08)),
