@@ -51,7 +51,7 @@ export function MobileNavigation<T extends string>({items,activeId,glass,onSelec
     style={{'--pt-tab-count':items.length,'--pt-tab-position':position} as CSSProperties}
     onPointerDown={down} onPointerMove={move} onPointerUp={up}
     onPointerCancel={reset} onLostPointerCapture={reset}>
-    {glass&&<OpticalGlass radius={27} strength={12} dock/>}
+    {glass&&<OpticalGlass radius={27} strength={24} dock/>}
     <span className="pt-nav-thumb" aria-hidden="true" hidden={active<0&&preview===null}/>
     {items.map((item,index)=><button type="button" key={item.id}
       className={Math.round(position)===index&&(active>=0||preview!==null)?'active':''}
