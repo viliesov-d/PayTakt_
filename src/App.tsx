@@ -1785,7 +1785,7 @@ export default function App(){
       </main>
     </div>
     {isNativeAndroid&&<nav className={`paytakt-mobile-tabs ${nativeOpticalGlass?'pt-optical-host':''}`} aria-label="Навігація PayTakt Mobile">
-      {nativeOpticalGlass&&<OpticalGlass radius={27} strength={28}/>}
+      {nativeOpticalGlass&&<span className="pt-optical-glass pt-dock-glass" aria-hidden="true"/>}
       {allowedNav.map(item=>{
         const Icon=item.icon
         return <button type="button" key={item.id} onClick={()=>navigate(item.id)}
