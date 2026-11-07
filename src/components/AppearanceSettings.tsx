@@ -22,7 +22,9 @@ const translations={
     gradient:'Градієнт',none:'Без градієнта',mint:'М’ята',ocean:'Океан',sunset:'Захід',violet:'Фіолет',custom:'Власний',
     from:'Перший колір',to:'Другий колір',angle:'Напрямок',reset:'Скинути оформлення',
     device:'Зберігається на цьому пристрої.',preview:'Попередній перегляд',
-    dockTransparency:'Прозорість панелі навігації',dockHint:'Для скляної панелі у мобільному застосунку.',
+    dockTransparency:'Прозорість панелі навігації',dockHint:'Для скляної панелі на мобільному сайті та у застосунку.',
+    dockBlur:'Розмиття панелі навігації',dockBlurHint:'Налаштовує силу блюру, не змінюючи заломлення країв та рух повзунка.',
+    noBlur:'Без розмиття',strongBlur:'Сильне',
     opaque:'Непрозора',clear:'Прозора',
   },
   en:{
@@ -32,7 +34,9 @@ const translations={
     gradient:'Gradient',none:'None',mint:'Mint',ocean:'Ocean',sunset:'Sunset',violet:'Violet',custom:'Custom',
     from:'First color',to:'Second color',angle:'Direction',reset:'Reset appearance',
     device:'Saved on this device.',preview:'Live preview',
-    dockTransparency:'Navigation panel transparency',dockHint:'For the glass panel in the mobile app.',
+    dockTransparency:'Navigation panel transparency',dockHint:'For the glass panel on mobile web and in the app.',
+    dockBlur:'Navigation panel blur',dockBlurHint:'Adjusts background blur without changing the optical edge or moving thumb.',
+    noBlur:'No blur',strongBlur:'Strong',
     opaque:'Opaque',clear:'Transparent',
   },
   ru:{
@@ -42,7 +46,9 @@ const translations={
     gradient:'Градиент',none:'Без градиента',mint:'Мята',ocean:'Океан',sunset:'Закат',violet:'Фиолет',custom:'Свой',
     from:'Первый цвет',to:'Второй цвет',angle:'Направление',reset:'Сбросить оформление',
     device:'Сохраняется на этом устройстве.',preview:'Предпросмотр',
-    dockTransparency:'Прозрачность панели навигации',dockHint:'Для стеклянной панели в мобильном приложении.',
+    dockTransparency:'Прозрачность панели навигации',dockHint:'Для стеклянной панели на мобильном сайте и в приложении.',
+    dockBlur:'Размытие панели навигации',dockBlurHint:'Меняет силу размытия, сохраняя преломление краёв и движение ползунка.',
+    noBlur:'Без размытия',strongBlur:'Сильное',
     opaque:'Непрозрачная',clear:'Прозрачная',
   },
 }
@@ -93,6 +99,17 @@ export function AppearanceSettings({value,onChange,theme,onThemeChange,language}
         onChange={e=>onChange({...value,dockTransparency:Number(e.target.value)})}/>
       <div className="appearance-dock-scale"><span>{t.opaque}</span><span>{t.clear}</span></div>
       <p id="appearance-dock-hint" className="appearance-dock-hint">{t.dockHint}</p>
+      <div className="appearance-dock-blur">
+        <label htmlFor="appearance-dock-blur" className="appearance-dock-title">
+          <span><Droplets size={18} aria-hidden="true"/>{t.dockBlur}</span>
+          <output htmlFor="appearance-dock-blur">{value.dockBlur}%</output>
+        </label>
+        <input id="appearance-dock-blur" type="range" min="0" max="100" step="5"
+          value={value.dockBlur} aria-describedby="appearance-dock-blur-hint"
+          onChange={e=>onChange({...value,dockBlur:Number(e.target.value)})}/>
+        <div className="appearance-dock-scale"><span>{t.noBlur}</span><span>{t.strongBlur}</span></div>
+        <p id="appearance-dock-blur-hint" className="appearance-dock-hint">{t.dockBlurHint}</p>
+      </div>
     </div>}
 
     <div className="appearance-theme-row">

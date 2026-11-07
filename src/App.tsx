@@ -1850,13 +1850,13 @@ export default function App(){
         <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>{isNativeMobile?`PayTakt Mobile v${installedAppVersion}`:'Версія 2.0.0 beta 4'}</span></footer>
       </main>
     </div>
-    {isNativeMobile&&<MobileNavigation activeId={page} glass={nativeOpticalGlass} dockTransparency={appearance.dockTransparency} onSelect={navigate}
+    {isNativeMobile&&<MobileNavigation activeId={page} glass={nativeOpticalGlass} dockTransparency={appearance.dockTransparency} onSelect={navigate} dockBlur={appearance.dockBlur}
       items={allowedNav.map(item=>{
         const Icon=item.icon
         return {id:item.id,label:tr(item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування'),
           icon:<Icon size={22} strokeWidth={2.2} aria-hidden="true"/>}
       })}/>}
-    {platform==='web'&&<WebMobileNavigation activeId={page} appearanceStyle={appearance.style} dockTransparency={appearance.dockTransparency} onSelect={navigate}
+    {platform==='web'&&<WebMobileNavigation activeId={page} appearanceStyle={appearance.style} dockTransparency={appearance.dockTransparency} onSelect={navigate} dockBlur={appearance.dockBlur}
       items={allowedNav.map(item=>{
         const Icon=item.icon
         return {id:item.id,label:tr(item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування'),

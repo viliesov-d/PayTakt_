@@ -298,3 +298,14 @@
     display:none!important;
   }
 }
+
+
+/* Browser Liquid Glass: independent outer dock blur, preserving floating thumb
+   position and avoiding any blur in Classic / Soft Minimal. */
+@media(max-width:880px){
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='glass']
+  .app-shell .pt-web-slider.pt-optical-host > .pt-dock-glass{
+    -webkit-backdrop-filter:blur(var(--pt-dock-frost-blur,19px)) saturate(1.52) contrast(1.04);
+    backdrop-filter:blur(var(--pt-dock-frost-blur,19px)) saturate(1.52) contrast(1.04);
+  }
+}

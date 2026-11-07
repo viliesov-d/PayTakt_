@@ -69,7 +69,10 @@ export function OpticalGlass({radius,strength=30,dock=false,reflectiveRim=false}
     }
   },[radius,dock,strength,reflectiveRim])
 
-  const svgFilter=map?`url("#${id}") blur(${dock?0.65:3}px) saturate(1.3)`:null
+  // Only the OUTER dock lens gets adjustable blur. The moving thumb keeps
+  // its original crisp refraction, as do every other optical surface.
+  const blur=dock&&reflectiveRim?'var(--pt-dock-optical-blur,0.65px)':dock?'0.65px':'3px'
+  const svgFilter=map?`url("#${id}") blur(${blur}) saturate(1.3)`:null
   return <>
     {map&&<svg className="pt-optical-defs" width="0" height="0" focusable="false" aria-hidden="true">
       <defs>

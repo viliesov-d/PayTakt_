@@ -4,11 +4,11 @@ import {
 } from 'react'
 import {OpticalGlass} from './OpticalGlass'
 import {navigationKeyIndex,navigationPosition} from '../lib/navigationSlider'
-import {dockOverlayAlpha,type UIStyle} from '../lib/uiPreferences'
+import {dockOverlayAlpha,dockFrostBlurPx,dockOpticalBlurPx,type UIStyle} from '../lib/uiPreferences'
 
 type Item<T extends string>={id:T;label:string;icon:ReactNode}
 type Props<T extends string>={
-  items:Item<T>[];activeId:T;appearanceStyle:UIStyle;dockTransparency:number;onSelect:(id:T)=>void
+  items:Item<T>[];activeId:T;appearanceStyle:UIStyle;dockTransparency:number;dockBlur:number;onSelect:(id:T)=>void
 }
 type Gesture={id:number;startX:number;dragged:boolean}
 
@@ -21,7 +21,7 @@ type Gesture={id:number;startX:number;dragged:boolean}
  * keyboard and accessibility interactions independent of pointer capture.
  */
 export function WebMobileNavigation<T extends string>({
-  items,activeId,appearanceStyle,dockTransparency,onSelect,
+  items,activeId,appearanceStyle,dockTransparency,dockBlur,onSelect,
 }:Props<T>){
   const host=useRef<HTMLElement>(null)
   const gesture=useRef<Gesture|null>(null)
@@ -124,6 +124,8 @@ export function WebMobileNavigation<T extends string>({
       '--pt-tab-count':items.length,
       '--pt-tab-position':position,
       '--pt-dock-tint-alpha':dockOverlayAlpha(dockTransparency),
+      '--pt-dock-frost-blur':dockFrostBlurPx(dockBlur,true)+'px',
+      '--pt-dock-optical-blur':dockOpticalBlurPx(dockBlur)+'px',
       '--pt-web-thumb-width':geometry.width>0?geometry.width+'px':undefined,
       '--pt-web-thumb-offset':(geometry.step*position).toFixed(2)+'px',
     } as CSSProperties}
