@@ -1,0 +1,52 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+
+const file=path=>readFileSync(new URL(path,import.meta.url),'utf8')
+const app=file('../src/App.tsx')
+const main=file('../src/main.tsx')
+const nativeNav=file('../src/components/MobileNavigation.tsx')
+const webCss=file('../src/styles/web-liquid-dock.css')
+const nativeCss=file('../src/styles/navigation-slider.css')
+const index=file('../index.html')
+const manifest=JSON.parse(file('../public/manifest.webmanifest'))
+const sw=file('../public/sw.js')
+
+test('website reuses the existing native navigation component and optical lenses',()=>{
+  assert.match(app,/isNativeMobile&&<MobileNavigation/)
+  assert.match(app,/platform==='web'&&<MobileNavigation/)
+  assert.match(app,/glass=\{nativeOpticalGlass\}/)
+  assert.match(app,/glass=\{true\}/)
+  assert.match(nativeNav,/<OpticalGlass radius=\{27\} strength=\{24\} dock reflectiveRim\/>/)
+  assert.match(nativeNav,/<OpticalGlass radius=\{21\} strength=\{15\} dock\/>/)
+  assert.match(webCss,/data-pressed='true'[\s\S]*?scale\(1\.075,1\.105\)/)
+  assert.match(webCss,/prefers-reduced-transparency:reduce/)
+  assert.match(webCss,/prefers-reduced-motion:reduce/)
+  assert.match(nativeCss,/html:is\(\.paytakt-native-android,\.paytakt-native-ios\)/)
+})
+test('mobile web styles are scoped away from native and desktop navigation',()=>{
+  assert.match(webCss,/@media \(max-width:880px\)/)
+  assert.match(webCss,/html:not\(:is\(\.paytakt-native-android,\.paytakt-native-ios\)\)/)
+  assert.match(webCss,/\.zmina-site-header \.zmina-primary-nav/)
+  assert.match(webCss,/env\(safe-area-inset-bottom,0px\)/)
+  assert.match(main,/import '\.\/styles\/web-liquid-dock\.css'/)
+})
+test('standalone install metadata and bounded offline shell are configured',()=>{
+  assert.match(index,/<link rel="manifest" href="\.\/manifest\.webmanifest"/)
+  assert.match(index,/apple-touch-icon/)
+  assert.equal(manifest.display,'standalone')
+  assert.equal(manifest.start_url,'./')
+  assert.equal(manifest.scope,'./')
+  assert.ok(manifest.icons.some(icon=>icon.sizes==='192x192'&&icon.type==='image/png'))
+  assert.ok(manifest.icons.some(icon=>icon.sizes==='512x512'&&icon.type==='image/png'))
+  assert.match(main,/initWebPwa\(\)/)
+  assert.match(sw,/request\.mode==='navigate'/)
+  assert.match(sw,/baseUrl\.pathname\+'assets\/'/)
+  assert.doesNotMatch(sw,/firestore\.googleapis\.com|identitytoolkit\.googleapis\.com/)
+})
+test('PWA installation is offered in settings without changing native update logic',()=>{
+  assert.match(app,/platform==='web'\?<PwaInstallCard/)
+  assert.match(app,/section==='data'&&<>\{pwaPanel\}\{syncPanel\}\{updatesPanel\}<\/>/)
+  assert.match(file('../src/lib/webPwa.ts'),/nativePlatform\(\)!=='web'/)
+  assert.match(file('../src/components/PwaInstallCard.tsx'),/requestWebInstall\(\)/)
+})
