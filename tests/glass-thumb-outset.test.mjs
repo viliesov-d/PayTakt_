@@ -42,5 +42,5 @@ test('optical surface, active capsule lens, controls, and other styles are untou
   assert.match(css,/touch-action:none;user-select:none/)
   assert.match(css,/\.pt-slider-nav>button\{[\s\S]*?min-height:61px;/)
   // The new appearance only applies to native Android Liquid Glass.
-  assert.match(css,/html\.paytakt-native-android\[data-ui-style='glass'\]/)
+  assert.match(css,/html:is\(\.paytakt-native-android,\.paytakt-native-ios\)\[data-ui-style='glass'\]/)
 })

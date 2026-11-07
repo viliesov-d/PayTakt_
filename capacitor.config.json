@@ -9,5 +9,9 @@
       "style": "LIGHT",
       "hidden": false
     }
+  },
+  "ios": {
+    "contentInset": "never",
+    "preferredContentMode": "mobile"
   }
 }

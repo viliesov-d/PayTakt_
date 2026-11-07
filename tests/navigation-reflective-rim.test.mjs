@@ -14,7 +14,7 @@ test('press expands instantly while dragging tracks every pointer move continuou
   assert.match(nav,/const move=\(event:PointerEvent<HTMLElement>\)=>\{[\s\S]*?setPreview\(sample\(event\.clientX\)\)/)
   assert.match(nav,/data-dragging=\{dragging\} data-pressed=\{pressed\}/)
   assert.match(css,/\.pt-slider-nav\[data-pressed='true'\]>\.pt-nav-thumb\{[\s\S]*?scale\(1\.075,1\.105\)/)
-  assert.match(css,/html\.paytakt-native-android\[data-ui-style='glass'\].*?\[data-pressed='true'\]/)
+  assert.match(css,/html:is\(\.paytakt-native-android,\.paytakt-native-ios\)\[data-ui-style='glass'\].*?\[data-pressed='true'\]/)
   assert.match(css,/\.pt-slider-nav\[data-dragging='true'\]>\.pt-nav-thumb\{\s*transition:none!important;/)
 })
 

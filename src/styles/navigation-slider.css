@@ -1,13 +1,13 @@
 /* One continuous segmented track. All paint is clipped inside the existing dock. */
 @media(max-width:880px){
-  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .app-shell .paytakt-mobile-tabs.pt-slider-nav{
     grid-template-columns:repeat(var(--pt-tab-count),minmax(0,1fr));
     gap:5px;padding:7px;touch-action:none;user-select:none;
     inset-inline:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));
     border:1px solid transparent;border-radius:28px;overflow:hidden;
     box-shadow:0 6px 20px rgba(12,30,45,.13)!important;
   }
-  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
     position:absolute;z-index:1;pointer-events:none;
     top:7px;bottom:7px;left:7px;
     width:calc((100% - 14px - (var(--pt-tab-count) - 1)*5px)/var(--pt-tab-count));
@@ -17,38 +17,38 @@
     box-shadow:inset 0 1px 3px rgba(255,255,255,.12),0 2px 7px rgba(12,30,45,.06);
     transition:transform 260ms cubic-bezier(.22,.8,.25,1),background 180ms;
   }
-  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb[hidden]{display:none}
-  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-dragging='true']>.pt-nav-thumb{transition:none}
-  html.paytakt-native-android[data-ui-style] .app-shell .paytakt-mobile-tabs.pt-slider-nav>button{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb[hidden]{display:none}
+  html:is(.paytakt-native-android,.paytakt-native-ios) .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-dragging='true']>.pt-nav-thumb{transition:none}
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style] .app-shell .paytakt-mobile-tabs.pt-slider-nav>button{
     position:relative;z-index:2;min-height:61px;
     background:transparent!important;border-color:transparent!important;
     box-shadow:none!important;transform:none!important;
     color:var(--muted-deep);transition:color 180ms;
   }
-  html.paytakt-native-android[data-ui-style] .app-shell .paytakt-mobile-tabs.pt-slider-nav>button.active{color:var(--text)}
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style] .app-shell .paytakt-mobile-tabs.pt-slider-nav>button.active{color:var(--text)}
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
     background:rgba(28,62,77,.10)!important;
   }
-  html.paytakt-native-android[data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav{
     box-shadow:0 7px 22px rgba(0,0,0,.24)!important;
   }
-  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
     background:rgba(190,216,230,.09)!important;
   }
-  html.paytakt-native-android[data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
     background:rgba(190,216,230,.2);
   }
-  html.paytakt-native-android[data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
     background-image:linear-gradient(rgba(10,24,43,.30),rgba(10,24,43,.30)),var(--pt-gradient);
   }
-  html.paytakt-native-android[data-ui-gradient='on'][data-ui-style] .app-shell .paytakt-mobile-tabs.pt-slider-nav>button.active{color:#fff}
-  html.paytakt-native-android .main-content{padding-bottom:calc(116px + env(safe-area-inset-bottom,0px))}
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-gradient='on'][data-ui-style] .app-shell .paytakt-mobile-tabs.pt-slider-nav>button.active{color:#fff}
+  html:is(.paytakt-native-android,.paytakt-native-ios) .main-content{padding-bottom:calc(116px + env(safe-area-inset-bottom,0px))}
 }
 @media(prefers-reduced-motion:reduce){
-  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{transition:none}
+  html:is(.paytakt-native-android,.paytakt-native-ios) .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{transition:none}
 }
 @media(prefers-reduced-transparency:reduce){
-  html.paytakt-native-android[data-ui-style='glass'][data-theme] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-theme] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
     background:var(--panel)!important;
   }
 }
@@ -56,17 +56,17 @@
 /* A broad reflection inside the glass gives depth without outlining the dock.
    The existing transparent rim and shadow remain unchanged. */
 @media(max-width:880px){
-  html.paytakt-native-android .pt-dock-sheen{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .pt-dock-sheen{
     position:absolute;inset:4px;border-radius:23px;pointer-events:none;
     background:radial-gradient(ellipse 46% 110% at var(--pt-glint-x,38%) var(--pt-glint-y,0%),
       rgba(255,255,255,.14),rgba(255,255,255,.035) 46%,transparent 76%);
     -webkit-mask-image:linear-gradient(transparent,#000 18%,#000 75%,transparent);
     mask-image:linear-gradient(transparent,#000 18%,#000 75%,transparent);
   }
-  html.paytakt-native-android[data-theme='dark'] .pt-dock-sheen{opacity:.65}
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-theme='dark'] .pt-dock-sheen{opacity:.65}
 }
 @media(prefers-reduced-transparency:reduce){
-  html.paytakt-native-android .pt-dock-sheen{display:none}
+  html:is(.paytakt-native-android,.paytakt-native-ios) .pt-dock-sheen{display:none}
 }
 
 
@@ -74,19 +74,19 @@
    The moving thumb is a second clipped surface with its own displacement map.
    No new strokes are drawn outside either silhouette: avoid the old halo. */
 @media(max-width:880px){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass,
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass,
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
     background:rgba(28,62,77,var(--pt-dock-tint-alpha,.093))!important;
   }
-  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass,
-  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass,
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
     background:rgba(190,216,230,var(--pt-dock-tint-alpha,.093))!important;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
     background:transparent!important;background-image:none!important;
     box-shadow:none!important;overflow:hidden;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass{
     position:absolute;inset:0;border:0!important;border-radius:inherit;
     background:color-mix(in srgb,var(--mint-soft) 50%,transparent)!important;
     box-shadow:inset 0 1px 1px rgba(255,255,255,.16),
@@ -95,36 +95,36 @@
     -webkit-backdrop-filter:blur(.8px) saturate(1.16);
     pointer-events:none;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass-ready{
     background:color-mix(in srgb,var(--mint-soft) 28%,transparent)!important;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::before{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::before{
     border:0!important;
     background:linear-gradient(170deg,rgba(255,255,255,.27),transparent 29%,transparent 73%,rgba(40,95,130,.1));
     opacity:.48;mix-blend-mode:normal;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::after{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::after{
     box-shadow:inset 0 1px 1px rgba(255,255,255,.19),inset 0 -1px 2px rgba(25,60,91,.12)!important;
   }
-  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass{
     background:rgba(188,215,229,.11)!important;
     box-shadow:inset 0 1px 1px rgba(250,253,255,.1),inset 0 -1px 2px rgba(0,12,35,.16)!important;
   }
 }
 @media(max-width:880px) and (prefers-reduced-transparency:reduce){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass,
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass,
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-dock-glass.pt-optical-glass-ready{
     background:var(--panel)!important;
     backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass,
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass,
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass-ready{
     background:var(--panel)!important;
     backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
     box-shadow:none!important;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::before,
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::after{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::before,
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb>.pt-optical-glass::after{
     content:none!important;
   }
 }
@@ -134,19 +134,19 @@
    The panel frame, its colors, other themes, and every navigation button stay
    unchanged. During a drag the capsule tracks the pointer without easing. */
 @media(max-width:880px){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb{
     transform-origin:center center;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']>.pt-nav-thumb{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']>.pt-nav-thumb{
     transform:translateX(calc(var(--pt-tab-position)*(100% + 5px))) scale(1.075,1.105);
     transition:transform 155ms cubic-bezier(.2,.85,.2,1);
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-dragging='true']>.pt-nav-thumb{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-dragging='true']>.pt-nav-thumb{
     transition:none!important;
   }
 }
 @media(prefers-reduced-motion:reduce){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']>.pt-nav-thumb{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']>.pt-nav-thumb{
     transition:none!important;
   }
 }
@@ -156,10 +156,10 @@
    dock. The unchanged full-panel optical surface clips itself with its own
    rounded bounds; allowing overflow here does NOT change its refraction. */
 @media(max-width:880px){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']{
     overflow:visible;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']>.pt-nav-thumb{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']>.pt-nav-thumb{
     top:0;bottom:0;
     /* Keep the established 1.075 × 1.105 scale and free drag transform. */
     transition:transform 155ms cubic-bezier(.2,.85,.2,1),
@@ -170,7 +170,7 @@
   /* Reuse the user's existing gradient setting; its translucent tint is a
      separate paint layer, not a replacement for the optical refraction.
      The thumb clips the tint to its own pill, and the icons stay above it. */
-  html.paytakt-native-android[data-ui-style='glass'][data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb::after{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb::after{
     content:'';
     position:absolute;inset:0;z-index:1;
     border-radius:inherit;pointer-events:none;
@@ -179,12 +179,12 @@
   }
 }
 @media(max-width:880px) and (prefers-reduced-motion:reduce){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']>.pt-nav-thumb{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav[data-pressed='true']>.pt-nav-thumb{
     transition:none!important;
   }
 }
 @media(max-width:880px) and (prefers-reduced-transparency:reduce){
-  html.paytakt-native-android[data-ui-style='glass'][data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb::after{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-slider-nav>.pt-nav-thumb::after{
     opacity:0;
   }
 }

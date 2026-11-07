@@ -1,0 +1,12 @@
+import {readFileSync,writeFileSync} from 'node:fs'
+const root=new URL('../',import.meta.url)
+const version=JSON.parse(readFileSync(new URL('ios-version.json',root),'utf8'))
+if(!/^\d+\.\d+\.\d+$/.test(version.version)||!Number.isSafeInteger(version.buildNumber)||version.buildNumber<1)
+  throw Error('Invalid ios-version.json')
+const project=new URL('ios/App/App.xcodeproj/project.pbxproj',root)
+let source=readFileSync(project,'utf8')
+if(!source.includes('MARKETING_VERSION =')||!source.includes('CURRENT_PROJECT_VERSION ='))throw Error('Missing iOS version fields')
+source=source.replace(/MARKETING_VERSION = [^;]+;/g,`MARKETING_VERSION = ${version.version};`)
+  .replace(/CURRENT_PROJECT_VERSION = [^;]+;/g,`CURRENT_PROJECT_VERSION = ${version.buildNumber};`)
+writeFileSync(project,source)
+console.log(`iOS ${version.version} (${version.buildNumber})`)

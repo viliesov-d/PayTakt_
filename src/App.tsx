@@ -1,3 +1,6 @@
+import iosVersion from '../ios-version.json'
+import {nativePlatform} from './lib/nativePlatform'
+import {App as NativeApp} from '@capacitor/app'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import {AuthScreen} from './components/AuthScreen'
 import {AppearanceSettings} from './components/AppearanceSettings'
@@ -1071,17 +1074,22 @@ export default function App(){
     return()=>{mounted=false;window.clearInterval(interval);window.removeEventListener('online',check);document.removeEventListener('visibilitychange',visible)}
   },[])
   // Capacitor injects this bridge into the Android WebView; the hosted website stays unchanged.
-  const [isNativeAndroid] = useState(() => {
-    const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }).Capacitor
-    return Boolean(cap?.isNativePlatform?.() && cap?.getPlatform?.() === 'android')
-  })
+  const [platform]=useState(nativePlatform)
+  const isNativeAndroid=platform==='android'
+  const isNativeIOS=platform==='ios'
+  const isNativeMobile=isNativeAndroid||isNativeIOS
   useEffect(() => {
-    document.documentElement.classList.toggle('paytakt-native-android', isNativeAndroid)
-    return () => document.documentElement.classList.remove('paytakt-native-android')
-  }, [isNativeAndroid])
+    const root=document.documentElement
+    root.classList.toggle('paytakt-native-android',isNativeAndroid)
+    root.classList.toggle('paytakt-native-ios',isNativeIOS)
+    return()=>root.classList.remove('paytakt-native-android','paytakt-native-ios')
+  },[isNativeAndroid,isNativeIOS])
 
   const [updateResult,setUpdateResult]=useState<ReleaseCheck|null>(null)
-  const [installedAppVersion,setInstalledAppVersion]=useState(MOBILE_VERSION)
+  const [installedAppVersion,setInstalledAppVersion]=useState(isNativeIOS?iosVersion.version:MOBILE_VERSION)
+  useEffect(()=>{
+    if(isNativeIOS)void NativeApp.getInfo().then(info=>setInstalledAppVersion(info.version)).catch(()=>undefined)
+  },[isNativeIOS])
   const [updatesChecking,setUpdatesChecking]=useState(false)
   const [updateOpenError,setUpdateOpenError]=useState('')
   const updateCheckingRef=useRef(false)
@@ -1301,7 +1309,7 @@ export default function App(){
     finally{setReminderBusy(false)}
   }
   useEffect(()=>{
-    if(!isNativeAndroid)return
+    if(!isNativeMobile)return
     if(!session||session.demo||!workspace){
       void cancelPayTaktReminders().catch(()=>undefined)
       return
@@ -1327,7 +1335,7 @@ export default function App(){
       window.removeEventListener('online',sync)
       window.clearInterval(interval)
     }
-  },[isNativeAndroid,session?.uid,session?.demo,workspace?.id,workspace?.name,
+  },[isNativeMobile,session?.uid,session?.demo,workspace?.id,workspace?.name,
     reminderRecord.key,reminderPrefs,shifts,paySettings,payLoaded,shiftsLoaded])
 
 
@@ -1342,10 +1350,10 @@ export default function App(){
       const dark=theme==='dark'||(theme==='system'&&mq.matches)
       document.documentElement.dataset.theme=dark?'dark':'light'
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#0c1425':'#f4f7fb')
-      if(isNativeAndroid)setAndroidSystemBarContrast(dark)
+      if(isNativeMobile)setAndroidSystemBarContrast(dark)
     }
     apply();mq.addEventListener('change',apply);return()=>mq.removeEventListener('change',apply)
-  },[theme,isNativeAndroid])
+  },[theme,isNativeMobile])
   const setAppearanceChoice=useCallback((next:AppearancePreferences)=>{
     setAppearance(saveAppearance(next))
   },[])
@@ -1697,10 +1705,10 @@ export default function App(){
     setMobileMenu(false)
     setWorkspaceMenu(false)
   }
-  const remindersPanel=<NotificationSettings supported={isNativeAndroid&&!session?.demo}
+  const remindersPanel=<NotificationSettings supported={isNativeMobile&&!session?.demo}
     prefs={reminderPrefs} scheduled={reminderCount} busy={reminderBusy} error={reminderError}
     onEnable={enableReminders} onChange={changeReminders}/>
-  const updatesPanel=<AppUpdatesPanel native={isNativeAndroid} currentVersion={installedAppVersion}
+  const updatesPanel=<AppUpdatesPanel ios={isNativeIOS} native={isNativeAndroid} currentVersion={installedAppVersion}
     result={updateResult} checking={updatesChecking} hasPendingOffline={offlineQueue.length>0}
     openError={updateOpenError}
     onCheck={()=>{setUpdateOpenError('');void checkUpdates(true)}}
@@ -1749,7 +1757,7 @@ export default function App(){
 
   // Keep optical refraction in the installed Android application only.
   // The website uses the lighter CSS frosted-glass appearance.
-  const nativeOpticalGlass=isNativeAndroid&&appearance.style==='glass'
+  const nativeOpticalGlass=isNativeMobile&&appearance.style==='glass'
   if(loading)return <div className="loading-screen"><Logo/><div className="spinner"/><p>Готуємо твій робочий простір…</p></div>
   if(!session)return <AuthScreen onDemo={enterDemo} language={presentation.language} onLanguageChange={language=>onPresentationChange({...presentation,language})} logo={<Logo/>} theme={theme} friendlyError={friendlyError}/>
   if(!workspace)return <div className="loading-screen"><Logo/><div className="firebase-note wide">{error||'Не вдалося відкрити робочий простір. Перевір доступ до акаунта.'}</div><button type="button" className="btn btn-outline" onClick={logout}>{tr("Вийти з акаунта")}</button></div>
@@ -1835,10 +1843,10 @@ export default function App(){
         {page==='settings'&&settingsSection==='schedule'&&<CalendarPage scheduleOnly key={`${workspace.id}-schedule-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
         
         </div>
-        <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>{isNativeAndroid?`PayTakt Mobile v${installedAppVersion}`:'Версія 2.0.0 beta 4'}</span></footer>
+        <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>{isNativeMobile?`PayTakt Mobile v${installedAppVersion}`:'Версія 2.0.0 beta 4'}</span></footer>
       </main>
     </div>
-    {isNativeAndroid&&<MobileNavigation activeId={page} glass={nativeOpticalGlass} dockTransparency={appearance.dockTransparency} onSelect={navigate}
+    {isNativeMobile&&<MobileNavigation activeId={page} glass={nativeOpticalGlass} dockTransparency={appearance.dockTransparency} onSelect={navigate}
       items={allowedNav.map(item=>{
         const Icon=item.icon
         return {id:item.id,label:tr(item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування'),

@@ -1,34 +1,34 @@
 /* Android system bars & scroll bounds only.
    Capacitor 8 injects --safe-area-inset-* when WebView env() is unreliable.
    Keep both values so old and new Android WebView preserve readable controls. */
-html.paytakt-native-android{
+html:is(.paytakt-native-android,.paytakt-native-ios){
   --pt-safe-top:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));
   --pt-safe-bottom:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px));
   overscroll-behavior-y:none;
 }
-html.paytakt-native-android body{
+html:is(.paytakt-native-android,.paytakt-native-ios) body{
   overscroll-behavior-y:none;
   background:var(--page);
 }
 /* Keep foreground content below the system clock, while the background extends
    behind the now-transparent Android status bar. Do not change glass styling. */
-html.paytakt-native-android .zmina-site-header{
+html:is(.paytakt-native-android,.paytakt-native-ios) .zmina-site-header{
   padding-top:var(--pt-safe-top);
 }
 /* Login and onboarding also need room under the status and gesture bars. */
-html.paytakt-native-android .auth-layout,
-html.paytakt-native-android .setup-page{
+html:is(.paytakt-native-android,.paytakt-native-ios) .auth-layout,
+html:is(.paytakt-native-android,.paytakt-native-ios) .setup-page{
   padding-top:var(--pt-safe-top);
   padding-bottom:var(--pt-safe-bottom);
 }
 @media(max-width:880px){
   /* The floating navigation stays above Android's own gesture handle. */
-  html.paytakt-native-android .app-shell .paytakt-mobile-tabs.pt-slider-nav,
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav.pt-optical-host{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .app-shell .paytakt-mobile-tabs.pt-slider-nav,
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-slider-nav.pt-optical-host{
     bottom:calc(10px + var(--pt-safe-bottom));
   }
-  html.paytakt-native-android .main-content,
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .main-content{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .main-content,
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .main-content{
     padding-bottom:calc(116px + var(--pt-safe-bottom));
   }
 }

@@ -107,7 +107,7 @@
   transform:scale(.96)
 }
 @media(max-width:880px){
-  html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs.pt-optical-host{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .paytakt-mobile-tabs.pt-optical-host{
     background:transparent!important;
     border:0;box-shadow:0 14px 40px rgba(12,28,56,.21);
     border-radius:27px;isolation:isolate;overflow:hidden;
@@ -127,26 +127,26 @@
 
 /* Stage B glass correction: refraction belongs to Android only.
    On the website, retain a lightweight frosted pane and normal document flow. */
-:root:not(.paytakt-native-android)[data-ui-style='glass'] .zmina-primary-nav,
-:root:not(.paytakt-native-android)[data-ui-style='glass'] .workspace-popover,
-:root:not(.paytakt-native-android)[data-ui-style='glass'] .modal{
+:root:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='glass'] .zmina-primary-nav,
+:root:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='glass'] .workspace-popover,
+:root:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='glass'] .modal{
   background:var(--panel);
   border:1px solid var(--border);
   box-shadow:0 12px 32px rgba(22,48,70,.1);
 }
 @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  :root:not(.paytakt-native-android)[data-ui-style='glass'] .zmina-primary-nav,
-  :root:not(.paytakt-native-android)[data-ui-style='glass'] .workspace-popover,
-  :root:not(.paytakt-native-android)[data-ui-style='glass'] .modal{
+  :root:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='glass'] .zmina-primary-nav,
+  :root:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='glass'] .workspace-popover,
+  :root:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='glass'] .modal{
     background:color-mix(in srgb,var(--panel) 84%,transparent);
     backdrop-filter:blur(16px) saturate(1.22);
     -webkit-backdrop-filter:blur(16px) saturate(1.22)
   }
 }
 @media(prefers-reduced-transparency:reduce){
-  :root:not(.paytakt-native-android)[data-ui-style='glass'] .zmina-primary-nav,
-  :root:not(.paytakt-native-android)[data-ui-style='glass'] .workspace-popover,
-  :root:not(.paytakt-native-android)[data-ui-style='glass'] .modal{
+  :root:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='glass'] .zmina-primary-nav,
+  :root:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='glass'] .workspace-popover,
+  :root:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-style='glass'] .modal{
     background:var(--panel);
     backdrop-filter:none;-webkit-backdrop-filter:none
   }
@@ -156,7 +156,7 @@
    High-specificity fixed position prevents a future generic glass skin from
    moving the dock into the document flow. Leave all three buttons as grid items. */
 @media(max-width:880px){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host{
     position:fixed;
     inset-inline:12px;
     top:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px));
@@ -173,7 +173,7 @@
     overflow:hidden;isolation:isolate;
     z-index:65;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass{
     position:absolute;inset:0;
     border-radius:inherit;
     border:1px solid transparent;
@@ -185,18 +185,18 @@
   }
   /* Only the Android dock loses the stark white pseudo-element outline.
      Other optical surfaces retain their highlights and materials. */
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::before{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::before{
     border-color:transparent;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::after{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::after{
     box-shadow:inset 0 1px 2px rgba(255,255,255,.08),
       inset 0 -1px 2px rgba(29,61,95,.1);
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass-ready{
     background:linear-gradient(155deg,rgba(255,255,255,.18),transparent 55%,rgba(112,190,225,.08)),
       color-mix(in srgb,var(--panel) 29%,transparent);
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button{
     z-index:2;position:relative;
     min-width:0;min-height:61px;
     display:flex;flex-direction:column;justify-content:center;align-items:center;
@@ -206,37 +206,37 @@
     border:1px solid transparent;border-radius:21px;
     box-shadow:none;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button svg{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button svg{
     width:23px;height:23px;flex:0 0 auto;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
     background:linear-gradient(150deg,rgba(255,255,255,.76),rgba(255,255,255,.21) 85%);
     color:#163a4e;
     border-color:rgba(255,255,255,.72);
     box-shadow:inset 0 1px 1px rgba(255,255,255,.92),
       inset 0 -1px 1px rgba(52,95,128,.13),0 3px 14px rgba(16,53,85,.1);
   }
-  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
     color:#f6fbff;
     background:linear-gradient(146deg,rgba(232,247,255,.27),rgba(139,193,226,.1));
     border-color:rgba(238,250,255,.29);
   }
-  html.paytakt-native-android[data-ui-style='glass'][data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
     background-image:linear-gradient(rgba(10,24,43,.30),rgba(10,24,43,.30)),var(--pt-gradient);
     color:#fff;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .main-content{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .main-content{
     padding-bottom:calc(116px + env(safe-area-inset-bottom,0px));
   }
 }
 @media(max-width:880px) and (prefers-reduced-transparency:reduce){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass{
     background:var(--panel)!important;
     backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
   }
 }
 @media(max-width:880px) and (prefers-reduced-motion:reduce){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button{
     transition:none!important
   }
 }
@@ -246,18 +246,18 @@
    pseudo-element highlights still painted a visible frosted frame.
    Keep the host's fixed positioning, grid, safe area, tap targets, and lens blur. */
 @media(max-width:880px){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass,
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass,
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass-ready{
     background:rgba(25,64,82,.08)!important;
     border-color:transparent!important;
     box-shadow:none!important;
   }
-  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass,
-  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass,
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass-ready{
     background:rgba(175,205,228,.06)!important;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::before,
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::after{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::before,
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-optical-glass::after{
     content:none!important;
     display:none!important;
   }
@@ -267,38 +267,38 @@
    Keep the rim and active tab free of outlines/glow. Inline SVG filtering takes
    over only after the map is ready; CSS blur remains the fallback. */
 @media(max-width:880px){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host{
     box-shadow:none!important;
     border-color:transparent!important;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass{
     background:color-mix(in srgb,var(--panel) 73%,transparent)!important;
     border:0!important;
     box-shadow:none!important;
     backdrop-filter:blur(18px) saturate(1.16);
     -webkit-backdrop-filter:blur(18px) saturate(1.16);
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass.pt-optical-glass-ready{
     background:color-mix(in srgb,var(--panel) 20%,transparent)!important;
   }
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
     border-color:transparent!important;
     box-shadow:none!important;
     background:color-mix(in srgb,var(--mint-soft) 68%,var(--panel) 32%);
     color:var(--text);
   }
-  html.paytakt-native-android[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-theme='dark'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
     background:rgba(184,215,231,.16);
     color:var(--text);
   }
-  html.paytakt-native-android[data-ui-style='glass'][data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-ui-gradient='on'] .app-shell .paytakt-mobile-tabs.pt-optical-host>button.active{
     background-image:linear-gradient(rgba(10,24,43,.30),rgba(10,24,43,.30)),var(--pt-gradient);
     color:#fff;
   }
 }
 @media(max-width:880px) and (prefers-reduced-transparency:reduce){
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass,
-  html.paytakt-native-android[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass.pt-optical-glass-ready{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass,
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .app-shell .paytakt-mobile-tabs.pt-optical-host>.pt-dock-glass.pt-optical-glass-ready{
     background:var(--panel)!important;
     backdrop-filter:none!important;
     -webkit-backdrop-filter:none!important;

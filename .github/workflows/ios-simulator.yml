@@ -1,0 +1,66 @@
+name: iOS simulator build
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'ios/**'
+      - 'src/**'
+      - 'package*.json'
+      - 'capacitor.config.json'
+      - 'ios-version.json'
+      - 'scripts/set-ios-version.mjs'
+      - '.github/workflows/ios-simulator.yml'
+permissions:
+  contents: read
+concurrency:
+  group: ios-simulator-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Select Xcode 26
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob, os, re, subprocess
+          candidates=[]
+          for path in glob.glob('/Applications/Xcode*.app'):
+              developer=path+'/Contents/Developer'
+              result=subprocess.run(['xcodebuild','-version'],env={**os.environ,'DEVELOPER_DIR':developer},capture_output=True,text=True)
+              match=re.search(r'Xcode (26(?:\.\d+)*)',result.stdout)
+              if match:candidates.append((tuple(map(int,match[1].split('.'))),developer))
+          if not candidates:raise SystemExit('Xcode 26 is required; select a runner image with Xcode 26.')
+          subprocess.run(['sudo','xcode-select','-s',max(candidates)[1]],check=True)
+          PY
+          xcodebuild -version
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run ios:sync
+      - name: Compile for iOS Simulator (no signing)
+        run: >-
+          xcodebuild -project ios/App/App.xcodeproj -scheme App
+          -configuration Debug -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath ios/DerivedData CODE_SIGNING_ALLOWED=NO build
+      - name: Package simulator app
+        run: ditto -c -k --sequesterRsrc --keepParent ios/DerivedData/Build/Products/Debug-iphonesimulator/App.app PayTakt-iOS-Simulator.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PayTakt-iOS-Simulator
+          path: PayTakt-iOS-Simulator.zip
+          if-no-files-found: error
+          retention-days: 14
