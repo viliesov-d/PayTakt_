@@ -16,7 +16,7 @@ const clamp=(n:number,low:number,high:number)=>Math.min(high,Math.max(low,n))
  * Output is normalized to +/-1 so a CSS/ SVG pixel scale controls strength.
  */
 export function glassEdgeVector(
-  x:number,y:number,width:number,height:number,radius:number,bezel=22,softEdge=false,
+  x:number,y:number,width:number,height:number,radius:number,bezel=22,softEdge=false,displacementScale=0,
 ):{x:number;y:number}{
   if(width<=0||height<=0||bezel<=0)return {x:0,y:0}
   const dist=roundedRectDistance(x,y,width,height,radius)
@@ -30,9 +30,15 @@ export function glassEdgeVector(
   if(length<1e-5)return {x:0,y:0}
   const near=clamp(1+dist/bezel,0,1)
   // A dock lens has no displacement at its silhouette, avoiding a hard refractive rim.
-  const intensity=softEdge
+  let intensity=softEdge
     ? Math.sin(Math.PI*clamp(-dist/bezel,0,1))**2
     : near*near*(3-2*near) // smoothstep: no hard inner ring
+  if(softEdge&&displacementScale>0){
+    // Bound the actual SVG sample offset to 75% of the distance to the silhouette.
+    // tanh avoids a hard kink/ring when a stronger lens meets the edge constraint.
+    const limit=(-dist*.75)/(displacementScale*117/255)
+    intensity=limit*Math.tanh(intensity/limit)
+  }
   return {x:gx/length*intensity,y:gy/length*intensity}
 }
 
@@ -42,7 +48,7 @@ export type GlassMap={width:number;height:number;dataUrl:string}
 export function makeGlassDisplacementMap(
   width:number,height:number,radius:number,
   createCanvas:()=>HTMLCanvasElement=()=>document.createElement('canvas'),
-  softEdge=false,
+  softEdge=false,displacementScale=0,
 ):GlassMap|null{
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<15||height<15)return null
   const ratio=Math.min(1,Math.sqrt(125000/(width*height)))
@@ -55,11 +61,13 @@ export function makeGlassDisplacementMap(
   if(!ctx)return null
   const pixels=ctx.createImageData(w,h)
   const data=pixels.data
-  const bezel=Math.min(23,Math.max(12,Math.min(width,height)*0.22))
+  const bezel=softEdge
+    ? Math.min(26,Math.max(12,Math.min(width,height)*0.32))
+    : Math.min(23,Math.max(12,Math.min(width,height)*0.22))
   for(let py=0;py<h;py++){
     for(let px=0;px<w;px++){
       const {x,y}=glassEdgeVector(
-        (px+.5)*width/w,(py+.5)*height/h,width,height,radius,bezel,softEdge,
+        (px+.5)*width/w,(py+.5)*height/h,width,height,radius,bezel,softEdge,displacementScale,
       )
       const idx=(py*w+px)*4
       data[idx]=Math.round(clamp(128+x*117,0,255))

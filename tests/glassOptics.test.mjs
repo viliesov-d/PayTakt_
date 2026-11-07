@@ -61,3 +61,23 @@ test('dock lens fades at the boundary but still refracts inside the bezel',()=>{
     assert.ok(Math.abs(v.y)*12*117/255<=depth)
   }
 })
+
+test('strong dock refraction keeps samples inside straight and rounded edges',()=>{
+  const width=360,height=78,radius=27,bezel=height*.32,scale=24
+  let maximumOffset=0
+  for(let y=.5;y<height;y+=1){
+    for(let x=.5;x<width;x+=1){
+      const distance=roundedRectDistance(x,y,width,height,radius)
+      const v=glassEdgeVector(x,y,width,height,radius,bezel,true,scale)
+      const dx=v.x*scale*117/255,dy=v.y*scale*117/255
+      const offset=Math.hypot(dx,dy)
+      maximumOffset=Math.max(maximumOffset,offset)
+      if(distance>=0){assert.equal(offset,0);continue}
+      assert.ok(offset<=-distance*.75+1e-9)
+      assert.ok(roundedRectDistance(x+dx,y+dy,width,height,radius)<=0)
+    }
+  }
+  // Stronger visible bending than the previous 12px-scale lens (~5.5px max).
+  assert.ok(maximumOffset>7)
+  assert.deepEqual(glassEdgeVector(180,39,width,height,radius,bezel,true,scale),{x:0,y:0})
+})

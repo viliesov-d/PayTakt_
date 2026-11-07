@@ -34,7 +34,7 @@ export function OpticalGlass({radius,strength=30,dock=false}:Props){
       const width=Math.round(box.width),height=Math.round(box.height)
       if(width===measuredW&&height===measuredH)return
       measuredW=width;measuredH=height
-      try{setMap(makeGlassDisplacementMap(width,height,radius,undefined,dock))}
+      try{setMap(makeGlassDisplacementMap(width,height,radius,undefined,dock,strength))}
       catch{setMap(null)} // The frosted fallback still works on weak WebViews.
     }
     const schedule=()=>{
@@ -47,6 +47,7 @@ export function OpticalGlass({radius,strength=30,dock=false}:Props){
     observer?.observe(host)
     window.addEventListener('resize',schedule,{passive:true})
     const pointer=(event:PointerEvent)=>{
+      if(dock&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return
       const box=host.getBoundingClientRect()
       if(!box.width||!box.height)return
       node.style.setProperty('--pt-glint-x',`${Math.round((event.clientX-box.left)/box.width*100)}%`)
@@ -66,9 +67,9 @@ export function OpticalGlass({radius,strength=30,dock=false}:Props){
       host.removeEventListener('pointermove',pointer)
       host.removeEventListener('pointerleave',reset)
     }
-  },[radius,dock])
+  },[radius,dock,strength])
 
-  const svgFilter=map?`url("#${id}") blur(${dock?1.5:3}px) saturate(1.3)`:null
+  const svgFilter=map?`url("#${id}") blur(${dock?0.65:3}px) saturate(1.3)`:null
   return <>
     {map&&<svg className="pt-optical-defs" width="0" height="0" focusable="false" aria-hidden="true">
       <defs>
@@ -84,6 +85,8 @@ export function OpticalGlass({radius,strength=30,dock=false}:Props){
     <span ref={surface}
       className={`pt-optical-glass ${map?'pt-optical-glass-ready':''} ${dock?'pt-dock-glass':''}`}
       style={svgFilter?{backdropFilter:svgFilter,WebkitBackdropFilter:svgFilter}:undefined}
-      aria-hidden="true"/>
+      aria-hidden="true">
+      {dock&&<span className="pt-dock-sheen"/>}
+    </span>
   </>
 }
