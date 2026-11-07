@@ -1,0 +1,124 @@
+/* Optical Liquid Glass — physically meaningful edge refraction is supplied by
+   the <OpticalGlass> SVG map. CSS is the readable no-GPU/no-SVG fallback. */
+:root[data-ui-style='glass'] .pt-optical-glass{
+  position:absolute;inset:0;display:block;z-index:0;
+  pointer-events:none;overflow:hidden;border-radius:inherit;
+  background:linear-gradient(145deg,rgba(255,255,255,.26),rgba(255,255,255,.04) 42%,rgba(153,209,229,.1)),
+             color-mix(in srgb,var(--panel) 70%,transparent);
+  border:1px solid rgba(255,255,255,.5);
+  -webkit-backdrop-filter:blur(17px) saturate(1.5);
+  backdrop-filter:blur(17px) saturate(1.5);
+  box-shadow:
+    inset 0 2px 2px rgba(255,255,255,.72),
+    inset 0 -2px 2px rgba(10,42,80,.13),
+    inset 1px 0 2px rgba(255,134,132,.2),
+    inset -1px 0 2px rgba(123,158,255,.24);
+}
+:root[data-ui-style='glass'][data-theme='dark'] .pt-optical-glass{
+  background:linear-gradient(145deg,rgba(255,255,255,.12),transparent 45%,rgba(132,188,229,.06)),
+             color-mix(in srgb,var(--panel) 77%,transparent);
+  border-color:rgba(229,246,255,.32);
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.3),
+             inset 0 -2px 2px rgba(1,10,35,.25),
+             inset 1px 0 2px rgba(255,126,137,.12),
+             inset -1px 0 2px rgba(126,152,255,.18);
+}
+:root[data-ui-style='glass'] .pt-optical-glass-ready{
+  background:linear-gradient(145deg,rgba(255,255,255,.18),transparent 40%,rgba(93,184,223,.07)),
+             color-mix(in srgb,var(--panel) 26%,transparent);
+}
+:root[data-ui-style='glass'][data-theme='dark'] .pt-optical-glass-ready{
+  background:linear-gradient(145deg,rgba(255,255,255,.10),transparent 41%,rgba(126,160,210,.07)),
+             color-mix(in srgb,var(--panel) 36%,transparent);
+}
+:root[data-ui-style='glass'] .pt-optical-glass::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  border:1px solid rgba(255,255,255,.4);
+  background:
+    radial-gradient(ellipse 42% 100% at var(--pt-glint-x,38%) var(--pt-glint-y,0%),
+      rgba(255,255,255,.52),rgba(255,255,255,.09) 42%,transparent 80%),
+    linear-gradient(160deg,rgba(255,255,255,.38),transparent 28%,transparent 74%,rgba(150,203,235,.15));
+  opacity:.83;mix-blend-mode:screen
+}
+:root[data-ui-style='glass'] .pt-optical-glass::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.9),
+    inset 0 -1px 2px rgba(29,61,95,.17),
+    inset 2px 0 2px rgba(255,171,173,.22),
+    inset -2px 0 2px rgba(129,161,255,.3);
+}
+.pt-optical-defs{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+
+/* Give the glass layer an unobstructed backdrop and keep every control above it. */
+:root[data-ui-style='glass'] .app-shell .pt-optical-host{
+  position:relative;isolation:isolate;
+  background:transparent!important;
+}
+:root[data-ui-style='glass'] .pt-optical-host > :not(.pt-optical-glass):not(.pt-optical-defs){
+  position:relative;z-index:1;
+}
+:root[data-ui-style='glass'] .zmina-primary-nav.pt-optical-host{
+  border:0;box-shadow:0 12px 34px rgba(17,44,68,.12);
+  border-radius:999px;overflow-x:auto;overflow-y:hidden;
+}
+:root[data-ui-style='glass'] .zmina-primary-nav.pt-optical-host .pt-optical-glass{position:sticky;left:0}
+:root[data-ui-style='glass'] .zmina-primary-nav.pt-optical-host > button{position:relative;z-index:2}
+:root[data-ui-style='glass'] .workspace-popover.pt-optical-host,
+:root[data-ui-style='glass'] .modal.pt-optical-host{
+  background:transparent;border-color:rgba(255,255,255,.32);
+  box-shadow:0 24px 66px rgba(12,30,54,.25)
+}
+:root[data-ui-style='glass'] .workspace-popover.pt-optical-host > button,
+:root[data-ui-style='glass'] .modal.pt-optical-host > *:not(.pt-optical-glass):not(.pt-optical-defs){
+  position:relative;z-index:2;
+}
+:root[data-ui-style='glass'] .workspace-popover.pt-optical-host{overflow:hidden}
+:root[data-ui-style='glass'] .modal.pt-optical-host{
+  overflow-y:auto;max-height:calc(100dvh - 32px);
+}
+
+/* Active tab is a second, brighter convex-looking capsule, not a solid patch. */
+:root[data-ui-style='glass'] .paytakt-mobile-tabs.pt-optical-host > button.active{
+  border:1px solid rgba(255,255,255,.64);
+  border-radius:21px;
+  background:linear-gradient(145deg,rgba(255,255,255,.74),rgba(255,255,255,.21));
+  color:#193c56;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.95),
+    inset 0 -1px 2px rgba(49,85,124,.14),
+    0 4px 15px rgba(26,62,90,.16);
+}
+:root[data-ui-style='glass'][data-theme='dark'] .paytakt-mobile-tabs.pt-optical-host > button.active{
+  border-color:rgba(242,250,255,.37);
+  background:linear-gradient(145deg,rgba(255,255,255,.28),rgba(156,199,228,.11));
+  color:#fff
+}
+:root[data-ui-style='glass'][data-ui-gradient='on'] .paytakt-mobile-tabs.pt-optical-host > button.active{
+  background-image:linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.07)),var(--pt-gradient);
+  color:#fff
+}
+:root[data-ui-style='glass'] .paytakt-mobile-tabs.pt-optical-host > button{
+  position:relative;z-index:2;
+  transition:background .2s ease,box-shadow .2s ease,transform .2s ease;
+}
+:root[data-ui-style='glass'] .paytakt-mobile-tabs.pt-optical-host > button:active{
+  transform:scale(.96)
+}
+@media(max-width:880px){
+  html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs.pt-optical-host{
+    background:transparent!important;
+    border:0;box-shadow:0 14px 40px rgba(12,28,56,.21);
+    border-radius:27px;isolation:isolate;overflow:hidden;
+  }
+}
+@media(prefers-reduced-transparency:reduce){
+  :root[data-ui-style='glass'] .pt-optical-glass,
+  :root[data-ui-style='glass'] .pt-optical-glass-ready{
+    background:var(--panel)!important;
+    backdrop-filter:none!important;-webkit-backdrop-filter:none!important
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  :root[data-ui-style='glass'] .paytakt-mobile-tabs.pt-optical-host > button{transition:none}
+  :root[data-ui-style='glass'] .paytakt-mobile-tabs.pt-optical-host > button:active{transform:none}
+}
