@@ -17,10 +17,10 @@ export function NotificationSettings({supported,prefs,scheduled,busy,error,onEna
   }
   return <section className="panel settings-panel settings-wide paytakt-reminders">
     <div className="settings-heading"><Bell size={22}/><div>
-      <h3>{tr('Нагадування Android')}</h3>
+      <h3>{tr('Нагадування')}</h3>
       <p>{tr('Про зміни та заплановані виплати, навіть коли застосунок закритий.')}</p>
     </div></div>
-    {!supported&&<p className="paytakt-reminder-note">{tr('Нагадування доступні у встановленому Android-застосунку PayTakt. У браузері вони не плануються.')}</p>}
+    {!supported&&<p className="paytakt-reminder-note">{tr('Нагадування доступні у встановленому застосунку Android або iOS PayTakt. У браузері вони не плануються.')}</p>}
     {supported&&!prefs.enabled&&<button type="button" className="btn btn-primary paytakt-reminder-enable" disabled={busy} onClick={()=>void onEnable()}>
       <Bell size={17}/>{busy?tr('Налаштовуємо…'):tr('Увімкнути нагадування')}
     </button>}
@@ -59,7 +59,7 @@ export function NotificationSettings({supported,prefs,scheduled,busy,error,onEna
     </>}
     {error&&<p className="form-error" role="alert"><AlertCircle size={15}/>{error}</p>}
     <p className="paytakt-reminder-note">
-      {tr('Дозвіл запитується лише під час увімкнення. Плануємо події на найближчі 28 днів і оновлюємо їх при відкритті застосунку. Android може показати нагадування із затримкою.')}
+      {tr('Дозвіл запитується лише під час увімкнення. Плануємо події на найближчі 28 днів і оновлюємо їх при відкритті застосунку. Час доставки залежить від налаштувань телефону.')}
     </p>
   </section>
 }

@@ -1453,19 +1453,19 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
 /* PayTakt Mobile: only the native Android build gets the fixed tab bar. */
 .paytakt-mobile-tabs{display:none}
 @media(max-width:880px){
-  html.paytakt-native-android .zmina-site-header{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .zmina-site-header{
     padding-top:env(safe-area-inset-top,0px);
   }
-  html.paytakt-native-android .zmina-nav-toggle,
-  html.paytakt-native-android .zmina-primary-nav,
-  html.paytakt-native-android .zmina-header-tools .theme-switch{display:none!important}
-  html.paytakt-native-android .zmina-header-main{min-height:70px;gap:7px}
-  html.paytakt-native-android .zmina-workspace-switcher{margin-inline:auto}
-  html.paytakt-native-android .zmina-header-tools{gap:7px}
-  html.paytakt-native-android .main-content{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .zmina-nav-toggle,
+  html:is(.paytakt-native-android,.paytakt-native-ios) .zmina-primary-nav,
+  html:is(.paytakt-native-android,.paytakt-native-ios) .zmina-header-tools .theme-switch{display:none!important}
+  html:is(.paytakt-native-android,.paytakt-native-ios) .zmina-header-main{min-height:70px;gap:7px}
+  html:is(.paytakt-native-android,.paytakt-native-ios) .zmina-workspace-switcher{margin-inline:auto}
+  html:is(.paytakt-native-android,.paytakt-native-ios) .zmina-header-tools{gap:7px}
+  html:is(.paytakt-native-android,.paytakt-native-ios) .main-content{
     padding-bottom:calc(92px + env(safe-area-inset-bottom,0px));
   }
-  html.paytakt-native-android .paytakt-mobile-tabs{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .paytakt-mobile-tabs{
     position:fixed;
     inset-inline:0;
     bottom:0;
@@ -1478,7 +1478,7 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
     border-top:1px solid var(--border);
     box-shadow:0 -8px 24px rgba(4,18,38,.09);
   }
-  html.paytakt-native-android .paytakt-mobile-tabs button{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .paytakt-mobile-tabs button{
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -1497,17 +1497,17 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
     cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
-  html.paytakt-native-android .paytakt-mobile-tabs button.active{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .paytakt-mobile-tabs button.active{
     background:var(--mint-soft);
     color:var(--mint);
   }
-  html.paytakt-native-android .paytakt-mobile-tabs button span{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .paytakt-mobile-tabs button span{
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
     max-width:100%;
   }
-  html.paytakt-native-android .paytakt-mobile-tabs button:focus-visible{
+  html:is(.paytakt-native-android,.paytakt-native-ios) .paytakt-mobile-tabs button:focus-visible{
     outline:2px solid var(--mint);
     outline-offset:-2px;
   }

@@ -7,11 +7,11 @@ const navigation=readFileSync(new URL('../src/components/MobileNavigation.tsx',i
 const css=readFileSync(new URL('../src/styles/optical-glass.css',import.meta.url),'utf8')
 const version=JSON.parse(readFileSync(new URL('../mobile-version.json',import.meta.url),'utf8'))
 
-test('optical refraction only mounts in the installed Android application',()=>{
-  assert.match(app,/const nativeOpticalGlass=isNativeAndroid&&appearance\.style==='glass'/)
+test('optical refraction only mounts in installed mobile applications',()=>{
+  assert.match(app,/const nativeOpticalGlass=isNativeMobile&&appearance\.style==='glass'/)
   assert.match(navigation,/glass&&<OpticalGlass radius=\{27\} strength=\{24\} dock reflectiveRim/)
   assert.doesNotMatch(app,/<OpticalGlass radius=\{35\}/)
-  assert.match(css,/:root:not\(\.paytakt-native-android\)\[data-ui-style='glass'\] \.zmina-primary-nav/)
+  assert.match(css,/:root:not\(:is\(\.paytakt-native-android,\.paytakt-native-ios\)\)\[data-ui-style='glass'\] \.zmina-primary-nav/)
 })
 
 test('glass skin never changes positioning of all optical hosts',()=>{
@@ -21,14 +21,14 @@ test('glass skin never changes positioning of all optical hosts',()=>{
 })
 
 test('Android dock remains fixed, floating, with three navigation slots',()=>{
-  assert.match(css,/html\.paytakt-native-android\[data-ui-style='glass'\] \.app-shell \.paytakt-mobile-tabs\.pt-optical-host\{\s*position:fixed;/)
+  assert.match(css,/html:is\(\.paytakt-native-android,\.paytakt-native-ios\)\[data-ui-style='glass'\] \.app-shell \.paytakt-mobile-tabs\.pt-optical-host\{\s*position:fixed;/)
   assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/)
   assert.match(css,/bottom:calc\(10px \+ env\(safe-area-inset-bottom,0px\)\)/)
 })
 
 test('only the Android dock has a clear border, while remaining fixed',()=>{
-  const outer=css.match(/html\.paytakt-native-android\[data-ui-style='glass'\] \.app-shell \.paytakt-mobile-tabs\.pt-optical-host\{([\s\S]*?)\n  \}/)
-  const inner=css.match(/html\.paytakt-native-android\[data-ui-style='glass'\] \.app-shell \.paytakt-mobile-tabs\.pt-optical-host>\.pt-optical-glass\{([\s\S]*?)\n  \}/)
+  const outer=css.match(/html:is\(\.paytakt-native-android,\.paytakt-native-ios\)\[data-ui-style='glass'\] \.app-shell \.paytakt-mobile-tabs\.pt-optical-host\{([\s\S]*?)\n  \}/)
+  const inner=css.match(/html:is\(\.paytakt-native-android,\.paytakt-native-ios\)\[data-ui-style='glass'\] \.app-shell \.paytakt-mobile-tabs\.pt-optical-host>\.pt-optical-glass\{([\s\S]*?)\n  \}/)
   assert.ok(outer,'floating dock CSS rule must exist')
   assert.ok(inner,'glass layer CSS rule must exist')
   assert.match(outer[1],/position:fixed;/)

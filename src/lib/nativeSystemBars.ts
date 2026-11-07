@@ -16,7 +16,7 @@ export function setAndroidSystemBarContrast(
     typeof window==='undefined'?null:
       (window as Window&{Capacitor?:CapacitorBridge}).Capacitor,
 ):void{
-  if(!bridge?.isNativePlatform?.()||bridge.getPlatform?.()!=='android')return
+  if(!bridge?.isNativePlatform?.()||!['android','ios'].includes(bridge.getPlatform?.()??''))return
   const bars=bridge.Plugins?.SystemBars
   if(!bars?.setStyle)return
   try{

@@ -22,7 +22,7 @@ const translations={
     gradient:'Градієнт',none:'Без градієнта',mint:'М’ята',ocean:'Океан',sunset:'Захід',violet:'Фіолет',custom:'Власний',
     from:'Перший колір',to:'Другий колір',angle:'Напрямок',reset:'Скинути оформлення',
     device:'Зберігається на цьому пристрої.',preview:'Попередній перегляд',
-    dockTransparency:'Прозорість панелі навігації',dockHint:'Для Liquid Glass у застосунку Android. Заломлення залишається.',
+    dockTransparency:'Прозорість панелі навігації',dockHint:'Для скляної панелі у мобільному застосунку.',
     opaque:'Непрозора',clear:'Прозора',
   },
   en:{
@@ -32,7 +32,7 @@ const translations={
     gradient:'Gradient',none:'None',mint:'Mint',ocean:'Ocean',sunset:'Sunset',violet:'Violet',custom:'Custom',
     from:'First color',to:'Second color',angle:'Direction',reset:'Reset appearance',
     device:'Saved on this device.',preview:'Live preview',
-    dockTransparency:'Navigation panel transparency',dockHint:'For Liquid Glass in the Android app. Refraction stays enabled.',
+    dockTransparency:'Navigation panel transparency',dockHint:'For the glass panel in the mobile app.',
     opaque:'Opaque',clear:'Transparent',
   },
   ru:{
@@ -42,7 +42,7 @@ const translations={
     gradient:'Градиент',none:'Без градиента',mint:'Мята',ocean:'Океан',sunset:'Закат',violet:'Фиолет',custom:'Свой',
     from:'Первый цвет',to:'Второй цвет',angle:'Направление',reset:'Сбросить оформление',
     device:'Сохраняется на этом устройстве.',preview:'Предпросмотр',
-    dockTransparency:'Прозрачность панели навигации',dockHint:'Для Liquid Glass в приложении Android. Преломление сохраняется.',
+    dockTransparency:'Прозрачность панели навигации',dockHint:'Для стеклянной панели в мобильном приложении.',
     opaque:'Непрозрачная',clear:'Прозрачная',
   },
 }

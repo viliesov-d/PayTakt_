@@ -3,6 +3,7 @@ import {tr} from '../lib/presentation.ts'
 import {MOBILE_VERSION,RELEASES_URL,type ReleaseCheck} from '../lib/appUpdates.ts'
 
 type Props={
+  ios?:boolean
   native:boolean
   currentVersion:string
   result:ReleaseCheck|null
@@ -12,7 +13,13 @@ type Props={
   hasPendingOffline:boolean
   openError:string
 }
-export function AppUpdatesPanel({native,currentVersion,result,checking,onCheck,onOpen,hasPendingOffline,openError}:Props){
+export function AppUpdatesPanel({ios=false,native,currentVersion,result,checking,onCheck,onOpen,hasPendingOffline,openError}:Props){
+  if(ios)return <section className="panel settings-panel settings-wide paytakt-updates-panel">
+    <div className="settings-heading"><Smartphone size={22}/><div>
+      <h3>{tr('PayTakt для iPhone')}</h3><p>{tr('Встановлена версія')} v{currentVersion}</p>
+    </div></div>
+    <p>{tr('Оновлюй застосунок через той самий спосіб, яким його встановлено: Xcode, TestFlight або App Store.')}</p>
+  </section>
   return <section className="panel settings-panel settings-wide paytakt-updates-panel">
     <div className="settings-heading"><Smartphone size={22}/><div>
       <h3>{tr('Оновлення PayTakt')}</h3>

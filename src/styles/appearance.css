@@ -200,33 +200,33 @@
 
 /* Floating iOS-like navigation only on native mobile. */
 @media(max-width:880px){
-  html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .paytakt-mobile-tabs{
     inset-inline:11px;bottom:calc(9px + env(safe-area-inset-bottom,0px));
     padding:7px;gap:3px;border:1px solid var(--border);border-radius:25px;
     box-shadow:0 10px 38px rgba(4,21,45,.19);
     background:var(--panel)
   }
-  html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs button{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .paytakt-mobile-tabs button{
     border-radius:19px;min-height:54px
   }
-  html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs button.active{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .paytakt-mobile-tabs button.active{
     color:#fff;background:#2c546d
   }
-  html.paytakt-native-android[data-ui-style='glass'][data-ui-gradient='on'] .paytakt-mobile-tabs button.active{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'][data-ui-gradient='on'] .paytakt-mobile-tabs button.active{
     background-image:linear-gradient(rgba(8,22,39,.42),rgba(8,22,39,.42)),var(--pt-gradient)
   }
-  html.paytakt-native-android[data-ui-style='soft'] .paytakt-mobile-tabs{
+  html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='soft'] .paytakt-mobile-tabs{
     background:var(--panel);border-top-color:var(--border)
   }
   @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-    html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs{
+    html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .paytakt-mobile-tabs{
       background:color-mix(in srgb,var(--panel) 80%,transparent);
       backdrop-filter:blur(22px) saturate(1.35);
       -webkit-backdrop-filter:blur(22px) saturate(1.35)
     }
   }
   @media(prefers-reduced-transparency:reduce){
-    html.paytakt-native-android[data-ui-style='glass'] .paytakt-mobile-tabs{
+    html:is(.paytakt-native-android,.paytakt-native-ios)[data-ui-style='glass'] .paytakt-mobile-tabs{
       background:var(--panel);backdrop-filter:none;-webkit-backdrop-filter:none
     }
   }
