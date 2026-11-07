@@ -13,8 +13,10 @@ const manifest=JSON.parse(file('../public/manifest.webmanifest'))
 const sw=file('../public/sw.js')
 
 test('website reuses the existing native navigation component and optical lenses',()=>{
-  assert.match(app,/\(isNativeMobile\|\|platform==='web'\)&&<MobileNavigation/)
-  assert.match(app,/glass=\{isNativeMobile\?nativeOpticalGlass:true\}/)
+  assert.match(app,/isNativeMobile&&<MobileNavigation/)
+  assert.match(app,/platform==='web'&&<MobileNavigation/)
+  assert.match(app,/glass=\{nativeOpticalGlass\}/)
+  assert.match(app,/glass=\{true\}/)
   assert.match(nativeNav,/<OpticalGlass radius=\{27\} strength=\{24\} dock reflectiveRim\/>/)
   assert.match(nativeNav,/<OpticalGlass radius=\{21\} strength=\{15\} dock\/>/)
   assert.match(webCss,/data-pressed='true'[\s\S]*?scale\(1\.075,1\.105\)/)
