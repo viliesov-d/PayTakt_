@@ -8,7 +8,7 @@ const version=JSON.parse(readFileSync(new URL('../mobile-version.json',import.me
 
 test('optical refraction only mounts in the installed Android application',()=>{
   assert.match(app,/const nativeOpticalGlass=isNativeAndroid&&appearance\.style==='glass'/)
-  assert.match(app,/nativeOpticalGlass&&<OpticalGlass radius=\{27\}/)
+  assert.match(app,/nativeOpticalGlass&&<span className="pt-optical-glass pt-dock-glass"/)
   assert.doesNotMatch(app,/<OpticalGlass radius=\{35\}/)
   assert.match(css,/:root:not\(\.paytakt-native-android\)\[data-ui-style='glass'\] \.zmina-primary-nav/)
 })
@@ -55,4 +55,19 @@ test('Android dock disables only its white optical halo layers',()=>{
   // The previous fixed dock rule and 3 tap targets must remain unchanged.
   assert.match(css,/position:fixed;/)
   assert.ok(css.includes('grid-template-columns:repeat(3,minmax(0,1fr))'))
+})
+
+test('Android dock uses clean blur without the refractive rim or white glow',()=>{
+  const nav=app.slice(app.indexOf('aria-label="Навігація PayTakt Mobile"'))
+  assert.match(nav,/pt-dock-glass/)
+  assert.doesNotMatch(nav.slice(0,400),/<OpticalGlass\b/)
+  const marker=css.indexOf('v0.9.7 — final dock halo fix')
+  assert.ok(marker>0)
+  const cleanup=css.slice(marker)
+  assert.match(cleanup,/box-shadow:none!important;/)
+  assert.match(cleanup,/border-color:transparent!important;/)
+  assert.match(cleanup,/backdrop-filter:blur\(18px\)/)
+  assert.ok(!cleanup.includes('position:fixed'))
+  // Other dialogs retain the real optical lens implementation.
+  assert.match(app, /glass&&<OpticalGlass radius=\{23\}/)
 })
