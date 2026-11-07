@@ -34,17 +34,17 @@ export function MobileNavigation<T extends string>({items,activeId,glass,dockTra
     event.currentTarget.setPointerCapture(event.pointerId)
     // Expand immediately under the finger. Keep the position continuous,
     // including between all three tab centers, until the pointer is released.
-    setPressed(true)
-    setPreview(sample(event.clientX))
+    setPressed(glass)
+    if(glass)setPreview(sample(event.clientX))
   }
   const move=(event:PointerEvent<HTMLElement>)=>{
     const current=gesture.current
     if(!current||current.id!==event.pointerId)return
-    if(!current.dragged&&Math.abs(event.clientX-current.startX)>4){
+    if(!current.dragged&&Math.abs(event.clientX-current.startX)>(glass?4:5)){
       current.dragged=true
       setDragging(true)
     }
-    setPreview(sample(event.clientX))
+    if(glass||current.dragged)setPreview(sample(event.clientX))
   }
   const up=(event:PointerEvent<HTMLElement>)=>{
     const current=gesture.current
