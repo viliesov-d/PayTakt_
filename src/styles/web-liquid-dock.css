@@ -1,0 +1,200 @@
+/* Mobile WEBSITE dock: isolate these overrides from the Android/iOS Capacitor
+   navigation. The native v0.9.17 glass, animations, and system-bar rules stay intact. */
+@media (max-width:880px) {
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .zmina-site-header .zmina-primary-nav,
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .zmina-site-header .zmina-nav-toggle {
+    display:none!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .main-content {
+    padding-bottom:calc(120px + env(safe-area-inset-bottom,0px));
+  }
+
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .paytakt-mobile-tabs.pt-slider-nav {
+    position:fixed;
+    display:grid;
+    grid-template-columns:repeat(var(--pt-tab-count),minmax(0,1fr));
+    gap:5px;
+    padding:7px;
+    inset-inline:12px;
+    top:auto;
+    bottom:calc(12px + env(safe-area-inset-bottom,0px));
+    width:auto;
+    max-width:560px;
+    margin-inline:auto;
+    border:1px solid transparent;
+    border-radius:28px;
+    background:transparent!important;
+    box-shadow:none!important;
+    isolation:isolate;
+    overflow:visible;
+    z-index:65;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  /* The backdrop is clipped to the pill even when its thumb rises on press. */
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-slider-nav > .pt-dock-glass {
+    position:absolute;
+    inset:0;
+    z-index:0;
+    display:block;
+    border:0!important;
+    border-radius:inherit;
+    overflow:hidden;
+    pointer-events:none;
+    background:rgba(29,65,83,var(--pt-dock-tint-alpha,.093))!important;
+    box-shadow:inset 0 1px 1px rgba(255,255,255,.10)!important;
+    -webkit-backdrop-filter:blur(19px) saturate(1.52) contrast(1.04);
+    backdrop-filter:blur(19px) saturate(1.52) contrast(1.04);
+  }
+  /* On Chromium the existing SVG displacement-map filter overrides blur,
+     producing real sampled edge refraction; Safari keeps the frosted fallback. */
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-slider-nav > .pt-dock-glass.pt-optical-glass-ready {
+    background:rgba(29,65,83,var(--pt-dock-tint-alpha,.093))!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-theme='dark'] .app-shell .pt-slider-nav > .pt-dock-glass {
+    background:rgba(187,216,233,var(--pt-dock-tint-alpha,.093))!important;
+    box-shadow:inset 0 1px 1px rgba(255,255,255,.07)!important;
+  }
+  /* Two internal specular strips and a pointer-following glint; no outer halo. */
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > .pt-dock-glass::before {
+    content:'';
+    display:block!important;
+    position:absolute;inset:0;
+    pointer-events:none;
+    border:0!important;border-radius:inherit;
+    opacity:.65;mix-blend-mode:screen;
+    background:radial-gradient(ellipse 42% 95% at var(--pt-glint-x,38%) var(--pt-glint-y,0%),
+        rgba(255,255,255,.20),rgba(255,255,255,.045) 45%,transparent 78%),
+      linear-gradient(180deg,rgba(255,255,255,.13),transparent 20%,transparent 76%,rgba(17,71,106,.075));
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > .pt-dock-glass::after {
+    content:'';
+    display:block!important;
+    position:absolute;inset:1px;
+    pointer-events:none;
+    border:0!important;border-radius:inherit;
+    box-shadow:inset 0 1px 1px rgba(255,255,255,.24),
+      inset 0 -1px 1px rgba(19,75,105,.14),
+      inset 1px 0 1px rgba(255,177,180,.12),
+      inset -1px 0 1px rgba(126,183,250,.14)!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav .pt-dock-sheen {
+    position:absolute;inset:4px;border-radius:23px;pointer-events:none;
+    background:radial-gradient(ellipse 48% 110% at var(--pt-glint-x,38%) var(--pt-glint-y,0%),
+      rgba(255,255,255,.15),rgba(255,255,255,.03) 46%,transparent 77%);
+  }
+
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-slider-nav > .pt-nav-thumb {
+    position:absolute;z-index:1;pointer-events:none;
+    top:7px;bottom:7px;left:7px;
+    width:calc((100% - 14px - (var(--pt-tab-count) - 1)*5px)/var(--pt-tab-count));
+    transform:translateX(calc(var(--pt-tab-position)*(100% + 5px)));
+    border:0;border-radius:21px;
+    background:transparent!important;
+    box-shadow:none!important;
+    overflow:hidden;
+    transition:transform 260ms cubic-bezier(.22,.8,.25,1),
+      top 155ms cubic-bezier(.2,.85,.2,1),bottom 155ms cubic-bezier(.2,.85,.2,1);
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > .pt-nav-thumb[hidden]{display:none}
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > .pt-nav-thumb > .pt-optical-glass {
+    position:absolute;inset:0;z-index:0;display:block;
+    border:0!important;border-radius:inherit;overflow:hidden;
+    pointer-events:none;
+    background:color-mix(in srgb,var(--mint-soft) 43%,transparent)!important;
+    box-shadow:inset 0 1px 2px rgba(255,255,255,.25),inset 0 -1px 2px rgba(28,87,110,.15)!important;
+    -webkit-backdrop-filter:blur(2px) saturate(1.45);
+    backdrop-filter:blur(2px) saturate(1.45);
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > .pt-nav-thumb > .pt-optical-glass::before {
+    content:'';display:block!important;position:absolute;inset:0;
+    border:0!important;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(160deg,rgba(255,255,255,.30),transparent 32%,transparent 72%,rgba(50,116,160,.10));
+    opacity:.6;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > .pt-nav-thumb > .pt-optical-glass::after {
+    content:'';display:block!important;position:absolute;inset:0;border-radius:inherit;
+    pointer-events:none;box-shadow:inset 0 1px 1px rgba(255,255,255,.28),
+      inset 0 -1px 2px rgba(19,76,110,.16)!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-theme='dark'] .pt-slider-nav > .pt-nav-thumb > .pt-optical-glass {
+    background:rgba(187,216,233,.14)!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-gradient='on'] .pt-slider-nav > .pt-nav-thumb::after {
+    content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+    border-radius:inherit;background:var(--pt-gradient);opacity:.34;
+  }
+
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-slider-nav > button {
+    display:flex;position:relative;z-index:2;
+    min-width:0;min-height:61px;
+    flex-direction:column;align-items:center;justify-content:center;
+    gap:5px;padding:8px 4px;
+    font-size:10.5px;font-weight:750;line-height:1.15;
+    background:transparent!important;
+    border:0!important;border-radius:21px;
+    box-shadow:none!important;
+    transform:none!important;
+    color:var(--muted-deep);
+    transition:color 180ms;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-slider-nav > button.active {
+    color:var(--text);
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios))[data-ui-gradient='on'] .app-shell .pt-slider-nav > button.active {
+    color:var(--text);
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > button svg {
+    width:23px;height:23px;flex:0 0 auto;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > button span {
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > button:focus-visible {
+    outline:2px solid var(--mint);outline-offset:-2px;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav[data-pressed='true'] > .pt-nav-thumb {
+    top:0;bottom:0;
+    transform:translateX(calc(var(--pt-tab-position)*(100% + 5px))) scale(1.075,1.105);
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav[data-dragging='true'] > .pt-nav-thumb {
+    transition:none!important;
+  }
+}
+/* No transparency means a readable solid surface; reduced motion keeps navigation useful. */
+@media (max-width:880px) and (prefers-reduced-transparency:reduce) {
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .app-shell .pt-slider-nav > .pt-dock-glass,
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > .pt-nav-thumb > .pt-optical-glass {
+    background:var(--panel)!important;
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+  }
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > .pt-dock-glass::before,
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > .pt-dock-glass::after,
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > .pt-nav-thumb::after {
+    content:none!important;
+  }
+}
+@media (max-width:880px) and (prefers-reduced-motion:reduce) {
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > .pt-nav-thumb,
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-slider-nav > button {transition:none!important}
+}
+@media (min-width:881px) {
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .paytakt-mobile-tabs{display:none!important}
+}
+
+/* Web PWA installation entry, visible only on narrow browser/PWA layouts. */
+.pt-pwa-install-card{display:none}
+@media (max-width:880px){
+  html:not(:is(.paytakt-native-android,.paytakt-native-ios)) .pt-pwa-install-card{
+    display:grid;gap:13px;margin:17px 0;padding:19px;
+    border:1px solid var(--border);border-radius:18px;background:var(--panel);color:var(--text);
+  }
+  .pt-pwa-install-top{display:flex;align-items:center;gap:12px}
+  .pt-pwa-install-icon{width:44px;height:44px;display:grid;place-items:center;flex:0 0 44px;
+    border-radius:14px;background:var(--mint-soft);color:var(--mint)}
+  .pt-pwa-install-top h3{font-size:15px;margin:0 0 4px}
+  .pt-pwa-install-top p,.pt-pwa-install-card p{font-size:12px;line-height:1.55;margin:0;color:var(--muted-deep)}
+  .pt-pwa-install-card .btn{justify-self:start}
+}

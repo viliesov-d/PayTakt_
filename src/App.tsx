@@ -7,6 +7,7 @@ import {AppearanceSettings} from './components/AppearanceSettings'
 import {SettingsHome, SettingsSectionHeader, isSettingsSection, type SettingsSection} from './components/SettingsHome'
 import {OpticalGlass} from './components/OpticalGlass'
 import {MobileNavigation} from './components/MobileNavigation'
+import {PwaInstallCard} from './components/PwaInstallCard'
 import {setAndroidSystemBarContrast} from './lib/nativeSystemBars'
 import {gradientCss, readAppearance, saveAppearance, type AppearancePreferences} from './lib/uiPreferences'
 import {
@@ -817,14 +818,14 @@ function TeamPage({workspace}:{workspace:Workspace}) {
   return <><SectionHeading eyebrow="КОМАНДА" title="Співробітники компанії" detail={`Простір «${workspace.name}» · зараз доступний власнику акаунта.`}/><div className="panel team-owner"><div className="avatar large"><UserRound size={24}/></div><div><h3>Власник простору</h3><p>Повний доступ до власних налаштувань і календаря</p></div><span className="pill mint-pill">Власник</span></div><Placeholder icon={UsersRound} title="Запрошення співробітників — наступний етап" detail="Після налаштування корпоративних ролей тут з’являться запрошення, відділи та доступи. Зараз ніхто інший не може переглядати дані вашого простору."/></>
 }
 
-function SettingsPage({ session, workspace, workspaces, theme, setTheme, appearance, setAppearance, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates, syncPanel, remindersPanel, updatesPanel, section, onSectionChange, onGoRules, remindersEnabled }: {
+function SettingsPage({ session, workspace, workspaces, theme, setTheme, appearance, setAppearance, onCreate, onDeleteRequest, onSignOut, emailVerified, onVerify, onRefreshVerification, presentation, onPresentationChange, fxRates, syncPanel, remindersPanel, updatesPanel, pwaPanel, section, onSectionChange, onGoRules, remindersEnabled }: {
   session: Session; workspace: Workspace; workspaces: Workspace[]; theme: ThemeChoice;
   setTheme: (v:ThemeChoice)=>void; appearance:AppearancePreferences; setAppearance:(next:AppearancePreferences)=>void;
   onCreate:()=>void; onDeleteRequest:(w:Workspace)=>void;
   onSignOut:()=>void; emailVerified:boolean;
   onVerify:()=>Promise<void>; onRefreshVerification:()=>Promise<void>;
   presentation: PresentationSettings; onPresentationChange: (next:PresentationSettings)=>void;
-  fxRates:NbuRateCache|null; syncPanel:ReactNode; remindersPanel:ReactNode; updatesPanel:ReactNode;
+  fxRates:NbuRateCache|null; syncPanel:ReactNode; remindersPanel:ReactNode; updatesPanel:ReactNode; pwaPanel:ReactNode;
   section:SettingsSection;onSectionChange:(section:SettingsSection)=>void;onGoRules:()=>void;remindersEnabled:boolean;
 }) {
   const nativeCurrency=workspace.currency??'UAH'
@@ -852,7 +853,8 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, appeara
     {section==='home'&&<SettingsHome
       language={presentation.language} appearance={appearance} theme={theme}
       workspaceName={workspace.name} workspacesCount={workspaces.length}
-      remindersEnabled={remindersEnabled} onOpen={onSectionChange} onGoRules={onGoRules}/>}
+      remindersEnabled={remindersEnabled} onOpen={onSectionChange} onGoRules={onGoRules}/>} 
+    {section==='home'&&pwaPanel}
     {section!=='home'&&<SettingsSectionHeader section={section}
       language={presentation.language} onBack={()=>onSectionChange('home')}/>}
     {section==='account'&&!session.demo&&<div className={`verification-card ${emailVerified?'verified':''}`}>
@@ -940,7 +942,7 @@ function SettingsPage({ session, workspace, workspaces, theme, setTheme, appeara
       </>}
       </>}
       {section==='notifications'&&remindersPanel}
-      {section==='data'&&<>{syncPanel}{updatesPanel}</>}
+      {section==='data'&&<>{pwaPanel}{syncPanel}{updatesPanel}</>}
       {section==='workspaces'&&<>
 <section className="panel settings-panel settings-wide">
         <div className="settings-heading"><BriefcaseBusiness size={22}/><div><h3>{tr('Робочі простори')}</h3><p>{tr('Особисті записи та компанії не змішуються.')}</p></div></div>
@@ -1708,6 +1710,7 @@ export default function App(){
   const remindersPanel=<NotificationSettings supported={isNativeMobile&&!session?.demo}
     prefs={reminderPrefs} scheduled={reminderCount} busy={reminderBusy} error={reminderError}
     onEnable={enableReminders} onChange={changeReminders}/>
+  const pwaPanel=platform==='web'?<PwaInstallCard language={presentation.language}/>:null
   const updatesPanel=<AppUpdatesPanel ios={isNativeIOS} native={isNativeAndroid} currentVersion={installedAppVersion}
     result={updateResult} checking={updatesChecking} hasPendingOffline={offlineQueue.length>0}
     openError={updateOpenError}
@@ -1817,7 +1820,7 @@ export default function App(){
             setSettingsSection(next)
           }
           window.scrollTo({top:0,behavior:'auto'})
-        }} onGoRules={()=>navigate('rules')} remindersEnabled={reminderPrefs.enabled} syncPanel={syncPanel} remindersPanel={remindersPanel} updatesPanel={updatesPanel}/>}
+        }} onGoRules={()=>navigate('rules')} remindersEnabled={reminderPrefs.enabled} syncPanel={syncPanel} remindersPanel={remindersPanel} updatesPanel={updatesPanel} pwaPanel={pwaPanel}/>}
         {page==='settings'&&settingsSection==='schedule'&&<section className="panel v2-settings-actions">
           <div className="v2-settings-head"><div><h3>{tr("Налаштування твоєї роботи")}</h3><p>Персональний майстер або точні правила — обирай зручний спосіб.</p></div></div>
           <div className="v2-settings-links">
@@ -1846,7 +1849,7 @@ export default function App(){
         <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>{isNativeMobile?`PayTakt Mobile v${installedAppVersion}`:'Версія 2.0.0 beta 4'}</span></footer>
       </main>
     </div>
-    {isNativeMobile&&<MobileNavigation activeId={page} glass={nativeOpticalGlass} dockTransparency={appearance.dockTransparency} onSelect={navigate}
+    {(isNativeMobile||platform==='web')&&<MobileNavigation activeId={page} glass={isNativeMobile?nativeOpticalGlass:true} dockTransparency={appearance.dockTransparency} onSelect={navigate}
       items={allowedNav.map(item=>{
         const Icon=item.icon
         return {id:item.id,label:tr(item.id==='calendar'?'Календар':item.id==='statistics'?'Мої гроші':'Налаштування'),
