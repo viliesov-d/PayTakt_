@@ -38,3 +38,24 @@ test('mobile pay-rule fields do not inherit a 180px vertical flex basis',()=>{
   // Only rules section; never change the floating glass dock selectors.
   assert.doesNotMatch(css.slice(css.lastIndexOf('/* Mobile pay rules:')),/pt-slider-nav|pt-dock-glass/)
 })
+
+
+test('all pay-rule accordion panels use a single smooth height animation',()=>{
+  const motion=read('../src/lib/payRuleAccordion.ts')
+  assert.match(rules,/ref=\{rulesRoot\} className="salary-page salary-rules-page"/)
+  assert.match(rules,/bindPayRuleAccordions\(rulesRoot.current\)/)
+  assert.match(motion,/root.addEventListener\('click',onClick\)/)
+  assert.match(motion,/details.matches\('details.pay-collapse,details.pay-optional'\)/)
+  assert.match(motion,/event.preventDefault\(\)/)
+  assert.match(motion,/const opening=previous\?!previous.opening:!details.open/)
+  assert.match(motion,/const start=details.getBoundingClientRect\(\).height/)
+  assert.match(motion,/details.animate\(/)
+  assert.match(motion,/duration:opening\?340:270/)
+  assert.match(motion,/previous.animation.cancel\(\)/)
+  assert.match(motion,/prefers-reduced-motion: reduce/)
+  assert.match(motion,/details.open=opening/)
+  assert.match(motion,/root.removeEventListener\('click',onClick\)/)
+  assert.match(css,/\.salary-rules-page details:is\(\.pay-collapse,\.pay-optional\)\[open\] > :not\(summary\)/)
+  assert.match(css,/\.salary-rules-page details:is\(\.pay-collapse,\.pay-optional\)::details-content\{/)
+  assert.doesNotMatch(motion,/setPointerCapture|pt-web-slider|backdrop-filter/)
+})

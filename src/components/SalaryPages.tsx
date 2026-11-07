@@ -1,9 +1,10 @@
 import {tr,inputCurrencyLabel} from '../lib/presentation'
-import {useEffect,useMemo,useState,type FormEvent} from 'react'
+import {useEffect,useMemo,useRef,useState,type FormEvent} from 'react'
 import {Clock3,Wallet,ShieldCheck,Save,CheckCircle2,Info,Sparkles,Moon,Timer,Target,TrendingUp,Plus,Trash2,ChevronDown} from 'lucide-react'
 import type {Shift} from '../lib/calendar'
 import {calculatePayWithPerformance,type PerformanceSettings} from '../lib/performance'
 import {PerformanceRulesEditor} from './PerformanceRulesEditor'
+import {bindPayRuleAccordions} from '../lib/payRuleAccordion'
 import {PaymentScheduleEditor} from './PaymentScheduleEditor'
 import {calculatePaymentForecast} from '../lib/payments'
 import {defaultPaySettings,moneyUA,validatePaySettings,validateMonthlySales,type PaySettings,type CustomRule,type MonthlySales,type MonthlyUnits,type BandPeriod,validateMonthlyUnits,allocateBands,calendarSalaryNorm} from '../lib/salary'
@@ -41,6 +42,10 @@ function PercentField({label,value,onChange}: {label:string;value:number;onChang
 }
 const newRule=():CustomRule=>({id:`rule_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,title:'Мій бонус',trigger:'hours_at_least',threshold:9600,bonus:0})
 export function RulesPageV5({workspaceName,shifts,settings,loaded,demo,onSave,performance,onSavePerformance,onApplyZmina}:RuleProps){
+  const rulesRoot=useRef<HTMLDivElement>(null)
+  useEffect(()=>{
+    if(rulesRoot.current)return bindPayRuleAccordions(rulesRoot.current)
+  },[])
   const [draft,setDraft]=useState<PaySettings>(settings??defaultPaySettings)
   const referenceMonth=currentMonth()
   const calendarNorm=calendarSalaryNorm(shifts,referenceMonth,draft)
@@ -61,7 +66,7 @@ export function RulesPageV5({workspaceName,shifts,settings,loaded,demo,onSave,pe
     catch(err){setError(err instanceof Error?err.message:'Помилка збереження.')}
     finally{setBusy(false)}
   }
-  return <div className="salary-page salary-rules-page">
+  return <div ref={rulesRoot} className="salary-page salary-rules-page">
     <div className="section-head"><div><div className="eyebrow">{tr("КОНСТРУКТОР ОПЛАТИ")}</div><h2>{tr("Мої правила зарплати")}</h2><p>Оплата для будь-якої роботи: години, зміни, оклад, виробіток та власні правила · {workspaceName}</p></div></div>
     <div className="salary-note"><ShieldCheck size={20}/><div><strong>{tr("Прогноз, а не офіційна зарплатна відомість")}</strong><p>Правила діють для поточного робочого простору. Вони не замінюють положення про оплату праці, трудове законодавство чи розрахунок податків. Підсумки можуть перераховувати минулі місяці.</p></div></div>
     {!loaded?<div className="panel">{tr("Завантажуємо налаштування…")}</div>:<form className="salary-form" onSubmit={submit} noValidate>
