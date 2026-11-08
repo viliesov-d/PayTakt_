@@ -1,48 +1,209 @@
-.pt-admin{max-width:1180px;margin:auto;display:grid;gap:20px;padding:24px 16px 110px;min-width:0;color:var(--text)}
-.pt-admin-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.pt-admin h1{display:flex;align-items:center;gap:10px;font-size:28px;margin:20px 0 5px}.pt-admin h2{font-size:17px;display:flex;align-items:center;gap:8px;margin:0 0 16px}.pt-admin p{color:var(--muted);line-height:1.6;font-size:13px}.pt-admin .panel{padding:22px;min-width:0}.pt-admin-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.pt-admin-cards article{display:flex;flex-direction:column;gap:14px}.pt-admin-cards span{font-size:13px;color:var(--muted)}.pt-admin-cards strong{font-size:32px;font-variant-numeric:tabular-nums}.pt-admin-charts{display:grid;grid-template-columns:2fr 1fr;gap:16px}.pt-admin-bars{display:flex;gap:12px;align-items:end;height:210px}.pt-admin-bars>div{display:flex;flex:1;min-width:0;flex-direction:column;gap:8px;text-align:center;font-size:12px}.pt-admin-bar-track{height:150px;display:flex;align-items:end;border-radius:7px;background:var(--panel-soft);overflow:hidden}.pt-admin-bar-track>div{width:100%;background:var(--mint);border-radius:7px 7px 0 0}.pt-admin-platform{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);font-size:14px}.pt-admin-note{margin:0}.pt-admin-search{display:grid;gap:8px;margin-bottom:20px}.pt-admin-search label{font-size:13px}.pt-admin-search>div{display:flex;gap:8px;flex-wrap:wrap}.pt-admin-search input{flex:1;min-width:150px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--input);color:var(--text)}.pt-admin-table{overflow:auto}.pt-admin table{border-collapse:collapse;width:100%;font-size:13px;text-align:left}.pt-admin th,.pt-admin td{padding:14px 12px;border-bottom:1px solid var(--border);vertical-align:top}.pt-admin td span,.pt-admin td small{display:block;margin-top:5px;color:var(--muted);overflow-wrap:anywhere}.pt-admin td:first-child{min-width:190px}.pt-admin-pages{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px;font-size:12px}.pt-admin-pages span{flex:1}.pt-admin button:disabled{opacity:.5;cursor:default}
-@media(max-width:700px){.pt-admin-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.pt-admin-charts{grid-template-columns:1fr}.pt-admin .panel{padding:16px}.pt-admin-heading{align-items:flex-start}.pt-admin-heading>.btn{margin-top:0}.pt-admin-bars{gap:6px}.pt-admin h1{font-size:23px}.pt-admin-pages span{flex-basis:100%}}
-
-
-/* Monthly payroll administration. These rules only apply inside .pt-admin. */
-.pt-admin-month{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.pt-admin-month label{display:flex;align-items:center;gap:8px;font-weight:800}
-.pt-admin-month input{width:auto;min-width:165px}
-.pt-admin-month p{flex:1 1 240px;margin:0}
-.pt-admin-section-head,.pt-admin-detail-head,.pt-admin-workspace-title{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
-.pt-admin-section-head>span{font-size:12px;color:var(--muted)}
-.pt-admin-open{padding:8px 12px;font-size:12px}
-.pt-admin-warning{background:var(--panel-soft);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--muted-deep)}
-.pt-admin-summary{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.pt-admin-summary h2{flex-basis:100%;margin:0}
-.pt-admin-summary strong{padding:9px 13px;background:var(--mint-soft);border-radius:11px;font-size:21px}
-.pt-admin-summary small{flex-basis:100%;color:var(--muted)}
-.pt-admin-detail{display:grid;gap:18px}
-.pt-admin-detail h2{margin:0}
-.pt-admin-detail-head p{margin:5px 0 0}
-.pt-admin-workspace{border:1px solid var(--border);border-radius:15px;padding:17px;min-width:0}
-.pt-admin-workspace-title h3{margin:0 0 5px;font-size:17px}
-.pt-admin-workspace-title p{margin:0}
-.pt-admin-workspace-title strong{font-size:20px;color:var(--mint);font-variant-numeric:tabular-nums}
-.pt-admin-facts{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0}
-.pt-admin-facts span{padding:7px 10px;background:var(--panel-soft);border:1px solid var(--border);border-radius:9px}
-.pt-admin-detail-cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px}
-.pt-admin-detail-cols>div{min-width:0}
-.pt-admin-detail h4{margin:13px 0;font-size:14px}
-.pt-admin-detail .pt-admin-table{max-width:100%}
-.pt-admin-detail .pt-admin-table td:first-child{min-width:125px}
-.pt-admin-detail .pt-admin-table th,.pt-admin-detail .pt-admin-table td{padding:10px 8px}
-.pt-admin-detail .pt-admin-table small{white-space:normal;max-width:260px}
-.pt-admin-paylines{border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.pt-admin-paylines>div{display:flex;justify-content:space-between;align-items:start;gap:11px;padding:11px 12px;border-bottom:1px solid var(--border)}
-.pt-admin-paylines>div:last-child{border:0}
-.pt-admin-paylines span{min-width:0}
-.pt-admin-paylines small{display:block;margin-top:4px;color:var(--muted);font-size:11px;line-height:1.4}
-.pt-admin-paylines b{white-space:nowrap;font-variant-numeric:tabular-nums}
-@media(max-width:750px){
-  .pt-admin-detail-cols{grid-template-columns:1fr}
-  .pt-admin-workspace{padding:12px}
-  .pt-admin-month{align-items:stretch}
-  .pt-admin-month input{width:100%}
-  .pt-admin .pt-admin-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .pt-admin-summary strong{font-size:18px}
+/* PayTakt administration — isolated replica of Zmina 2.0 team dashboard.
+   Source: YAPPI_/styles.css; reused only the admin selectors. Never style the
+   site's global theme, mobile navigation, salary forms or Liquid Glass dock. */
+.pt-zmina-admin{
+  --deep:#101c33;--green:#c2f075;--shadow:0 12px 44px rgba(27,44,65,.04);
+  color:#17243a;max-width:1450px;min-width:0;width:100%;
+  margin:0 auto;padding:14px 0 110px;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
 }
+.pt-zmina-admin *, .pt-zmina-admin *::before, .pt-zmina-admin *::after{box-sizing:border-box}
+.pt-zmina-admin button,.pt-zmina-admin input,.pt-zmina-admin select{font:inherit}
+.pt-zmina-admin button{cursor:pointer}
+.pt-zmina-admin button:focus-visible,.pt-zmina-admin select:focus-visible,
+.pt-zmina-admin input:focus-visible{outline:3px solid #7769dc;outline-offset:3px}
+.pt-zmina-admin h1,.pt-zmina-admin h2,.pt-zmina-admin h3,.pt-zmina-admin p{margin:0}
+.pt-zmina-admin .section-kicker{color:#93a1ae;font-size:10px;font-weight:800;letter-spacing:1.8px;margin-bottom:7px}
+.pt-zmina-admin .admin-panel{color:#17243a}
+.admin-main{padding:30px 0 40px}.admin-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:22px}
+.admin-bar h1{font-size:31px;letter-spacing:-1px}.admin-actions{display:flex;flex-wrap:wrap;gap:8px}
+.admin-filter{width:100%;border-radius:11px;border:1px solid #dfe8ed;background:#fff;padding:13px;margin-bottom:16px}
+.admin-layout{display:grid;grid-template-columns:minmax(285px,.86fr) minmax(0,1.6fr);gap:18px}
+.admin-panel{background:#fff;border:1px solid #e8edf1;border-radius:20px;padding:22px;box-shadow:var(--shadow);min-width:0}
+.admin-panel h2{font-size:19px;margin-bottom:13px}.admin-user-list{max-height:750px;overflow:auto;display:flex;flex-direction:column;gap:7px}
+.admin-user{width:100%;display:flex;flex-direction:column;align-items:stretch;text-align:left;gap:6px;border:1px solid #e8eef2;border-radius:12px;background:#fff;padding:13px;cursor:pointer}
+.admin-user:hover,.admin-user.active{border-color:#b4d99d;background:#f4faef}.admin-user strong{font-size:12px;color:#283c51;overflow-wrap:anywhere}.admin-user small{font-size:11px;color:#8c9ba8;overflow-wrap:anywhere}
+.admin-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:17px 0}.admin-kpi{background:#f5f9f1;border-radius:13px;padding:13px;min-width:0}.admin-kpi small{font-size:10px;color:#7d907b}.admin-kpi strong{display:block;font-size:18px;margin-top:8px;overflow-wrap:anywhere}
+.admin-table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:11px}.admin-table th,.admin-table td{text-align:left;border-bottom:1px solid #eef1f4;padding:10px 8px}.admin-table th{color:#8597a5;background:#f7fafc;font-size:10px}
+.admin-table-wrap{overflow:auto}.admin-month{border:1px solid #dce7ec;background:#fff;padding:10px 12px;border-radius:9px}
+.admin-notice{margin:12px 0;color:#8092a3;font-size:12px;line-height:1.6}.admin-user-details{font-size:11px;color:#8699a6;margin:12px 0;overflow-wrap:anywhere}
+/* === Zmina administration dashboard 2.0 (isolated from the employee calendar) === */
+.admin-dashboard{padding-top:12px}
+.admin-role-pill{font-size:9px;font-weight:900;letter-spacing:1.1px;border-radius:999px;color:#486d31;background:#e6f6d6;padding:8px 11px}
+.admin-hero{background:var(--deep);color:#fff;border-radius:27px;padding:34px 40px;display:flex;justify-content:space-between;align-items:center;gap:25px;position:relative;overflow:hidden;min-width:0}
+.admin-hero:after{content:"";position:absolute;pointer-events:none;width:300px;height:300px;border:48px solid rgba(194,240,117,.055);border-radius:50%;right:22%;top:-185px}
+.admin-hero>div{position:relative;z-index:1;min-width:0}
+.admin-hero-eyebrow{color:var(--green);font-size:10px;font-weight:850;letter-spacing:1.7px}
+.admin-hero h1{margin:12px 0;font-weight:850;font-size:clamp(30px,3.2vw,46px);letter-spacing:-1.7px;line-height:1.08}
+.admin-hero h1 span{color:var(--green)}
+.admin-hero p{font-size:12px;line-height:1.65;color:#aebed1;max-width:380px}
+.admin-toolbar{display:grid;grid-template-columns:1fr auto;column-gap:12px;row-gap:8px;align-items:end;flex:0 0 auto}
+.admin-toolbar-label{grid-column:1/-1;color:#b9c8d8;font-size:10px;font-weight:750}
+.admin-dashboard .admin-month{background:#fff;min-height:41px;color:#33445a;border:1px solid #c7d3df;font-size:12px;font-weight:700;min-width:163px}
+.admin-refresh{border:0;border-radius:10px;min-height:41px;background:var(--green);color:#243b22;font-weight:850;font-size:11px;padding:0 15px;white-space:nowrap}
+.admin-refresh:hover{background:#d5fc99}
+.admin-refresh:disabled,.admin-person-actions button:disabled,.admin-text-action:disabled{opacity:.45;cursor:not-allowed}
+.admin-live-message{background:#eaf4e1;border:1px solid #dbe9d0;color:#546f47;padding:11px 15px;border-radius:12px;margin:17px 0 19px;min-height:40px}
+.admin-live-message.error{color:#a95745;background:#fff0ed;border-color:#f0d5cf}
+.admin-section-heading{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:25px 0 15px}
+.admin-section-heading h2{font-size:23px;letter-spacing:-.7px;font-weight:850}
+.admin-section-heading h2 span{text-transform:capitalize}
+.admin-coverage{background:#fff;padding:9px 12px;border-radius:99px;font-size:10px;color:#8190a2;font-weight:750;white-space:nowrap}
+.admin-overview-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.admin-overview-card{background:#fff;border:1px solid #e9eff3;border-radius:18px;min-width:0;min-height:147px;display:flex;flex-direction:column;padding:19px 17px;position:relative;box-shadow:var(--shadow)}
+.admin-overview-card.featured{background:#e7f6dd;border-color:#dbeccf}
+.admin-overview-card>span{color:#697c8b;font-size:11px;font-weight:750}
+.admin-overview-card strong{color:#20314a;font-weight:850;font-size:clamp(20px,2.1vw,30px);letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1.25;margin:20px 0 8px;overflow-wrap:anywhere}
+.admin-overview-card small{color:#91a1b0;font-size:10px;line-height:1.5;margin-top:auto}
+.admin-overview-card.featured small{color:#64835d}
+.admin-overview-card>i{position:absolute;right:17px;top:16px;color:#599443;font-size:19px;font-style:normal;font-weight:800}
+.admin-analytics-grid{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(285px,.87fr);gap:15px;margin-top:17px}
+.admin-dashboard .admin-panel{border-radius:20px;min-width:0;padding:22px}
+.admin-card-heading{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+.admin-card-heading h2{font-size:20px;letter-spacing:-.6px;margin:6px 0 0}
+.admin-subtag{background:#f4f7fa;color:#8294a3;padding:8px 10px;font-size:10px;font-weight:650;border-radius:9px}
+.admin-chart-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.admin-chart-group{min-width:0;border:1px solid #eef2f5;border-radius:13px;padding:13px 10px 5px;background:#fcfdfd}
+.admin-chart-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:#4e6173;margin:0 5px 2px}
+.admin-chart-unit{font-size:9px;font-weight:600;color:#a5b0ba;margin-left:auto}
+.admin-chart-spot{height:7px;width:7px;border-radius:50%;display:inline-block}
+.admin-chart-spot.cash{background:#70ab4c}.admin-chart-spot.wage{background:#8072d4}
+.admin-svg-chart{width:100%;min-height:110px;display:grid;place-items:center}
+.admin-svg-chart svg{display:block;width:100%;max-height:180px;overflow:visible}
+.admin-chart-empty{color:#a6b1be;font-size:11px;text-align:center;padding:44px 0}
+.admin-leader-list{display:flex;flex-direction:column;gap:10px}
+.admin-leader{display:flex;flex-direction:column;gap:9px;width:100%;border:0;border-radius:12px;background:#f8fafb;padding:12px 13px;text-align:left}
+.admin-leader:hover{background:#f0f8e9}
+.admin-leader-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.admin-leader-name{font-size:11px;color:#53667b;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-leader-top strong{font-size:11px;font-weight:850;color:#30445a;white-space:nowrap}
+.admin-mini-track{height:6px;width:100%;background:#e8eef1;border-radius:99px;overflow:hidden}
+.admin-mini-fill{height:100%;background:#b4dd91;border-radius:99px}
+.admin-muted{color:#9daab8;font-size:12px;line-height:1.55}
+.admin-people-heading{margin-top:30px}
+.admin-text-action{background:#fff;border:1px solid #e3eaf0;color:#4b667b;border-radius:10px;padding:11px 14px;font-size:11px;font-weight:800}
+.admin-text-action:not(:disabled):hover{background:#f0f7e8}
+.admin-workspace{grid-template-columns:minmax(270px,.83fr) minmax(0,1.6fr);gap:15px;align-items:start}
+.admin-staff-panel{position:relative}
+.admin-dashboard .admin-filter{margin-bottom:13px;padding:13px 14px;font-size:12px}
+.admin-people-controls{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.admin-people-controls label{display:flex;flex-direction:column;gap:7px;color:#93a1ad;font-size:10px;font-weight:750}
+.admin-people-controls select{min-width:0;width:100%;border:1px solid #e4eaf0;border-radius:9px;padding:10px 8px;background:#fbfcfe;color:#53657a;font-size:11px}
+.admin-list-count{margin:16px 0 12px;color:#92a1ae;font-size:10px;font-weight:750}
+.admin-dashboard .admin-user-list{max-height:730px;overflow-y:auto;overscroll-behavior:contain}
+.admin-person-row{display:flex;flex-direction:column;width:100%;gap:12px;text-align:left;background:#fff;border:1px solid #e8edf1;border-radius:13px;padding:13px;cursor:pointer}
+.admin-person-row:hover,.admin-person-row.active{border-color:#b6d9a2;background:#f7fbf2}
+.admin-person-head{display:flex;align-items:center;gap:9px;min-width:0}
+.admin-avatar{width:36px;height:36px;border-radius:11px;flex:none;display:grid;place-items:center;background:#e8f4da;color:#5b893d;font-weight:850;font-size:14px}
+.admin-person-ident{min-width:0;display:flex;flex-direction:column;gap:3px;flex:1}
+.admin-person-ident strong{font-size:11px;color:#273a4d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-person-ident small{font-size:9px;color:#93a1ad;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-employee-status{font-size:9px;color:#5d8641;background:#eaf6e1;padding:5px 7px;border-radius:7px;white-space:nowrap}
+.admin-employee-status.paused{background:#fcefea;color:#ad6559}
+.admin-person-figures{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;font-weight:750;color:#7d8b9e}
+.admin-person-figures strong{color:#528638;font-size:11px;white-space:nowrap}
+.admin-empty-list{padding:25px;text-align:center}
+.admin-detail-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.admin-detail-top h2{font-size:24px;letter-spacing:-.8px;margin:7px 0 0;overflow-wrap:anywhere}
+.admin-detail-top .section-kicker{margin:0}
+.admin-detail-top .admin-user-details{margin:7px 0 0}
+.admin-state-pill{color:#5b823d;background:#e9f6df;border-radius:8px;padding:8px 10px;white-space:nowrap;font-weight:750;font-size:10px}
+.admin-state-pill.paused{color:#a85d50;background:#fff0ea}
+.admin-person-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:24px 0 16px}
+.admin-person-kpis>div{background:#f4f8f1;border-radius:12px;padding:12px;min-width:0}
+.admin-person-kpis>div:nth-child(2){background:#f4f3fc}
+.admin-person-kpis small{color:#8496a4;font-size:10px;line-height:1.5;display:block}
+.admin-person-kpis strong{font-size:18px;color:#2d4253;margin-top:12px;display:block;overflow-wrap:anywhere}
+.admin-progress-block{border:1px solid #e9eff0;background:#fff;border-radius:13px;padding:15px 16px}
+.admin-progress-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;color:#60758b;font-weight:800}
+.admin-progress-head strong{font-size:11px;color:#283d4a}
+.admin-progress-track{margin:13px 0 11px;background:#edf2e9;height:10px;border-radius:40px;overflow:hidden}
+.admin-progress-fill{width:0;background:linear-gradient(90deg,#8bc660,#c2f075);height:100%;border-radius:40px;transition:width .25s ease}
+.admin-bonus-note{font-size:10px;color:#8494a3;line-height:1.6}
+.admin-person-trends{margin:24px 0 20px}
+.admin-person-trends h3,.admin-person-bottom h3{font-size:16px;color:#32465a;margin-bottom:12px}
+.admin-person-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.admin-person-bottom span{color:#99a9b6;font-size:10px}
+.admin-dashboard .admin-table-wrap{border:1px solid #eaf0f4;border-radius:11px;max-height:280px;overflow:auto}
+.admin-dashboard .admin-table{width:100%}
+.admin-dashboard .admin-table thead{position:sticky;top:0;background:#f7fafc}
+.admin-dashboard .admin-table td,.admin-dashboard .admin-table th{padding:12px 10px;font-size:10px}
+.admin-dashboard .admin-table td:last-child{font-weight:800;color:#587f46}
+.admin-person-actions{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 3px}
+.admin-person-actions button{font-size:11px;border-radius:9px;min-height:39px}
+@media(max-width:1250px){.admin-overview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.admin-overview-card{min-height:135px}.admin-analytics-grid{grid-template-columns:1fr 1fr}.admin-workspace{grid-template-columns:minmax(265px,.9fr) minmax(0,1.5fr)}}
+@media(max-width:960px){.admin-hero{padding:28px}.admin-analytics-grid,.admin-workspace{grid-template-columns:1fr}.admin-user-list{max-height:360px!important}.admin-overview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){.admin-hero{display:block;padding:26px 21px}.admin-hero h1{font-size:35px}.admin-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:19px}.admin-toolbar-label{grid-column:1/-1}.admin-dashboard .admin-month,.admin-refresh{min-width:0;width:100%}.admin-dashboard .admin-section-heading h2{font-size:21px}.admin-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-overview-card{min-height:123px;padding:15px 13px;border-radius:14px}.admin-overview-card strong{font-size:21px;margin:14px 0 8px}.admin-overview-card>span{font-size:10px}.admin-overview-card small{font-size:9px}.admin-dashboard .admin-panel{padding:16px 12px}.admin-chart-columns{grid-template-columns:1fr}.admin-people-heading{align-items:start}.admin-people-heading .admin-text-action{max-width:145px}.admin-person-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-coverage{font-size:9px}.admin-role-pill{display:none}.admin-person-head{gap:7px}.admin-person-row{padding:11px}.admin-person-trends h3{margin-bottom:10px}}
+@media(max-width:360px){.admin-toolbar{grid-template-columns:1fr}.admin-dashboard .admin-hero h1{font-size:30px}.admin-overview-card strong{font-size:18px}.admin-person-head .admin-employee-status{display:none}}
+/* Panel-only adapters: PayTakt already has a site header and navigation. */
+.pt-zmina-admin .admin-back-link{
+  border:1px solid rgba(194,240,117,.3);background:rgba(194,240,117,.1);color:#e9f6df;
+  display:inline-flex;align-items:center;gap:7px;border-radius:9px;
+  padding:8px 11px;font-size:11px;font-weight:750;margin:0 0 18px;
+}
+.pt-zmina-admin .admin-back-link:hover{background:rgba(194,240,117,.2)}
+.pt-zmina-admin .admin-refresh,.pt-zmina-admin .admin-text-action{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+}
+.pt-zmina-admin .admin-toolbar{grid-template-columns:minmax(130px,1fr) auto;min-width:280px}
+.pt-zmina-admin .admin-toolbar-label{grid-column:auto;align-self:center;white-space:nowrap}
+.pt-zmina-admin .admin-toolbar .admin-month{min-width:0;width:100%;color-scheme:light}
+.pt-zmina-admin .admin-toolbar .admin-refresh{grid-column:1/-1}
+.pt-zmina-admin .admin-people-controls select,.pt-zmina-admin .admin-filter{color-scheme:light}
+.pt-zmina-admin .admin-live-message{white-space:normal}
+.pt-zmina-admin .admin-overview-card strong{overflow-wrap:anywhere;word-break:normal}
+.pt-zmina-admin .admin-section-heading h2,.pt-zmina-admin .admin-detail-top h2{
+  color:#21314a;
+}
+.pt-zmina-admin .admin-person-row{color:#17243a}
+.pt-zmina-admin .admin-person-row span{min-width:0}
+.pt-zmina-admin .admin-mini-track{display:block}
+.pt-zmina-admin .admin-mini-fill{display:block}
+.pt-zmina-admin .admin-sr-only{
+  position:absolute!important;clip:rect(0,0,0,0)!important;width:1px;height:1px;
+  padding:0;overflow:hidden;white-space:nowrap;border:0;
+}
+.pt-zmina-admin .admin-workspace-switch{display:grid;gap:5px;margin:13px 0;font-size:11px;color:#627389;font-weight:750}
+.pt-zmina-admin .admin-workspace-switch select{
+  background:#fff;border:1px solid #e4eaf0;border-radius:9px;
+  padding:10px;color:#34465d;width:100%;
+}
+.pt-zmina-admin .admin-workspace-caption{color:#6b869b;font-size:11px;margin:8px 0 0}
+.pt-zmina-admin .admin-detail-panel{scroll-margin-top:95px}
+.pt-zmina-admin .admin-table-wrap td:first-child small{display:block;color:#8d9ba8;font-weight:400;max-width:120px;white-space:normal}
+.pt-zmina-admin .admin-pay-breakdown{margin-top:23px;border-top:1px solid #e9eff0;padding-top:17px}
+.pt-zmina-admin .admin-pay-breakdown h3{font-size:16px;color:#32465a;margin:0 0 10px}
+.pt-zmina-admin .admin-pay-breakdown>div{
+  display:flex;align-items:start;justify-content:space-between;gap:10px;padding:10px 0;
+  border-bottom:1px solid #eff2f4;
+}
+.pt-zmina-admin .admin-pay-breakdown>div span{flex:1;min-width:0}
+.pt-zmina-admin .admin-pay-breakdown>div strong{color:#34465d;font-size:11px;display:block}
+.pt-zmina-admin .admin-pay-breakdown>div small{color:#9da8b3;font-size:10px;display:block;margin-top:4px;line-height:1.5}
+.pt-zmina-admin .admin-pay-breakdown>div b{color:#587f46;white-space:nowrap;font-size:11px}
+.pt-zmina-admin .admin-bottom-note{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  color:#8c9baa;font-size:11px;margin:27px 0 0;
+}
+.pt-zmina-admin .admin-detail-panel .admin-person-kpis strong{overflow-wrap:anywhere}
+.pt-zmina-admin .admin-overview-grid{align-items:stretch}
+.pt-zmina-admin .admin-toolbar select.admin-month{appearance:auto}
+@media(max-width:640px){
+  .pt-zmina-admin{padding-bottom:125px}
+  .pt-zmina-admin .admin-toolbar{min-width:0;grid-template-columns:1fr 1fr}
+  .pt-zmina-admin .admin-toolbar-label{grid-column:1;align-self:end}
+  .pt-zmina-admin .admin-toolbar .admin-refresh{grid-column:1/-1}
+  .pt-zmina-admin .admin-section-heading{align-items:flex-start}
+  .pt-zmina-admin .admin-coverage{white-space:normal;text-align:right}
+  .pt-zmina-admin .admin-bottom-note{text-align:center}
+}
+@media(prefers-reduced-motion:reduce){
+  .pt-zmina-admin *{animation:none!important;transition:none!important}
+}
+
+
+/* Existing PayTakt app has a floating mobile dock; leave it untouched and
+   keep the admin's last row reachable above it. */
+.pt-zmina-admin.admin-main{padding:12px 0 130px}
+@media(max-width:640px){.pt-zmina-admin.admin-main{padding-bottom:145px}}
