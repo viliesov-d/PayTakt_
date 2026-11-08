@@ -60,7 +60,7 @@ test('selected-day buttons remain visually steady through quick and offline save
   assert.match(app,/if\(!changedDate&&quickBusy\)return/)
   assert.match(app,/previousSelectedDate\.current!==selected/)
   assert.match(app,/if\(changedDate\)pendingButtonDay\.current=null/)
-  assert.match(app,/setInstantDay(next)/)
+  assert.match(app,/setInstantDay\(next\)/)
   assert.match(controls,/saved\.status===optimistic\.status/)
   assert.match(controls,/overtime\(saved\)===overtime\(optimistic\)/)
   assert.match(app,/disabled=\{quickBusy\|\|busy\|\|moneyBusy\}/)
