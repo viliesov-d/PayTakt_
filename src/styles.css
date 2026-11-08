@@ -2084,3 +2084,44 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
     transition:none!important;
   }
 }
+
+
+/* Selected-day controls: keep button geometry and contrast stable through an
+   optimistic update and an often very brief offline/Firebase queue cycle.
+   Only this editor is affected. No payroll or navigation styles change. */
+.day-editor-v2 .day-type-button,
+.day-editor-v2 .day-worked-toggle,
+.day-editor-v2 .day-ot-toggle,
+.day-editor-v2 .day-money-submit{
+  transform:none!important;
+  -webkit-tap-highlight-color:transparent;
+  transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease;
+}
+.day-editor-v2 .day-type-button:disabled,
+.day-editor-v2 .day-worked-toggle:disabled,
+.day-editor-v2 .day-ot-toggle:disabled,
+.day-editor-v2 .day-money-submit:disabled{
+  opacity:1!important;
+  filter:none;
+  cursor:progress;
+}
+.day-editor-v2 .day-type-button:disabled{color:var(--muted-deep)}
+.day-editor-v2 .day-worked-toggle:not(.compact){min-height:67px}
+.day-editor-v2 .day-ot-toggle{min-height:83px}
+.day-editor-v2 .day-worked-toggle>svg,
+.day-editor-v2 .day-ot-toggle>svg,
+.day-editor-v2 .day-money-submit>svg{flex:none}
+.day-editor-v2 .day-money-submit{min-height:49px;line-height:1.35}
+.day-editor-v2 .day-save-pending{
+  /* Keep live feedback accessible without inserting a temporary row that
+     pushes the entire editor down and back up on every button tap. */
+  position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;border:0!important;
+  overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;
+}
+@media(prefers-reduced-motion:reduce){
+  .day-editor-v2 .day-type-button,
+  .day-editor-v2 .day-worked-toggle,
+  .day-editor-v2 .day-ot-toggle,
+  .day-editor-v2 .day-money-submit{transition:none}
+}
