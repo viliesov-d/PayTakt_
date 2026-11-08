@@ -141,9 +141,10 @@ function shiftDay(shift:Shift,wages:Record<string,number>):AdminDayRow{
   const active=(shift.dayType??'work')==='work'
   const parts=active?[shift,...(shift.additionalShifts??[])].filter(s=>s.status==='worked'):[]
   const worked=parts.length>0
-  const overtime=overtimeExtraMinutes(shift)+(worked?(shift.overtimeMinutes??0):0)
+  const separateOvertime=overtimeExtraMinutes(shift)
+  const overtime=separateOvertime+(worked?(shift.overtimeMinutes??0):0)
   return {date:shift.date,
-    status:!active?(shift.dayType??'off'):worked?'Відпрацьовано':'Заплановано',
+    status:!active?(shift.dayType??'off'):worked||separateOvertime>0?'Відпрацьовано':'Заплановано',
     kind:shift.kind??'regular',shifts:parts.length,
     hours:workedHours(shift),overtimeMinutes:overtime,
     wage:Object.prototype.hasOwnProperty.call(wages,shift.date)?wages[shift.date]:null,
