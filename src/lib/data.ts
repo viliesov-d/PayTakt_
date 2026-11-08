@@ -208,11 +208,28 @@ export function comparableShift(shift:Shift|null):string|null{
   return JSON.stringify({...dayPayload(shift),updatedAt:undefined})
 }
 
-export function subscribeShifts(workspaceId: string, onChange: (data: Shift[]) => void, onError: (error: Error) => void): Unsubscribe {
+export function subscribeShifts(
+  workspaceId: string,
+  onChange: (data: Shift[]) => void,
+  onError: (error: Error) => void,
+  onServerConfirmed?: (data: Shift[]) => void,
+): Unsubscribe {
   if (!db) return () => undefined
-  return onSnapshot(collection(db, 'workspaces', workspaceId, 'shifts'), snapshot => {
-    onChange(snapshot.docs.map(d => decodeShift(d.id,d.data())))
-  }, onError)
+  // includeMetadataChanges is important: a locally cached/pending document
+  // may have identical values before and after the server acknowledges it.
+  // Only a non-cached snapshot with no pending Firestore writes can release
+  // the selected-day button's optimistic visual state.
+  return onSnapshot(
+    collection(db, 'workspaces', workspaceId, 'shifts'),
+    {includeMetadataChanges:true},
+    snapshot => {
+      const items=snapshot.docs.map(d => decodeShift(d.id,d.data()))
+      onChange(items)
+      if(!snapshot.metadata.fromCache&&!snapshot.metadata.hasPendingWrites)
+        onServerConfirmed?.(items)
+    },
+    onError,
+  )
 }
 
 export async function saveShift(workspaceId: string, shift: Shift): Promise<void> {

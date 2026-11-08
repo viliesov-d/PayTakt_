@@ -18,3 +18,21 @@ export function matchesDayButtonState(saved:Shift|undefined,optimistic:Shift):bo
     overtime(saved)===overtime(optimistic)&&
     extras(saved)===extras(optimistic)
 }
+
+
+export type DayButtonQueueState='pending'|'conflict'|'error'|undefined
+export type DayButtonResolution='waiting'|'confirmed'|'blocked'
+
+/** A matching optimistic *overlay* is never server confirmation.
+ * The caller must pass the last server-acknowledged snapshot, and an
+ * outstanding queued write blocks confirmation until it has been flushed.
+ */
+export function dayButtonResolution(
+  serverConfirmed:Shift|undefined,
+  expected:Shift,
+  queueState:DayButtonQueueState,
+):DayButtonResolution{
+  if(queueState==='conflict'||queueState==='error')return 'blocked'
+  if(queueState==='pending')return 'waiting'
+  return matchesDayButtonState(serverConfirmed,expected)?'confirmed':'waiting'
+}
