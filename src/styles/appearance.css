@@ -284,3 +284,10 @@
   padding-top:17px;
   border-top:1px solid var(--border);
 }
+
+/* Resizing many backdrop-filter surfaces repaints the background every frame.
+   Pay-rule cards use the same glass palette with a solid surface; dock unchanged. */
+:root[data-ui-style='glass'] .app-shell .salary-rules-page .pay-smooth-accordion,
+:root[data-ui-style='glass'] .app-shell .salary-rules-page .payment-rule-card{
+  backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--panel)
+}

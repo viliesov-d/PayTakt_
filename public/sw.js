@@ -1,5 +1,5 @@
 /* PayTakt offline app-shell only. Never cache Firebase, Auth, NBU, or user data. */
-const SHELL_CACHE='paytakt-pwa-shell-v8'
+const SHELL_CACHE='paytakt-pwa-shell-v9'
 const PREFIX='paytakt-pwa-shell-'
 const BASE=self.registration.scope
 const baseUrl=new URL(BASE)

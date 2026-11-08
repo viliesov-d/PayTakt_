@@ -4,6 +4,9 @@ service cloud.firestore {
     function signedIn() {
       return request.auth != null;
     }
+    function isAdmin() {
+      return signedIn() && request.auth.token.get('admin', false) == true;
+    }
     function isUser(uid) {
       return signedIn() && request.auth.uid == uid;
     }
@@ -17,13 +20,16 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('deleting', false) == false;
     }
     function validProfile() {
-      return request.resource.data.keys().hasOnly(['email', 'displayName', 'theme', 'createdAt'])
+      return request.resource.data.keys().hasOnly(['email', 'displayName', 'theme', 'createdAt', 'lastSeenAt', 'lastPlatform', 'lastAppVersion'])
         && request.resource.data.keys().hasAll(['email', 'displayName', 'theme'])
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0
         && request.resource.data.displayName.size() <= 70
-        && request.resource.data.theme in ['system', 'light', 'dark'];
+        && request.resource.data.theme in ['system', 'light', 'dark']
+        && (!('lastSeenAt' in request.resource.data) || request.resource.data.lastSeenAt is timestamp)
+        && (!('lastPlatform' in request.resource.data) || request.resource.data.lastPlatform in ['web', 'android', 'ios'])
+        && (!('lastAppVersion' in request.resource.data) || (request.resource.data.lastAppVersion is string && request.resource.data.lastAppVersion.size() <= 40));
     }
     function validWorkspace() {
       return request.resource.data.keys().hasOnly(['name', 'kind', 'currency', 'deleting', 'ownerUid', 'createdAt'])
@@ -140,14 +146,19 @@ service cloud.firestore {
         && request.resource.data.count <= 1000000000;
     }
     match /users/{uid} {
-      allow get: if isUser(uid);
-      allow list, delete: if false;
-      allow create: if isUser(uid) && validProfile();
+      allow get: if isUser(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow delete: if false;
+      allow create: if isUser(uid) && validProfile()
+        && request.resource.data.createdAt == request.time
+        && (!('lastSeenAt' in request.resource.data) || request.resource.data.lastSeenAt == request.time);
       allow update: if isUser(uid)
         && validProfile()
         && request.resource.data.email == resource.data.email
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['displayName', 'theme']);
+             .hasOnly(['displayName', 'theme', 'lastSeenAt', 'lastPlatform', 'lastAppVersion'])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastSeenAt', 'lastPlatform', 'lastAppVersion'])
+          || request.resource.data.lastSeenAt == request.time);
 
       match /workspaces/{workspaceId} {
         allow get, list: if isUser(uid);

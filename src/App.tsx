@@ -1,3 +1,5 @@
+import {AdminPage} from './components/AdminPage'
+import {trackUserActivity} from './lib/userActivity'
 import iosVersion from '../ios-version.json'
 import {nativePlatform} from './lib/nativePlatform'
 import {App as NativeApp} from '@capacitor/app'
@@ -19,7 +21,7 @@ import {
   UsersRound, Wallet, X, ReceiptText,
 } from 'lucide-react'
 import {
-  onAuthStateChanged, sendEmailVerification, reload, signOut,
+  onAuthStateChanged, onIdTokenChanged, sendEmailVerification, reload, signOut,
 } from 'firebase/auth'
 import { auth, firebaseReady } from './lib/firebase'
 import {
@@ -54,7 +56,7 @@ import {calendarFeatures} from './lib/featureVisibility'
 import {onboardingMonthKeys,schedulePattern,onboardingCalendarDays,onboardingOvertimePreset,makeOnboardingPaySettings,makeOnboardingPerformance,validateOnboardingDraft,type OnboardingDraft} from './lib/onboarding'
 import { savePaySettings, subscribePaySettings, saveMonthlySales, subscribeMonthlySales, saveMonthlyUnits, subscribeMonthlyUnits, subscribeDailyCash, subscribeCashPreferences, saveCashPreferences,subscribePerformanceSettings,savePerformanceSettings,subscribeMonthlyTargets,saveMonthlyTarget,removeMonthlyTarget,subscribeDailyWages } from './lib/data'
 
-type Page = 'setup' | 'dashboard' | 'calendar' | 'statistics' | 'pay' | 'rules' | 'team' | 'settings'
+type Page = 'setup' | 'dashboard' | 'calendar' | 'statistics' | 'pay' | 'rules' | 'team' | 'settings' | 'admin'
 type Session = { uid: string; email: string; name: string; demo: boolean }
 const dateFormat = { format: formatDate }
 const monthFormat = { format: formatMonth }
@@ -1189,6 +1191,22 @@ export default function App(){
   const [unitsLoaded,setUnitsLoaded]=useState(false)
   const [unitsError,setUnitsError]=useState('')
   const [page,setPage]=useState<Page>('calendar')
+  const [adminUid,setAdminUid]=useState<string|null>(null)
+  const isAdmin=Boolean(session&&!session.demo&&session.uid===adminUid)
+  useEffect(()=>{
+    if(!auth)return
+    let generation=0
+    const off=onIdTokenChanged(auth,user=>{
+      const current=++generation;setAdminUid(previous=>user&&previous===user.uid?previous:null)
+      if(user)void user.getIdTokenResult().then(token=>{
+        if(current===generation)setAdminUid(token.claims.admin===true?user.uid:null)
+      }).catch(()=>{if(current===generation)setAdminUid(null)})
+    })
+    return()=>{generation++;off()}
+  },[])
+  useEffect(()=>{
+    if(session&&!session.demo)return trackUserActivity(session.uid)
+  },[session?.uid,session?.demo])
   const [settingsSection,setSettingsSection]=useState<SettingsSection>('home')
   useEffect(()=>{if(page!=='settings')setSettingsSection('home')},[page])
   const [suggestedPreset,setSuggestedPreset]=useState<TemplatePreset>('2/2')
@@ -1680,7 +1698,7 @@ export default function App(){
     }
     const onPopState = (event: PopStateEvent) => {
       const candidate = (event.state as { paytaktPage?: unknown } | null)?.paytaktPage
-      if (typeof candidate === 'string' && (nav.some(item => item.id === candidate) || candidate === 'dashboard' || candidate === 'rules' || candidate === 'pay' || candidate === 'setup')) {
+      if (typeof candidate === 'string' && (nav.some(item => item.id === candidate) || candidate === 'dashboard' || candidate === 'rules' || candidate === 'pay' || candidate === 'setup' || candidate === 'admin')) {
         setPage(candidate as Page)
       } else {
         setPage('calendar')
@@ -1764,6 +1782,7 @@ export default function App(){
   const nativeOpticalGlass=isNativeMobile&&appearance.style==='glass'
   if(loading)return <div className="loading-screen"><Logo/><div className="spinner"/><p>Готуємо твій робочий простір…</p></div>
   if(!session)return <AuthScreen onDemo={enterDemo} language={presentation.language} onLanguageChange={language=>onPresentationChange({...presentation,language})} logo={<Logo/>} theme={theme} friendlyError={friendlyError}/>
+  if(page==='admin'&&isAdmin)return <AdminPage key={session.uid} onBack={()=>navigate('calendar')}/>
   if(!workspace)return <div className="loading-screen"><Logo/><div className="firebase-note wide">{error||'Не вдалося відкрити робочий простір. Перевір доступ до акаунта.'}</div><button type="button" className="btn btn-outline" onClick={logout}>{tr("Вийти з акаунта")}</button></div>
   if(!session.demo&&(!payLoaded||!shiftsLoaded))return <div className="loading-screen"><Logo/><div className="spinner"/><p>Завантажуємо графік і правила роботи…</p></div>
   if(forceWizard||newWorkspaceNeedsWizard)return <OnboardingWizard key={`${session.uid}:${workspace.id}`} workspaceKey={`${session.uid}:${workspace.id}`} workspaceName={workspace.name} isExisting={Boolean(paySettings||shifts.length)} onComplete={finishOnboarding} onCancel={forceWizard?()=>setForceWizard(false):undefined} onSignOut={()=>void logout()}/>
@@ -1790,6 +1809,7 @@ export default function App(){
             <span>{tr("До календаря")}</span>
           </button>}
           <ThemeControls value={theme} onChange={setThemeChoice}/>
+          {isAdmin&&<button type="button" className="zmina-profile-btn" onClick={()=>navigate('admin')} aria-label="Адмінпанель" title="Адмінпанель"><ShieldCheck size={19}/></button>}
           <button type="button" className="zmina-profile-btn" onClick={()=>navigate('settings')} aria-label={updateResult?.status==='available'?'Доступне оновлення — налаштування':'Налаштування профілю'} title={updateResult?.status==='available'?'Доступне оновлення':session.name}><UserRound size={19}/>{updateResult?.status==='available'&&<span className="paytakt-update-dot" aria-hidden="true"/>}</button>
           <button type="button" className="zmina-logout-btn" onClick={logout} aria-label="Вийти" title="Вийти"><LogOut size={18}/></button>
           <button type="button" className="zmina-nav-toggle" onClick={()=>setMobileMenu(v=>!v)} aria-expanded={mobileMenu} aria-controls="zmina-primary-nav" aria-label={mobileMenu?'Згорнути меню':'Відкрити меню'}>{mobileMenu?<X size={22}/>:<Menu size={22}/>}</button>
@@ -1801,6 +1821,8 @@ export default function App(){
       <main className="main-content">{session.demo&&<div className="demo-banner"><Sparkles size={16}/><span><strong>Демоверсія.</strong> Зміни календаря й налаштування зарплати тут тимчасові.</span><button type="button" onClick={logout}>До реєстрації <ArrowRight size={15}/></button></div>}{error&&<div className="alert-banner" role="alert">{error}</div>}{overtimePresetError&&<div className="alert-banner" role="alert">Налаштування понаднормових: {overtimePresetError}</div>}{shiftsError&&<div className="alert-banner" role="alert">Не вдалося прочитати зміни: {shiftsError}</div>}{payError&&<div className="alert-banner" role="alert">Налаштування зарплати: {payError}</div>}{salesError&&<div className="alert-banner" role="alert">Показники продажів: {salesError}</div>}{cashError&&<div className="alert-banner" role="alert">Каса: {cashError}</div>}{verificationMessage&&<div className="alert-banner" role="status">{verificationMessage}<button className="small-dismiss" onClick={()=>setVerificationMessage('')} type="button" aria-label="Закрити повідомлення"><X size={16}/></button></div>}
         {setupPayDraft&&<div className="alert-banner" role="status">Ти вибрав шаблон оплати, але його правила ще не збережено. Після налаштування графіка відкрий «Правила оплати», перевір ставку й натисни «Зберегти». <button type="button" className="btn btn-outline" onClick={()=>navigate('rules')}>{tr("Відкрити правила оплати")}</button></div>}
         <div className="page-motion" key={`${workspace.id}:${page}:${presentation.language}:${presentation.currency}:${presentation.uahPerUnit}`}>
+        {page==='admin'&&!isAdmin&&<p role="alert">Доступ лише для адміністратора.</p>}
+        {page==='settings'&&settingsSection==='home'&&isAdmin&&<button type="button" className="btn btn-outline" onClick={()=>navigate('admin')}><ShieldCheck size={18}/> Адмінпанель користувачів</button>}
         {page==='setup'&&<SetupPage key={workspace.id} settings={paySettings} loaded={payLoaded} onChoose={chooseSetup}/>}
         {page==='dashboard'&&<Dashboard workspace={workspace} shifts={shifts} paySettings={payLoaded?paySettings:null} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoCalendar={()=>navigate('calendar')} onCreateCompany={()=>setCreateOpen(true)} onGoPay={()=>navigate('pay')} onGoStatistics={()=>navigate('statistics')}/>}
         {page==='calendar'&&<CalendarPage key={`${workspace.id}-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
