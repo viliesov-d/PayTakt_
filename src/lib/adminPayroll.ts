@@ -4,24 +4,26 @@
 import {auth,firebaseApp} from './firebase'
 import {decodeShift} from './data'
 import {workedHours,overtimeExtraMinutes,type Shift} from './calendar'
-import {calculatePayWithPerformance,parsePerformanceSettings,defaultPerformanceSettings} from './performance'
+import {calculatePayWithPerformance,performanceProgress,parsePerformanceSettings,defaultPerformanceSettings} from './performance'
 import {normalizePaySettings,type PayLine} from './salary'
-import {effectiveRevenue,defaultCashPreferences,validateCashPreferences,type DailyCash} from './dailyCash'
+import {effectiveRevenue,cashTotalsByMonth,defaultCashPreferences,validateCashPreferences,type DailyCash} from './dailyCash'
 import type {AdminUser} from './adminStats'
 
 export type AdminDayRow={
   date:string;status:string;kind:string;shifts:number;hours:number;overtimeMinutes:number;
-  wage:number|null;note:string
+  wage:number|null;cash:number|null;note:string
 }
 export type AdminWorkspaceMonth={
   id:string;name:string;kind:string;currency:string;
   shifts:number;hours:number;overtimeMinutes:number|null;
-  gross:number|null;bonus:number|null;lines:PayLine[];days:AdminDayRow[];
+  gross:number|null;bonus:number|null;cash:number|null;target:number|null;planActual:number|null;
+  targetMetric:'cash'|'earnings'|'units'|null;lines:PayLine[];days:AdminDayRow[];
   error?:string
 }
 export type AdminUserMonth={
   uid:string;workspaces:AdminWorkspaceMonth[];shifts:number;hours:number;
-  byCurrency:Record<string,number>;incomplete:boolean;error?:string
+  byCurrency:Record<string,number>;cashByCurrency:Record<string,number>;
+  bonusByCurrency:Record<string,number>;incomplete:boolean;error?:string
 }
 export type AdminOverview={users:number;workspaces:number}
 
@@ -137,7 +139,7 @@ const number=(value:unknown,label='Сума')=>{
   return value
 }
 const cleanCurrency=(value:unknown)=>typeof value==='string'&&['UAH','USD','EUR','PLN','GBP'].includes(value)?value:'UAH'
-function shiftDay(shift:Shift,wages:Record<string,number>):AdminDayRow{
+function shiftDay(shift:Shift,wages:Record<string,number>,cash:Record<string,number>):AdminDayRow{
   const active=(shift.dayType??'work')==='work'
   const parts=active?[shift,...(shift.additionalShifts??[])].filter(s=>s.status==='worked'):[]
   const worked=parts.length>0
@@ -148,6 +150,7 @@ function shiftDay(shift:Shift,wages:Record<string,number>):AdminDayRow{
     kind:shift.kind??'regular',shifts:parts.length,
     hours:workedHours(shift),overtimeMinutes:overtime,
     wage:Object.prototype.hasOwnProperty.call(wages,shift.date)?wages[shift.date]:null,
+    cash:Object.prototype.hasOwnProperty.call(cash,shift.date)?cash[shift.date]:null,
     note:shift.note??'',
   }
 }
@@ -157,7 +160,8 @@ async function workspaceMonth(api:Api,workspace:Wire,month:string):Promise<Admin
   const result:AdminWorkspaceMonth={
     id,name:typeof raw.name==='string'?raw.name:'Робочий простір',
     kind:raw.kind==='company'?'company':'personal',currency:cleanCurrency(raw.currency),
-    shifts:0,hours:0,overtimeMinutes:null,gross:null,bonus:null,lines:[],days:[],
+    shifts:0,hours:0,overtimeMinutes:null,gross:null,bonus:null,cash:null,target:null,planActual:null,
+    targetMetric:null,lines:[],days:[],
   }
   try{
     const path='workspaces/'+id+'/'
@@ -175,7 +179,10 @@ async function workspaceMonth(api:Api,workspace:Wire,month:string):Promise<Admin
     const shifts=shiftsRaw.map(row=>decodeShift(row.id,row.data))
     const wages=Object.fromEntries(wagesRaw.map(row=>[row.id,number(row.data.amount,'Оплата за день')]))
     const cash:DailyCash[]=cashRaw.map(row=>({date:row.id,amount:number(row.data.amount,'Каса за день')}))
-    result.days=shifts.map(s=>shiftDay(s,wages)).sort((a,b)=>b.date.localeCompare(a.date))
+    const active=new Set(shifts.filter(s=>(s.dayType??'work')==='work').map(s=>s.date))
+    const cashDays=Object.fromEntries(cash.filter(row=>active.has(row.date)).map(row=>[row.date,row.amount]))
+    result.cash=cashTotalsByMonth(cash,shifts)[month]??0
+    result.days=shifts.map(s=>shiftDay(s,wages,cashDays)).sort((a,b)=>b.date.localeCompare(a.date))
     result.shifts=result.days.reduce((sum,d)=>sum+d.shifts,0)
     result.hours=result.days.reduce((sum,d)=>sum+d.hours,0)
     if(!payRaw){
@@ -189,11 +196,21 @@ async function workspaceMonth(api:Api,workspace:Wire,month:string):Promise<Admin
     }:defaultCashPreferences
     validateCashPreferences(cashPrefs)
     const sales=effectiveRevenue({[month]:number(salesRaw?.amount,'Виручка за місяць')},cash,shifts,cashPrefs)[month]??0
+    const target=number(targetRaw?.amount??performance.defaultTarget,'План за місяць')
     const amount=calculatePayWithPerformance(
       shifts,month,pay,{month,amount:sales},{month,count:number(unitsRaw?.count,'Виконані роботи')},
-      performance,number(targetRaw?.amount??performance.defaultTarget,'План за місяць'),
-      cash.filter(c=>shifts.some(s=>s.date===c.date&&(s.dayType??'work')==='work')).reduce((sum,c)=>sum+c.amount,0),wages)
+      performance,target,result.cash,wages)
     result.gross=amount.gross
+    if(performance.enabled&&target>0){
+      const progress=performanceProgress(amount,performance,target,result.cash)
+      result.target=target
+      result.planActual=progress.actual
+      result.targetMetric=progress.metric
+    }else if(pay.salesPlan>0){
+      result.target=pay.salesPlan
+      result.planActual=sales
+      result.targetMetric='cash'
+    }
     result.overtimeMinutes=amount.overtimeMinutes
     result.lines=amount.lines
     const bonusCodes=new Set(['month','unit-plan','sales-plan','performance-plan'])
@@ -216,12 +233,18 @@ async function userMonth(api:Api,uid:string,month:string):Promise<AdminUserMonth
   for(let i=0;i<workspaces.length;i+=3){
     entries.push(...await Promise.all(workspaces.slice(i,i+3).map(w=>workspaceMonth(api,w,month))))
   }
-  const byCurrency:Record<string,number>={}
-  for(const w of entries)if(w.gross!==null)byCurrency[w.currency]=(byCurrency[w.currency]??0)+w.gross
+  const byCurrency:Record<string,number>={},cashByCurrency:Record<string,number>={}
+  const bonusByCurrency:Record<string,number>={}
+  for(const w of entries){
+    if(w.gross!==null)byCurrency[w.currency]=(byCurrency[w.currency]??0)+w.gross
+    if(w.cash!==null)cashByCurrency[w.currency]=(cashByCurrency[w.currency]??0)+w.cash
+    if(w.bonus!==null)bonusByCurrency[w.currency]=(bonusByCurrency[w.currency]??0)+w.bonus
+  }
   return {uid,workspaces:entries,
     shifts:entries.reduce((n,w)=>n+w.shifts,0),
     hours:entries.reduce((n,w)=>n+w.hours,0),
-    byCurrency,incomplete:entries.some(w=>w.gross===null),
+    byCurrency,cashByCurrency,bonusByCurrency,
+    incomplete:entries.some(w=>w.gross===null),
   }
 }
 /** Bound concurrency and report each user separately to keep the table responsive. */
@@ -236,7 +259,8 @@ export async function loadAdminMonthlyUsers(
       const user=users[next++]
       try{onResult(await userMonth(api,user.uid,month))}
       catch(error){
-        onResult({uid:user.uid,workspaces:[],shifts:0,hours:0,byCurrency:{},incomplete:true,
+        onResult({uid:user.uid,workspaces:[],shifts:0,hours:0,byCurrency:{},
+          cashByCurrency:{},bonusByCurrency:{},incomplete:true,
           error:error instanceof Error?error.message:'Помилка даних користувача.'})
       }
     }
