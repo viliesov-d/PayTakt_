@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState,type FormEvent} from 'react'
-import {ArrowLeft,RefreshCw,ShieldCheck,UsersRound,CalendarDays,Clock3,Wallet,ChevronDown} from 'lucide-react'
+import {ArrowLeft,RefreshCw,ShieldCheck,UsersRound,CalendarDays,Clock3,Wallet} from 'lucide-react'
 import {loadAdminUsers,type AdminUser} from '../lib/adminStats'
 import {
   loadAdminOverview,loadAdminMonthlyUsers,formatAdminMoney,
@@ -63,6 +63,7 @@ export function AdminPage({onBack}:{onBack:()=>void}){
   const [search,setSearch]=useState('')
   const [selected,setSelected]=useState<string|null>(null)
   const request=useRef(0),monthRequest=useRef(0)
+  const detailRef=useRef<HTMLElement>(null)
   async function load(query='',after?:string,stack:(string|undefined)[]=[]){
     const id=++request.current
     ++monthRequest.current // Cancel display of responses from previous pages.
@@ -90,6 +91,7 @@ export function AdminPage({onBack}:{onBack:()=>void}){
     return()=>{monthRequest.current++}
   },[users,month,busy])
 
+  useEffect(()=>{if(selected)detailRef.current?.scrollIntoView({behavior:'smooth',block:'start'})},[selected])
   const submit=(event:FormEvent)=>{event.preventDefault();void load(input.trim())}
   const resolved=users.map(user=>entries[user.uid]).filter((item):item is AdminUserMonth=>Boolean(item))
   const totalShifts=resolved.reduce((sum,item)=>sum+item.shifts,0)
@@ -166,7 +168,7 @@ export function AdminPage({onBack}:{onBack:()=>void}){
       {moneyValues(totals).length?moneyValues(totals).map(m=><strong key={m}>{m}</strong>):<p>Немає розрахованих сум.</p>}
       <small>Суми відображаються тільки для {resolved.length} завантажених профілів із {users.length} на цій сторінці.</small>
     </section>}
-    {active&&activeMonth&&<section className="panel pt-admin-detail" aria-label="Історія користувача">
+    {active&&activeMonth&&<section ref={detailRef} className="panel pt-admin-detail" aria-label="Історія користувача">
       <div className="pt-admin-detail-head"><div><h2><Clock3 size={19}/> {active.name}</h2>
         <p>{active.email} · {month} · тільки перегляд</p></div>
         <button className="btn btn-outline" type="button" onClick={()=>setSelected(null)}>Закрити</button></div>
