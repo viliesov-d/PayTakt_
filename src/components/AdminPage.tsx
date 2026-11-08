@@ -184,11 +184,11 @@ export function AdminPage({onBack}:{onBack:()=>void}){
 
   const resolved=users.map(user=>rows[user.uid]).filter((r):r is AdminUserMonth=>Boolean(r))
   const currencies=useMemo(()=>{
-    const values=new Set<string>()
+    const values=new Set<string>(['UAH',currency])
     for(const entry of Object.values(rows))for(const ws of entry.workspaces)values.add(ws.currency)
-    return values.size?[...values].sort():['UAH']
-  },[rows])
-  const activeCurrency=currencies.includes(currency)?currency:currencies[0]
+    return [...values].sort()
+  },[rows,currency])
+  const activeCurrency=currency
   const cashTotal=resolved.reduce((sum,r)=>sum+(r.cashByCurrency[activeCurrency]??0),0)
   const wageTotal=resolved.reduce((sum,r)=>sum+(r.byCurrency[activeCurrency]??0),0)
   const bonusTotal=resolved.reduce((sum,r)=>sum+(r.bonusByCurrency[activeCurrency]??0),0)

@@ -201,3 +201,9 @@
 @media(prefers-reduced-motion:reduce){
   .pt-zmina-admin *{animation:none!important;transition:none!important}
 }
+
+
+/* Existing PayTakt app has a floating mobile dock; leave it untouched and
+   keep the admin's last row reachable above it. */
+.pt-zmina-admin.admin-main{padding:12px 0 130px}
+@media(max-width:640px){.pt-zmina-admin.admin-main{padding-bottom:145px}}
