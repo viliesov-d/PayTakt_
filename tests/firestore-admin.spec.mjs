@@ -32,9 +32,37 @@ try{
   await env.withSecurityRulesDisabled(async ctx=>{
     await setDoc(doc(ctx.firestore(),'workspaces/private'),{ownerUid:'owner',kind:'personal',name:'Private'})
     await setDoc(doc(ctx.firestore(),'workspaces/private/paySettings/current'),{monthlySalary:3100000})
+    await setDoc(doc(ctx.firestore(),'workspaces/private/settings/performance'),{enabled:false})
+    await setDoc(doc(ctx.firestore(),'workspaces/private/settings/cash'),{enabled:true})
+    await setDoc(doc(ctx.firestore(),'workspaces/private/shifts/2026-11-01'),{
+      date:'2026-11-01',start:'09:00',end:'17:00',breakMinutes:0,status:'worked',note:'',
+    })
+    await setDoc(doc(ctx.firestore(),'workspaces/private/dailyWages/2026-11-01'),{amount:250000})
+    await setDoc(doc(ctx.firestore(),'workspaces/private/dailyCash/2026-11-01'),{amount:900000})
+    await setDoc(doc(ctx.firestore(),'workspaces/private/monthlySales/2026-11'),{amount:900000})
+    await setDoc(doc(ctx.firestore(),'workspaces/private/monthlyUnits/2026-11'),{count:5})
+    await setDoc(doc(ctx.firestore(),'workspaces/private/monthlyTargets/2026-11'),{amount:1500000})
     await setDoc(doc(ctx.firestore(),'users/legacy'),{email:'legacy@example.com',displayName:'Legacy',theme:'system'})
   })
-  await assertFails(getDoc(doc(admin,'workspaces/private/paySettings/current')))
+  // Admin can read individual financial documents and collections, never mutate them.
+  await assertSucceeds(getDocs(collection(admin,'workspaces')))
+  await assertSucceeds(getCountFromServer(collection(admin,'workspaces')))
+  await assertFails(getDocs(collection(stranger,'workspaces')))
+  await assertSucceeds(getDoc(doc(admin,'workspaces/private')))
+  for(const name of ['paySettings/current','settings/performance','settings/cash',
+    'shifts/2026-11-01','dailyWages/2026-11-01','dailyCash/2026-11-01',
+    'monthlySales/2026-11','monthlyUnits/2026-11','monthlyTargets/2026-11']){
+    await assertSucceeds(getDoc(doc(admin,'workspaces/private/'+name)))
+    await assertFails(getDoc(doc(stranger,'workspaces/private/'+name)))
+  }
+  for(const name of ['shifts','dailyWages','dailyCash','monthlySales','monthlyUnits','monthlyTargets']){
+    await assertSucceeds(getDocs(collection(admin,'workspaces/private/'+name)))
+    await assertFails(getDocs(collection(stranger,'workspaces/private/'+name)))
+  }
+  await assertFails(updateDoc(doc(admin,'workspaces/private/paySettings/current'),{monthlySalary:999999}))
+  await assertFails(updateDoc(doc(admin,'workspaces/private/shifts/2026-11-01'),{status:'planned'}))
+  await assertFails(updateDoc(doc(admin,'workspaces/private/dailyWages/2026-11-01'),{amount:1}))
+  await assertSucceeds(updateDoc(doc(owner,'workspaces/private/shifts/2026-11-01'),{status:'planned'}))
   await assertSucceeds(updateDoc(doc(env.authenticatedContext('legacy',{email:'legacy@example.com'}).firestore(),'users/legacy'),{lastSeenAt:serverTimestamp(),lastPlatform:'web',lastAppVersion:'2.0.0-beta.4'}))
   // Run the production REST query builder against the emulator as well as SDK assertions.
   await env.withSecurityRulesDisabled(async ctx=>{
