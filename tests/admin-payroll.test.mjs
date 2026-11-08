@@ -69,3 +69,22 @@ test('Monthly lookup filters workspaces by actual owner without writing or inven
     assert.doesNotMatch(source,/method:\s*['"](PUT|PATCH|DELETE)['"]/)
   }finally{globalThis.fetch=actualFetch;delete globalThis.__adminPayrollFixture}
 })
+
+
+test('Zmina 2.0 replaces prior table-only admin without touching other pages',()=>{
+  const ui=readFileSync(new URL('../src/components/AdminPage.tsx',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../src/styles/admin.css',import.meta.url),'utf8')
+  for(const marker of ['admin-dashboard','admin-hero-eyebrow','admin-overview-grid','admin-analytics-grid',
+    'admin-leader-list','admin-layout admin-workspace','admin-person-kpis','admin-person-trends',
+    'admin-table-wrap','admin-filter','admin-person-actions','exportTeam','Експорт JSON',
+    'Загальна каса','Зарплата команди','Нараховані премії','Користувачів']){
+    assert.ok(ui.includes(marker),marker+' missing in Zmina admin')
+  }
+  assert.doesNotMatch(ui,/Призупинити синхронізацію/)
+  assert.doesNotMatch(ui,/loadAdminStats/)
+  assert.match(css,/\.pt-zmina-admin/)
+  assert.match(css,/\.admin-hero\{/)
+  assert.match(css,/\.admin-overview-grid\{/)
+  assert.match(css,/\.admin-person-row\{/)
+  assert.doesNotMatch(css,/pt-slider-nav|pt-dock-glass/)
+})
