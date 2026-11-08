@@ -1,3 +1,48 @@
 .pt-admin{max-width:1180px;margin:auto;display:grid;gap:20px;padding:24px 16px 110px;min-width:0;color:var(--text)}
 .pt-admin-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.pt-admin h1{display:flex;align-items:center;gap:10px;font-size:28px;margin:20px 0 5px}.pt-admin h2{font-size:17px;display:flex;align-items:center;gap:8px;margin:0 0 16px}.pt-admin p{color:var(--muted);line-height:1.6;font-size:13px}.pt-admin .panel{padding:22px;min-width:0}.pt-admin-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.pt-admin-cards article{display:flex;flex-direction:column;gap:14px}.pt-admin-cards span{font-size:13px;color:var(--muted)}.pt-admin-cards strong{font-size:32px;font-variant-numeric:tabular-nums}.pt-admin-charts{display:grid;grid-template-columns:2fr 1fr;gap:16px}.pt-admin-bars{display:flex;gap:12px;align-items:end;height:210px}.pt-admin-bars>div{display:flex;flex:1;min-width:0;flex-direction:column;gap:8px;text-align:center;font-size:12px}.pt-admin-bar-track{height:150px;display:flex;align-items:end;border-radius:7px;background:var(--panel-soft);overflow:hidden}.pt-admin-bar-track>div{width:100%;background:var(--mint);border-radius:7px 7px 0 0}.pt-admin-platform{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);font-size:14px}.pt-admin-note{margin:0}.pt-admin-search{display:grid;gap:8px;margin-bottom:20px}.pt-admin-search label{font-size:13px}.pt-admin-search>div{display:flex;gap:8px;flex-wrap:wrap}.pt-admin-search input{flex:1;min-width:150px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--input);color:var(--text)}.pt-admin-table{overflow:auto}.pt-admin table{border-collapse:collapse;width:100%;font-size:13px;text-align:left}.pt-admin th,.pt-admin td{padding:14px 12px;border-bottom:1px solid var(--border);vertical-align:top}.pt-admin td span,.pt-admin td small{display:block;margin-top:5px;color:var(--muted);overflow-wrap:anywhere}.pt-admin td:first-child{min-width:190px}.pt-admin-pages{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px;font-size:12px}.pt-admin-pages span{flex:1}.pt-admin button:disabled{opacity:.5;cursor:default}
 @media(max-width:700px){.pt-admin-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.pt-admin-charts{grid-template-columns:1fr}.pt-admin .panel{padding:16px}.pt-admin-heading{align-items:flex-start}.pt-admin-heading>.btn{margin-top:0}.pt-admin-bars{gap:6px}.pt-admin h1{font-size:23px}.pt-admin-pages span{flex-basis:100%}}
+
+
+/* Monthly payroll administration. These rules only apply inside .pt-admin. */
+.pt-admin-month{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.pt-admin-month label{display:flex;align-items:center;gap:8px;font-weight:800}
+.pt-admin-month input{width:auto;min-width:165px}
+.pt-admin-month p{flex:1 1 240px;margin:0}
+.pt-admin-section-head,.pt-admin-detail-head,.pt-admin-workspace-title{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.pt-admin-section-head>span{font-size:12px;color:var(--muted)}
+.pt-admin-open{padding:8px 12px;font-size:12px}
+.pt-admin-warning{background:var(--panel-soft);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--muted-deep)}
+.pt-admin-summary{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.pt-admin-summary h2{flex-basis:100%;margin:0}
+.pt-admin-summary strong{padding:9px 13px;background:var(--mint-soft);border-radius:11px;font-size:21px}
+.pt-admin-summary small{flex-basis:100%;color:var(--muted)}
+.pt-admin-detail{display:grid;gap:18px}
+.pt-admin-detail h2{margin:0}
+.pt-admin-detail-head p{margin:5px 0 0}
+.pt-admin-workspace{border:1px solid var(--border);border-radius:15px;padding:17px;min-width:0}
+.pt-admin-workspace-title h3{margin:0 0 5px;font-size:17px}
+.pt-admin-workspace-title p{margin:0}
+.pt-admin-workspace-title strong{font-size:20px;color:var(--mint);font-variant-numeric:tabular-nums}
+.pt-admin-facts{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0}
+.pt-admin-facts span{padding:7px 10px;background:var(--panel-soft);border:1px solid var(--border);border-radius:9px}
+.pt-admin-detail-cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px}
+.pt-admin-detail-cols>div{min-width:0}
+.pt-admin-detail h4{margin:13px 0;font-size:14px}
+.pt-admin-detail .pt-admin-table{max-width:100%}
+.pt-admin-detail .pt-admin-table td:first-child{min-width:125px}
+.pt-admin-detail .pt-admin-table th,.pt-admin-detail .pt-admin-table td{padding:10px 8px}
+.pt-admin-detail .pt-admin-table small{white-space:normal;max-width:260px}
+.pt-admin-paylines{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.pt-admin-paylines>div{display:flex;justify-content:space-between;align-items:start;gap:11px;padding:11px 12px;border-bottom:1px solid var(--border)}
+.pt-admin-paylines>div:last-child{border:0}
+.pt-admin-paylines span{min-width:0}
+.pt-admin-paylines small{display:block;margin-top:4px;color:var(--muted);font-size:11px;line-height:1.4}
+.pt-admin-paylines b{white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-width:750px){
+  .pt-admin-detail-cols{grid-template-columns:1fr}
+  .pt-admin-workspace{padding:12px}
+  .pt-admin-month{align-items:stretch}
+  .pt-admin-month input{width:100%}
+  .pt-admin .pt-admin-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pt-admin-summary strong{font-size:18px}
+}
