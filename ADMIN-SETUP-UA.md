@@ -6,7 +6,7 @@
 
 1. Опублікуй `firestore.rules` із цього оновлення у Firebase Console → Firestore Database → Rules для бази `(default)`. Або виконай `firebase deploy --only firestore:rules --project YOUR_PROJECT_ID`.
 2. У Firebase Authentication → Users скопіюй UID свого акаунта.
-3. На довіреному комп’ютері налаштуй Application Default Credentials для адміністратора Firebase (наприклад, `gcloud auth application-default login`). Обліковому запису потрібне право оновлювати Firebase Auth users. Не додавай сервісні ключі у сайт, `.env` з префіксом `VITE_` чи репозиторій.
+3. На довіреному комп’ютері у Firebase Console → Project settings → Service accounts → Firebase Admin SDK створи приватний ключ. Збережи JSON поза папкою репозиторію, наприклад у Downloads як `paytakt-admin.json`. У PowerShell задай `$env:GOOGLE_APPLICATION_CREDENTIALS = "$env:USERPROFILE\Downloads\paytakt-admin.json"`. Не надсилай ключ у чат і не додавай його у сайт, `.env` з префіксом `VITE_` чи репозиторій. Звичайний `gcloud auth application-default login` без власного OAuth client ID не підходить для Firebase Authentication: https://firebase.google.com/docs/admin/setup#test_with_gcloud_end_user_credentials .
 4. Виконай:
 
 ```powershell
@@ -14,7 +14,7 @@ npm.cmd --prefix scripts/admin install
 node scripts/admin/set-admin.mjs YOUR_PROJECT_ID YOUR_USER_UID grant
 ```
 
-5. Вийди з PayTakt та увійди знову. Відкрий кнопку зі щитом.
+5. Вийди з PayTakt та увійди знову. Відкрий кнопку зі щитом. Після успішного одноразового налаштування видали саме новостворений ключ у Google Cloud IAM → Service Accounts → відповідний сервісний акаунт → Keys, а також локальний JSON. Не видаляй інші ключі, які можуть використовуватися сервісами.
 
 Відкликання ролі: та сама команда з `revoke` замість `grant`. Уже виданий ID token може залишатися чинним до завершення строку його дії (приблизно година); оновлення адмінпанелі примусово оновлює токен.
 
