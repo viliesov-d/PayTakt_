@@ -129,7 +129,13 @@ async function monthDocuments(api:Api,wsid:string,name:string,month:string){
   if(docs.length>31)throw Error('Занадто багато записів для одного календарного місяця.')
   return docs.map(item=>({id:item.name?.split('/').pop()??'',data:decodeFirestoreFields(item.fields??{})}))
 }
-const number=(value:unknown)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0?value:0
+/** Missing optional documents mean zero; invalid stored amounts do not. */
+const number=(value:unknown,label='Сума')=>{
+  if(value===undefined||value===null)return 0
+  if(typeof value!=='number'||!Number.isSafeInteger(value)||value<0)
+    throw Error(label+': некоректне числове значення у Firestore.')
+  return value
+}
 const cleanCurrency=(value:unknown)=>typeof value==='string'&&['UAH','USD','EUR','PLN','GBP'].includes(value)?value:'UAH'
 function shiftDay(shift:Shift,wages:Record<string,number>):AdminDayRow{
   const active=(shift.dayType??'work')==='work'
@@ -166,8 +172,8 @@ async function workspaceMonth(api:Api,workspace:Wire,month:string):Promise<Admin
       api.get(path+'monthlyTargets/'+month),
     ])
     const shifts=shiftsRaw.map(row=>decodeShift(row.id,row.data))
-    const wages=Object.fromEntries(wagesRaw.map(row=>[row.id,number(row.data.amount)]))
-    const cash:DailyCash[]=cashRaw.map(row=>({date:row.id,amount:number(row.data.amount)}))
+    const wages=Object.fromEntries(wagesRaw.map(row=>[row.id,number(row.data.amount,'Оплата за день')]))
+    const cash:DailyCash[]=cashRaw.map(row=>({date:row.id,amount:number(row.data.amount,'Каса за день')}))
     result.days=shifts.map(s=>shiftDay(s,wages)).sort((a,b)=>b.date.localeCompare(a.date))
     result.shifts=result.days.reduce((sum,d)=>sum+d.shifts,0)
     result.hours=result.days.reduce((sum,d)=>sum+d.hours,0)
@@ -181,10 +187,10 @@ async function workspaceMonth(api:Api,workspace:Wire,month:string):Promise<Admin
       enabled:cashPrefRaw.enabled as boolean,useForSales:cashPrefRaw.useForSales as boolean,
     }:defaultCashPreferences
     validateCashPreferences(cashPrefs)
-    const sales=effectiveRevenue({[month]:number(salesRaw?.amount)},cash,shifts,cashPrefs)[month]??0
+    const sales=effectiveRevenue({[month]:number(salesRaw?.amount,'Виручка за місяць')},cash,shifts,cashPrefs)[month]??0
     const amount=calculatePayWithPerformance(
-      shifts,month,pay,{month,amount:sales},{month,count:number(unitsRaw?.count)},
-      performance,number(targetRaw?.amount??performance.defaultTarget),
+      shifts,month,pay,{month,amount:sales},{month,count:number(unitsRaw?.count,'Виконані роботи')},
+      performance,number(targetRaw?.amount??performance.defaultTarget,'План за місяць'),
       cash.filter(c=>shifts.some(s=>s.date===c.date&&(s.dayType??'work')==='work')).reduce((sum,c)=>sum+c.amount,0),wages)
     result.gross=amount.gross
     result.overtimeMinutes=amount.overtimeMinutes
