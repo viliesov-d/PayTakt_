@@ -4,9 +4,6 @@ service cloud.firestore {
     function signedIn() {
       return request.auth != null;
     }
-    function isAdmin() {
-      return signedIn() && request.auth.token.get('admin', false) == true;
-    }
     function isUser(uid) {
       return signedIn() && request.auth.uid == uid;
     }
@@ -20,16 +17,13 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.get('deleting', false) == false;
     }
     function validProfile() {
-      return request.resource.data.keys().hasOnly(['email', 'displayName', 'theme', 'createdAt', 'lastSeenAt', 'lastPlatform', 'lastAppVersion'])
+      return request.resource.data.keys().hasOnly(['email', 'displayName', 'theme', 'createdAt'])
         && request.resource.data.keys().hasAll(['email', 'displayName', 'theme'])
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0
         && request.resource.data.displayName.size() <= 70
-        && request.resource.data.theme in ['system', 'light', 'dark']
-        && (!('lastSeenAt' in request.resource.data) || request.resource.data.lastSeenAt is timestamp)
-        && (!('lastPlatform' in request.resource.data) || request.resource.data.lastPlatform in ['web', 'android', 'ios'])
-        && (!('lastAppVersion' in request.resource.data) || (request.resource.data.lastAppVersion is string && request.resource.data.lastAppVersion.size() <= 40));
+        && request.resource.data.theme in ['system', 'light', 'dark'];
     }
     function validWorkspace() {
       return request.resource.data.keys().hasOnly(['name', 'kind', 'currency', 'deleting', 'ownerUid', 'createdAt'])
@@ -146,19 +140,14 @@ service cloud.firestore {
         && request.resource.data.count <= 1000000000;
     }
     match /users/{uid} {
-      allow get: if isUser(uid) || isAdmin();
-      allow list: if isAdmin();
-      allow delete: if false;
-      allow create: if isUser(uid) && validProfile()
-        && request.resource.data.createdAt == request.time
-        && (!('lastSeenAt' in request.resource.data) || request.resource.data.lastSeenAt == request.time);
+      allow get: if isUser(uid);
+      allow list, delete: if false;
+      allow create: if isUser(uid) && validProfile();
       allow update: if isUser(uid)
         && validProfile()
         && request.resource.data.email == resource.data.email
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['displayName', 'theme', 'lastSeenAt', 'lastPlatform', 'lastAppVersion'])
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastSeenAt', 'lastPlatform', 'lastAppVersion'])
-          || request.resource.data.lastSeenAt == request.time);
+             .hasOnly(['displayName', 'theme']);
 
       match /workspaces/{workspaceId} {
         allow get, list: if isUser(uid);
@@ -182,8 +171,8 @@ service cloud.firestore {
     }
 
     match /workspaces/{workspaceId} {
-      allow get: if ownWorkspace(workspaceId) || isAdmin();
-      allow list: if isAdmin();
+      allow get: if ownWorkspace(workspaceId);
+      allow list: if false;
       allow create: if signedIn() && validWorkspace()
         && request.resource.data.get('deleting',false) == false;
       // The sole permitted edit is a one-way "begin deletion" marker.
@@ -198,7 +187,7 @@ service cloud.firestore {
         && !existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)/workspaces/$(workspaceId));
 
       match /settings/{settingsId} {
-        allow get: if (ownWorkspace(workspaceId) || isAdmin()) && settingsId in ['overtime','cash','performance'];
+        allow get: if ownWorkspace(workspaceId) && settingsId in ['overtime','cash','performance'];
         allow list: if false;
         allow delete: if ownWorkspace(workspaceId);
         allow create, update: if activeWorkspace(workspaceId) && (
@@ -226,7 +215,7 @@ service cloud.firestore {
       // Cash amounts are recorded per day; only the owner can see and edit them.
       // Separate from salary; a missing day has no cash record.
       match /dailyCash/{date} {
-        allow get, list: if ownWorkspace(workspaceId) || isAdmin();
+        allow get, list: if ownWorkspace(workspaceId);
         allow create, update: if activeWorkspace(workspaceId)
           && date.matches('^(19[0-9][0-9]|20[0-9][0-9]|2100)-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
           && request.resource.data.keys().hasOnly(['amount','updatedAt'])
@@ -240,7 +229,7 @@ service cloud.firestore {
       // Optional, owner-only performance plan and bonus rules.
       // Personal wage input per worked day; separate from cash turnover.
       match /dailyWages/{date} {
-        allow get, list: if ownWorkspace(workspaceId) || isAdmin();
+        allow get, list: if ownWorkspace(workspaceId);
         allow create, update: if activeWorkspace(workspaceId)
           && date.matches('^(19[0-9][0-9]|20[0-9][0-9]|2100)-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
           && request.resource.data.keys().hasOnly(['amount','updatedAt'])
@@ -251,7 +240,7 @@ service cloud.firestore {
       }
 
       match /monthlyTargets/{month} {
-        allow get, list: if ownWorkspace(workspaceId) || isAdmin();
+        allow get, list: if ownWorkspace(workspaceId);
         allow create, update: if activeWorkspace(workspaceId)
           && month.matches('^(19[0-9][0-9]|20[0-9][0-9]|2100)-(0[1-9]|1[0-2])$')
           && request.resource.data.keys().hasOnly(['amount','updatedAt'])
@@ -262,7 +251,7 @@ service cloud.firestore {
       }
 
       match /scheduleTemplates/{templateId} {
-        allow get, list: if ownWorkspace(workspaceId) || isAdmin();
+        allow get, list: if ownWorkspace(workspaceId);
         allow create, update: if activeWorkspace(workspaceId) && validTemplate();
         allow delete: if ownWorkspace(workspaceId);
       }
@@ -276,7 +265,7 @@ service cloud.firestore {
       // pay-setting field; a modified client of the owner can write malformed v5
       // documents. See FIRESTORE-RULES-SAFETY-UA.md before production rollout.
       match /paySettings/{payId} {
-        allow get: if payId == 'current' && (ownWorkspace(workspaceId) || isAdmin());
+        allow get: if payId == 'current' && ownWorkspace(workspaceId);
         allow list: if false;
         allow delete: if payId == 'current' && ownWorkspace(workspaceId);
         allow create, update: if payId == 'current'
@@ -285,19 +274,19 @@ service cloud.firestore {
       }
 
       match /monthlySales/{month} {
-        allow get, list: if ownWorkspace(workspaceId) || isAdmin();
+        allow get, list: if ownWorkspace(workspaceId);
         allow create, update: if activeWorkspace(workspaceId) && validMonthlySales(month);
         allow delete: if ownWorkspace(workspaceId);
       }
 
       match /monthlyUnits/{month} {
-        allow get, list: if ownWorkspace(workspaceId) || isAdmin();
+        allow get, list: if ownWorkspace(workspaceId);
         allow create, update: if activeWorkspace(workspaceId) && validMonthlyUnits(month);
         allow delete: if ownWorkspace(workspaceId);
       }
 
       match /shifts/{shiftId} {
-        allow get, list: if ownWorkspace(workspaceId) || isAdmin();
+        allow get, list: if ownWorkspace(workspaceId);
         allow create, update: if activeWorkspace(workspaceId) && validShift(shiftId);
         allow delete: if ownWorkspace(workspaceId);
       }
