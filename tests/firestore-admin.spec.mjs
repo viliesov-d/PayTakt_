@@ -69,6 +69,38 @@ try{
     for(let i=0;i<30;i++)await setDoc(doc(ctx.firestore(),`users/test${String(i).padStart(2,'0')}`),{email:`test${i}@example.com`,displayName:`Test ${i}`,theme:'system',createdAt:new Date()})
   })
   globalThis.__restToken=createMockUserToken({sub:'admin',email:'admin@example.com',admin:true},'demo-paytakt')
+
+  // Verify the actual REST query shape used by AdminPayroll against the emulator.
+  const root='http://127.0.0.1:8080/v1/projects/demo-paytakt/databases/(default)/documents'
+  const post=async(url,structuredQuery)=>{
+    const response=await fetch(url,{method:'POST',headers:{
+      Authorization:'Bearer '+globalThis.__restToken,'Content-Type':'application/json',
+    },body:JSON.stringify({structuredQuery})})
+    if(!response.ok)throw Error('Admin REST query denied: '+response.status+' '+await response.text())
+    return response.json()
+  }
+  const workspaceRows=await post(root+':runQuery',{
+    from:[{collectionId:'workspaces'}],
+    where:{fieldFilter:{field:{fieldPath:'ownerUid'},op:'EQUAL',value:{stringValue:'owner'}}},
+    limit:101,
+  })
+  if(workspaceRows.filter(row=>row.document).length!==1)
+    throw Error('Admin REST workspace owner filter failed')
+  const monthlyRows=await post(root+'/workspaces/private:runQuery',{
+    from:[{collectionId:'shifts'}],
+    orderBy:[{field:{fieldPath:'__name__'},direction:'ASCENDING'}],
+    startAt:{values:[{referenceValue:'projects/demo-paytakt/databases/(default)/documents/workspaces/private/shifts/2026-11-01'}],before:true},
+    endAt:{values:[{referenceValue:'projects/demo-paytakt/databases/(default)/documents/workspaces/private/shifts/2026-11-31'}],before:false},
+    limit:33,
+  })
+  if(!monthlyRows.some(row=>row.document?.name?.endsWith('/2026-11-01')))
+    throw Error('Admin REST date-range shift query failed')
+  const financeResponse=await fetch(root+'/workspaces/private/paySettings/current',{
+    headers:{Authorization:'Bearer '+globalThis.__restToken},
+  })
+  if(!financeResponse.ok)throw Error('Admin REST financial get denied: '+financeResponse.status)
+  console.log('Admin REST: workspace ownership filter, month cursor and read-only financial GET passed')
+
   const source=readFileSync(new URL('../src/lib/adminStats.ts',import.meta.url),'utf8')
     .replace("import {auth, firebaseApp} from './firebase'",`const auth={currentUser:{getIdTokenResult:async()=>({claims:{admin:true},token:globalThis.__restToken})}};const firebaseApp={options:{projectId:'demo-paytakt'}}`)
     .replace('https://firestore.googleapis.com','http://127.0.0.1:8080')
