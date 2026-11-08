@@ -230,7 +230,6 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
     setMoneyBusy(true);setQuickBusy(true);setMoneyNotice('')
     let shiftSaved=false
     try{
-      const wasWorked=draft.status==='worked'
       const next=markWorkedForDailyPay({...draft,id:date,date,plannedMinutes:draft.plannedMinutes??0})
       await onSave(next)
       shiftSaved=true
@@ -244,7 +243,6 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
       }
       if(selectedRef.current===date){
         setDraft(next)
-        setMoneyNotice(wasWorked?'Зміни збережено.':'День відпрацьовано. Суми збережено.')
       }
     }catch(error){
       if(selectedRef.current===date){
@@ -260,7 +258,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
     if(!cashEntry)return
     const date=selected
     setMoneyBusy(true);setCashNotice('')
-    try{await onDeleteCash(date);if(selectedRef.current===date){setCashDraft('');setCashNotice('Касу видалено.')}}
+    try{await onDeleteCash(date);if(selectedRef.current===date)setCashDraft('')}
     catch(e){if(selectedRef.current===date)setCashNotice(friendlyError(e))}finally{setMoneyBusy(false)}
   }
   useEffect(()=>setOvertimeDraft({...overtimePreset}),[overtimePreset.start,overtimePreset.end,overtimePreset.breakMinutes,overtimePreset.basisPoints])
@@ -269,7 +267,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
     try{validateOvertimePreset(overtimeDraft);await onSaveOvertimePreset(overtimeDraft);setOvertimeMessage('Шаблон понаднормових збережено. Він доступний у редакторі календаря.')}
     catch(e){setOvertimeMessage(friendlyError(e))}finally{setOvertimeBusy(false)}
   }
-  const quickSave = async (next:Shift, success:string) => {
+  const quickSave = async (next:Shift) => {
     // Synchronous lock: double taps cannot send two conflicting Firestore writes.
     if (quickLock.current || busy) return
     quickLock.current=true
@@ -280,7 +278,6 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
     try {
       validateDay(next)
       await onSave({...next,id:selected,date:selected})
-      if(selectedRef.current===next.date)setStatus(success)
     } catch (error) {
       // The user may have selected a different date while Firebase was saving.
       // Never overwrite the new day's editor with a stale rollback.
@@ -298,25 +295,21 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
     if (quickLock.current || busy || (draft.dayType??'work')===type) return
     if (type!=='work' && (draft.overtimeExtra || (draft.overtimeMinutes??0)>0) &&
       !window.confirm('У цей день додані понаднормові. Змінити тип дня та прибрати понаднормові?')) return
-    try { void quickSave(changeDayType(draft,type),'Тип дня змінено й збережено.') }
+    try { void quickSave(changeDayType(draft,type)) }
     catch(error){setStatus(friendlyError(error))}
   }
   const quickStatus = () => {
     if (quickLock.current || busy) return
     try {
       const next=toggleWorkedDay(draft)
-      void quickSave(next,next.status==='worked'?'День відмічено як відпрацьований.':'День повернуто до запланованих.')
+      void quickSave(next)
     } catch(error){setStatus(friendlyError(error))}
   }
   const quickOvertime = () => {
     if (quickLock.current || busy) return
     try {
-      const hadOvertime=!!draft.overtimeExtra
       const next=togglePresetOvertime(draft,overtimePreset)
-      void quickSave(next,hadOvertime?'Понаднормові прибрано.':
-        next.overtimeExtra?.start!==overtimePreset.start
-          ? `Понаднормові додано після зміни: ${next.overtimeExtra?.start}–${next.overtimeExtra?.end}. Час автоматично скориговано без накладання.`
-          : 'Понаднормові додано й збережено в календарі.')
+      void quickSave(next)
     }catch(error){setStatus(friendlyError(error))}
   }
   const activeShift = shifts.find(s=>s.date===selected)
@@ -434,7 +427,6 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
       // The planned norm is independent from actually worked and overtime hours.
       // Changing worked time must never silently increase the salary denominator.
       await onSave({...draft,id:selected,date:selected,plannedMinutes:draft.plannedMinutes??0})
-      setStatus(demo?'Збережено в деморежимі.':'День збережено.')
     }
     catch(err){setStatus(friendlyError(err))}finally{setBusy(false)}
   }
@@ -442,7 +434,7 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
     if(quickLock.current || busy)return
     if(!window.confirm('Видалити запис дня та всі його додаткові зміни?'))return
     setBusy(true);setStatus('')
-    try{await onDelete(selected);setStatus('Запис дня видалено.')}
+    try{await onDelete(selected)}
     catch(err){setStatus(friendlyError(err))}finally{setBusy(false)}
   }
   const addExtra=()=>{
@@ -715,20 +707,20 @@ function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overt
           {(performance.manualDailyPay||cashPrefs.enabled)&&(draft.dayType??'work')==='work'&&<form className="day-money-entry" onSubmit={saveDayMoney}>
             <div className="day-money-heading"><Wallet size={19}/><strong>{tr("Заробіток і каса")}</strong></div>
             <div className="day-money-fields">
-              {performance.manualDailyPay&&<label><span>{tr("Мій заробіток, ₴").replace('₴',inputCurrencyLabel())}</span><input inputMode="decimal" type="text" value={wageDraft} placeholder="0,00" onChange={e=>setWageDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
               {cashPrefs.enabled&&<label><span>{tr("Каса за день, ₴").replace('₴',inputCurrencyLabel())}</span><input inputMode="decimal" type="text" value={cashDraft} placeholder="0,00" onChange={e=>setCashDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
+              {performance.manualDailyPay&&<label><span>{tr("Мій заробіток, ₴").replace('₴',inputCurrencyLabel())}</span><input inputMode="decimal" type="text" value={wageDraft} placeholder="0,00" onChange={e=>setWageDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
             </div>
             {draft.status==='worked'&&<span className="day-money-worked"><CheckCircle2 size={17}/> {tr("Відпрацьовано")}</span>}
             <button type="submit" className="btn btn-primary day-money-submit" disabled={moneyBusy||quickBusy||busy}>
               {draft.status==='worked'?<Save size={19}/>:<CheckCircle2 size={19}/>}
               {moneyBusy?'Зберігаємо…':draft.status==='worked'?'Зберегти зміни':'Зберегти й відмітити'}
             </button>
-            {moneyNotice&&<p role="status" className="save-notice">{moneyNotice}</p>}
+            {moneyNotice&&<p role="alert" className="form-error">{moneyNotice}</p>}
           </form>}
           {cashPrefs.enabled&&(draft.dayType??'work')!=='work'&&cashEntry&&<div className="cash-source-note">Для цього дня збережено касу {moneyUA(cashEntry.amount)}, але після позначення вихідного чи відсутності вона <strong>{tr("не входить у місячні підсумки")}</strong>. <button type="button" className="link-button" disabled={moneyBusy} onClick={()=>void clearCash()}>{tr("Видалити запис каси")}</button></div>}
-          {cashNotice&&<p className="save-notice" role="status">{cashNotice}</p>}
+          {cashNotice&&<p className="form-error" role="alert">{cashNotice}</p>}
           {quickBusy&&<p className="day-save-pending" role="status">{tr("Зберігаємо зміни…")}</p>}
-          {status&&<p className="save-notice" role="status">{status}</p>}
+          {status&&<p className="form-error" role="alert">{status}</p>}
         </div>
         <details className="day-advanced">
           <summary><Settings2 size={17}/> {tr("Додаткові параметри")} <ChevronDown size={17} className="details-chevron"/></summary>
