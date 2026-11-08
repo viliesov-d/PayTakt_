@@ -2014,8 +2014,6 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
   width:100%;
   min-width:0;
   border:0;
-  border-bottom:1px solid transparent;
-  transition:border-color 700ms ease;
   background:transparent;
   color:var(--text);
   text-align:left;
@@ -2030,11 +2028,14 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
 .salary-rules-page .pay-smooth-accordion .pay-accordion-track{
   display:grid;
   grid-template-rows:0fr;
+  opacity:0;
   transition:
-    grid-template-rows 700ms cubic-bezier(.4,0,.2,1);
+    grid-template-rows 700ms cubic-bezier(.18,.82,.22,1),
+    opacity 460ms ease;
 }
 .salary-rules-page .pay-smooth-accordion[data-expanded='true'] .pay-accordion-track{
   grid-template-rows:1fr;
+  opacity:1;
 }
 .salary-rules-page .pay-smooth-accordion .pay-accordion-clip{
   min-height:0;
@@ -2082,19 +2083,4 @@ details[open] > :not(summary){animation:pt-disclosure-open .28s cubic-bezier(.2,
   .salary-rules-page .pay-smooth-accordion .pay-collapse-chevron{
     transition:none!important;
   }
-}
-
-/* Keep scroll anchoring from fighting the expanding document flow. */
-.salary-rules-page{overflow-anchor:none}
-.salary-rules-page .pay-smooth-accordion .pay-accordion-content{contain:layout}
-.salary-rules-page .pay-smooth-accordion .pay-collapse-chevron{transition:transform 700ms cubic-bezier(.4,0,.2,1)}
-.salary-rules-page .pay-smooth-accordion .pay-accordion-clip{visibility:hidden;transition:visibility 0s 700ms}
-.salary-rules-page .pay-smooth-accordion[data-expanded='true'] .pay-accordion-clip{visibility:visible;transition-delay:0s}
-/* Performance editor content is now inside the persistent disclosure wrapper. */
-.salary-rules-page > .performance-editor .pay-accordion-content > .pay-collapse-body{padding:13px 21px 17px;gap:12px}
-@media(max-width:700px){.salary-rules-page > .performance-editor .pay-accordion-content > .pay-collapse-body{padding:12px 15px 15px}}
-@media(prefers-reduced-motion:reduce){
-  .salary-rules-page .pay-smooth-accordion .pay-accordion-clip,
-  .salary-rules-page .pay-smooth-accordion .pay-collapse-chevron,
-  .salary-rules-page .pay-smooth-accordion > .pay-accordion-toggle{transition:none!important}
 }

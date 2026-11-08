@@ -12,9 +12,9 @@ const payMatch=rules.match(/match \/paySettings\/\{payId\}\s*\{([^}]+)\}/)
 
 // Static rule tests: confirm intended guards are present. Emulator-backed
 // integration testing is still necessary to verify actual Firestore behavior.
-test('paySettings writes remain owner-only; admin can read only current',()=>{
+test('paySettings route is scoped to current and authenticated workspace owner',()=>{
   assert.ok(payMatch, 'paySettings/current route must exist')
-  assert.match(payMatch[1],/allow get:\s*if payId == 'current' && \(ownWorkspace\(workspaceId\) \|\| isAdmin\(\)\)/)
+  assert.match(payMatch[1],/allow get:\s*if payId == 'current' && ownWorkspace\(workspaceId\)/)
   assert.match(payMatch[1],/allow list:\s*if false/)
   assert.match(payMatch[1],/allow delete:\s*if payId == 'current' && ownWorkspace\(workspaceId\)/)
   assert.match(payMatch[1],/allow create, update:\s*if payId == 'current'\s*&& activeWorkspace\(workspaceId\)\s*&& request\.resource\.data\.version == 5/)
