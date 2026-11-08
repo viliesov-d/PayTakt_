@@ -33,7 +33,7 @@ import { sectors, suggestions, allSuggestions, createSelfPreset, type Sector, ty
 import { defaultPaySettings,defaultPaymentRules } from './lib/salary'
 import {defaultOvertimePreset,validateOvertimePreset,segmentHours,type OvertimePreset} from './lib/calendar'
 import {changeDayType, markWorkedForDailyPay, toggleWorkedDay, togglePresetOvertime} from './lib/dayActions'
-import {matchesDayButtonState} from './lib/dayButtonState'
+import {matchesDayButtonState,dayButtonResolution} from './lib/dayButtonState'
 import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
 import { tr, readPresentation, savePresentation, formatDate, formatMonth, locale as presentationLocale, setAccountingCurrency, inputCurrencyLabel, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
@@ -151,8 +151,9 @@ function Dashboard({ workspace, shifts, paySettings, salesByMonth, unitsByMonth,
   </>
 }
 
-function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePreset, paySettings, salesByMonth, unitsByMonth, cashRecords, cashPrefs, performance, monthlyTargets, cashByMonth, dailyWages, onSaveDailyWage, onRemoveDailyWage, onSaveCash, onDeleteCash, onGoStatistics, onSaveOvertimePreset, onSave, onApplyPattern, onDelete, onSaveTemplate, onDeleteTemplate, scheduleOnly=false }: {
-  shifts: Shift[]; workspace: Workspace; demo: boolean; templates: ScheduleTemplate[]; initialPreset: TemplatePreset;
+function CalendarPage({ shifts, confirmedShifts, queuedShiftEdits, workspace, templates, initialPreset, overtimePreset, paySettings, salesByMonth, unitsByMonth, cashRecords, cashPrefs, performance, monthlyTargets, cashByMonth, dailyWages, onSaveDailyWage, onRemoveDailyWage, onSaveCash, onDeleteCash, onGoStatistics, onSaveOvertimePreset, onSave, onApplyPattern, onDelete, onSaveTemplate, onDeleteTemplate, scheduleOnly=false }: {
+  shifts: Shift[]; confirmedShifts:Shift[]; queuedShiftEdits:OfflineEdit[];
+  workspace: Workspace; demo: boolean; templates: ScheduleTemplate[]; initialPreset: TemplatePreset;
   overtimePreset:OvertimePreset; paySettings:PaySettings|null; salesByMonth:Record<string,number>; unitsByMonth:Record<string,number>;
   cashRecords:DailyCash[]; cashPrefs:CashPreferences; performance:PerformanceSettings; monthlyTargets:Record<string,number>;cashByMonth:Record<string,number>;dailyWages:Record<string,number>;onSaveDailyWage:(date:string,amount:number)=>Promise<void>;onRemoveDailyWage:(date:string)=>Promise<void>;
   onSaveCash:(record:DailyCash)=>Promise<void>;onDeleteCash:(date:string)=>Promise<void>;
@@ -176,8 +177,8 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
   const [quickBusy, setQuickBusy] = useState(false)
   const quickLock = useRef(false)
   const [instantDay,setInstantDay] = useState<Shift|null>(null)
-  // Retain the tapped button state until the queued/offline Firestore overlay catches up.
-  // Removing it as soon as onSave returns causes a rapid on/off visual flash.
+  // The editor remains on its tapped state until an actual server-confirmed
+  // snapshot agrees; overlayShifts can agree before Firebase has acknowledged it.
   const pendingButtonDay=useRef<Shift|null>(null)
   const previousSelectedDate=useRef(selected)
   const [status, setStatus] = useState('')
@@ -237,6 +238,9 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
     let savedShift:Shift|null=null
     try{
       const next=markWorkedForDailyPay({...draft,id:date,date,plannedMinutes:draft.plannedMinutes??0})
+      pendingButtonDay.current=next
+      setInstantDay(next)
+      setDraft(next)
       await onSave(next)
       shiftSaved=true
       savedShift=next
@@ -252,8 +256,13 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
         setDraft(next)
       }
     }catch(error){
+      if(!shiftSaved){
+        pendingButtonDay.current=null
+        setInstantDay(null)
+      }
       if(selectedRef.current===date){
         if(savedShift)setDraft(savedShift)
+        else setDraft(shifts.find(s=>s.date===date)??defaultShift(date))
         setMoneyNotice(`${shiftSaved?'День відмічено, але не всі суми збережені. ':''}${friendlyError(error)}`)
       }
     }finally{
@@ -324,6 +333,10 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
     }catch(error){setStatus(friendlyError(error))}
   }
   const activeShift = shifts.find(s=>s.date===selected)
+  const serverConfirmedShift=confirmedShifts.find(s=>s.date===selected)
+  const queuedShiftEdit=queuedShiftEdits.find(e=>e.date===selected)
+  const queuedSyncIssue=queuedShiftEdit?.state==='error'||queuedShiftEdit?.state==='conflict'
+    ?queuedShiftEdit:null
   // Read-only label for the UI; payroll status and saved records are untouched.
   const selectedCalendarShift=instantDay?.date===selected?instantDay:activeShift
   const selectedDayStatus=!selectedCalendarShift?'Немає зміни':
@@ -335,21 +348,49 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
     const changedDate=previousSelectedDate.current!==selected
     previousSelectedDate.current=selected
     if(changedDate)pendingButtonDay.current=null
-    const optimistic=pendingButtonDay.current
-    if(!changedDate&&optimistic?.date===selected){
-      // Ignore older snapshots while the new button state is awaiting its
-      // local queue overlay. The indicator must not flash back to the old state.
-      if(!matchesDayButtonState(activeShift,optimistic))return
+    // A quick save can update the offline overlay before its own Promise
+    // completes. Never hydrate an older editor while that action is locked.
+    if(!changedDate&&quickBusy)return
+
+    // Recover a queued edit on a remounted editor, or after retrying an offline
+    // error. A second edit of the same day supersedes the earlier visual state.
+    const queued=queuedShiftEdit?.state==='pending'&&
+      queuedShiftEdit.next&&typeof queuedShiftEdit.next==='object'
+        ? queuedShiftEdit.next as Shift:null
+    const previous=pendingButtonDay.current
+    if(queued&&(!previous||!matchesDayButtonState(previous,queued))){
+      pendingButtonDay.current=queued
+      setInstantDay(queued)
+      setDraft({...queued,additionalShifts:[...(queued.additionalShifts??[])]})
+    }
+
+    const expected=pendingButtonDay.current
+    if(expected?.date===selected){
+      const decision=dayButtonResolution(serverConfirmedShift,expected,queuedShiftEdit?.state)
+      if(decision==='waiting')return
       pendingButtonDay.current=null
       setInstantDay(null)
+      if(decision==='blocked'){
+        // A rejected/conflicting edit stays in the durable offline queue.
+        // Show that local value along with an explicit sync error instead of
+        // presenting the operation as successfully confirmed.
+        setDraft(activeShift ? {...activeShift,additionalShifts:[...(activeShift.additionalShifts||[])]} : defaultShift(selected))
+        return
+      }
     }
-    // The save can update Firestore props before all inputs have been persisted.
-    // Keep the current editor stable until the user action completes.
-    if(!changedDate&&quickLock.current)return
     setInstantDay(null)
     setDraft(activeShift ? {...activeShift,additionalShifts:[...(activeShift.additionalShifts||[])]} : defaultShift(selected))
     setStatus('')
-  },[selected,activeShift?.start,activeShift?.end,activeShift?.breakMinutes,activeShift?.status,activeShift?.note,activeShift?.kind,activeShift?.dayType,activeShift?.overtimeMinutes,JSON.stringify(activeShift?.overtimeExtra),activeShift?.plannedWorkday,activeShift?.plannedMinutes,JSON.stringify(activeShift?.additionalShifts||[])])
+  },[
+    selected,quickBusy,
+    activeShift?.start,activeShift?.end,activeShift?.breakMinutes,activeShift?.status,
+    activeShift?.note,activeShift?.kind,activeShift?.dayType,activeShift?.overtimeMinutes,
+    JSON.stringify(activeShift?.overtimeExtra),activeShift?.plannedWorkday,activeShift?.plannedMinutes,
+    JSON.stringify(activeShift?.additionalShifts||[]),
+    serverConfirmedShift?.status,serverConfirmedShift?.dayType,serverConfirmedShift?.kind,
+    JSON.stringify(serverConfirmedShift?.overtimeExtra),JSON.stringify(serverConfirmedShift?.additionalShifts||[]),
+    queuedShiftEdit?.state,queuedShiftEdit?.revision,
+  ])
 
   const count = new Date(year,month+1,0).getDate()
   const offset = (new Date(year,month,1).getDay()+6)%7
@@ -744,6 +785,11 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
           {cashPrefs.enabled&&(draft.dayType??'work')!=='work'&&cashEntry&&<div className="cash-source-note">Для цього дня збережено касу {moneyUA(cashEntry.amount)}, але після позначення вихідного чи відсутності вона <strong>{tr("не входить у місячні підсумки")}</strong>. <button type="button" className="link-button" disabled={moneyBusy} onClick={()=>void clearCash()}>{tr("Видалити запис каси")}</button></div>}
           {cashNotice&&<p className="form-error" role="alert">{cashNotice}</p>}
           {quickBusy&&<p className="day-save-pending" role="status">{tr("Зберігаємо зміни…")}</p>}
+          {queuedSyncIssue&&<p className="form-error" role="alert">
+            {queuedSyncIssue.state==='conflict'
+              ?'Зміна дня конфліктує з даними іншого пристрою. Вона збережена локально, але не підтверджена Firebase. Відкрий синхронізацію й обери правильну версію.'
+              :'Не вдалося синхронізувати зміну дня. Вона залишилася локально. Перевір з’єднання та стан синхронізації.'}
+          </p>}
           {status&&<p className="form-error" role="alert">{status}</p>}
         </div>
         <details className="day-advanced">
@@ -1167,9 +1213,15 @@ export default function App(){
   const syncingRef=useRef(false)
   const activeUidRef=useRef('')
   const [serverShifts,setShifts]=useState<Shift[]>([])
+  const [confirmedShiftSnapshot,setConfirmedShiftSnapshot]=useState<{workspaceId:string;shifts:Shift[]}|null>(null)
   const shifts=useMemo(()=>workspace&&!session?.demo?
     overlayShifts(serverShifts,offlineQueue,workspace.id):serverShifts,
     [serverShifts,offlineQueue,workspace?.id,session?.demo])
+  const confirmedShifts=session?.demo?shifts:
+    confirmedShiftSnapshot&&confirmedShiftSnapshot.workspaceId===workspace?.id?confirmedShiftSnapshot.shifts:[]
+  const queuedShiftEdits=useMemo(()=>
+    offlineQueue.filter(e=>e.workspaceId===workspace?.id&&e.kind==='shifts'),
+    [offlineQueue,workspace?.id])
   const [shiftsLoaded,setShiftsLoaded]=useState(false)
   const [forceWizard,setForceWizard]=useState(false)
   const [templates,setTemplates]=useState<ScheduleTemplate[]>([])
@@ -1416,10 +1468,16 @@ export default function App(){
     return()=>{live=false;unsubscribe()}
   },[demo])
   useEffect(()=>{
-    if(!session||!workspace){setShiftsLoaded(false);return}
+    if(!session||!workspace){setShiftsLoaded(false);setConfirmedShiftSnapshot(null);return}
+    setConfirmedShiftSnapshot(null)
     if(session.demo){setShifts(demoShifts());setShiftsLoaded(true);setShiftsError('');return}
     setShifts([]);setShiftsLoaded(false);setShiftsError('')
-    return subscribeShifts(workspace.id,items=>{setShifts(items);setShiftsLoaded(true)},err=>{setShiftsError(friendlyError(err));setShiftsLoaded(true)})
+    return subscribeShifts(
+      workspace.id,
+      items=>{setShifts(items);setShiftsLoaded(true)},
+      err=>{setShiftsError(friendlyError(err));setShiftsLoaded(true)},
+      items=>setConfirmedShiftSnapshot({workspaceId:workspace.id,shifts:items}),
+    )
   },[session?.uid,workspace?.id])
 
   useEffect(()=>{
@@ -1819,7 +1877,7 @@ export default function App(){
         <div className="page-motion" key={`${workspace.id}:${page}:${presentation.language}:${presentation.currency}:${presentation.uahPerUnit}`}>
         {page==='setup'&&<SetupPage key={workspace.id} settings={paySettings} loaded={payLoaded} onChoose={chooseSetup}/>}
         {page==='dashboard'&&<Dashboard workspace={workspace} shifts={shifts} paySettings={payLoaded?paySettings:null} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoCalendar={()=>navigate('calendar')} onCreateCompany={()=>setCreateOpen(true)} onGoPay={()=>navigate('pay')} onGoStatistics={()=>navigate('statistics')}/>}
-        {page==='calendar'&&<CalendarPage key={`${workspace.id}-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
+        {page==='calendar'&&<CalendarPage key={`${workspace.id}-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} confirmedShifts={confirmedShifts} queuedShiftEdits={queuedShiftEdits} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
         {page==='statistics'&&<StatisticsPage key={workspace.id} workspaceName={workspace.name} shifts={shifts} settings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} onSaveTarget={onSaveTarget} onResetTarget={onResetTarget} dailyWages={dailyWages} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onCalendar={()=>navigate('calendar')} onRules={()=>navigate('rules')} onPay={()=>navigate('pay')}/>}
         {performanceError&&<div className="alert-banner" role="alert">{performanceError}</div>}
         {page==='pay'&&unitsError&&<p className="form-error" role="alert">{unitsError}</p>}
@@ -1860,7 +1918,7 @@ export default function App(){
             </div>
           </details>
         </section>}
-        {page==='settings'&&settingsSection==='schedule'&&<CalendarPage scheduleOnly key={`${workspace.id}-schedule-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
+        {page==='settings'&&settingsSection==='schedule'&&<CalendarPage scheduleOnly key={`${workspace.id}-schedule-${suggestedPreset}`} initialPreset={suggestedPreset} shifts={shifts} confirmedShifts={confirmedShifts} queuedShiftEdits={queuedShiftEdits} workspace={workspace} demo={session.demo} templates={templates} overtimePreset={overtimePreset} paySettings={payLoaded?paySettings:null} cashRecords={cashRecords} cashPrefs={cashPrefs} performance={performance} monthlyTargets={monthlyTargets} cashByMonth={cashByMonth} dailyWages={dailyWages} onSaveDailyWage={onSaveDailyWage} onRemoveDailyWage={onRemoveDailyWage} onSaveCash={onSaveCash} onDeleteCash={onDeleteCash} salesByMonth={effectiveSales} unitsByMonth={unitsByMonth} onGoStatistics={()=>navigate('statistics')} onSaveOvertimePreset={onSaveOvertimePreset} onSaveTemplate={onSaveTemplate} onDeleteTemplate={onDeleteTemplate} onSave={onSave} onApplyPattern={onApplyPattern} onDelete={onDelete}/>}
         
         </div>
         <footer className="main-footer"><span>© {new Date().getFullYear()} PayTakt. Твій графік. Твої правила.</span><span>{isNativeMobile?`PayTakt Mobile v${installedAppVersion}`:'Версія 2.0.0 beta 4'}</span></footer>
