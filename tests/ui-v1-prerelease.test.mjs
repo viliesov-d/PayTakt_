@@ -32,11 +32,12 @@ test('the original Zmina visual tokens are present in the new theme', () => {
   assert.match(styles, /zmina-primary-nav\.expanded/)
 })
 
-test('user-facing success and daily help copy avoid Firebase jargon', () => {
+test('selected day removes fleeting green success text while keeping help and error messages clear', () => {
   assert.doesNotMatch(ui, /День збережено у Firebase|Зберігаємо зміни у Firebase|Кнопки вище одразу зберігають дані у Firebase/)
-  assert.match(ui, /День збережено\./)
-  assert.match(ui, /Зміни збережено\./)
-  assert.match(ui, /День відпрацьовано\. Суми збережено\./)
+  assert.doesNotMatch(ui, /setStatus\(success\)|setMoneyNotice\(wasWorked\?/)
+  assert.match(ui, /\{moneyNotice&&<p role="alert" className="form-error">/)
+  assert.match(ui, /\{status&&<p className="form-error" role="alert">/)
+  assert.match(ui, /День відмічено, але не всі суми збережені/)
 })
 
 test('Firebase workspace owner restriction is kept for payroll settings', () => {
