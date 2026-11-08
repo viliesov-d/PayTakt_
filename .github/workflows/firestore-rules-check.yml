@@ -6,6 +6,7 @@ on:
     paths:
       - 'firestore.rules'
       - 'tests/firestore-rules-delete.spec.mjs'
+      - 'tests/firestore-admin.spec.mjs'
       - '.github/workflows/firestore-rules-check.yml'
   workflow_dispatch:
 
@@ -38,4 +39,4 @@ jobs:
             --config firebase-rules-check.json \
             --project demo-paytakt \
             --only firestore \
-            'node tests/firestore-rules-delete.spec.mjs'
+            'node tests/firestore-rules-delete.spec.mjs && node tests/firestore-admin.spec.mjs'
