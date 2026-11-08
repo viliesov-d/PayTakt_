@@ -1218,7 +1218,7 @@ export default function App(){
     overlayShifts(serverShifts,offlineQueue,workspace.id):serverShifts,
     [serverShifts,offlineQueue,workspace?.id,session?.demo])
   const confirmedShifts=session?.demo?shifts:
-    confirmedShiftSnapshot?.workspaceId===workspace?.id?confirmedShiftSnapshot.shifts:[]
+    confirmedShiftSnapshot&&confirmedShiftSnapshot.workspaceId===workspace?.id?confirmedShiftSnapshot.shifts:[]
   const queuedShiftEdits=useMemo(()=>
     offlineQueue.filter(e=>e.workspaceId===workspace?.id&&e.kind==='shifts'),
     [offlineQueue,workspace?.id])

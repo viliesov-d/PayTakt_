@@ -86,7 +86,7 @@ test('calendar buttons require a server-confirmed snapshot and report offline fa
   assert.match(data,/includeMetadataChanges:true/)
   assert.match(data,/!snapshot\.metadata\.fromCache&&!snapshot\.metadata\.hasPendingWrites/)
   assert.match(app,/setConfirmedShiftSnapshot\(\{workspaceId:workspace\.id,shifts:items\}\)/)
-  assert.match(app,/confirmedShiftSnapshot\?\.workspaceId===workspace\?\.id/)
+  assert.match(app,/confirmedShiftSnapshot&&confirmedShiftSnapshot\.workspaceId===workspace\?\.id/)
   assert.match(app,/confirmedShifts=\{confirmedShifts\} queuedShiftEdits=\{queuedShiftEdits\}/)
   assert.match(app,/dayButtonResolution\(serverConfirmedShift,expected,queuedShiftEdit\?\.state\)/)
   assert.match(app,/if\(decision==='waiting'\)return/)
