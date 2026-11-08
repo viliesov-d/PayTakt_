@@ -150,7 +150,7 @@ function Dashboard({ workspace, shifts, paySettings, salesByMonth, unitsByMonth,
   </>
 }
 
-function CalendarPage({ shifts, workspace, demo, templates, initialPreset, overtimePreset, paySettings, salesByMonth, unitsByMonth, cashRecords, cashPrefs, performance, monthlyTargets, cashByMonth, dailyWages, onSaveDailyWage, onRemoveDailyWage, onSaveCash, onDeleteCash, onGoStatistics, onSaveOvertimePreset, onSave, onApplyPattern, onDelete, onSaveTemplate, onDeleteTemplate, scheduleOnly=false }: {
+function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePreset, paySettings, salesByMonth, unitsByMonth, cashRecords, cashPrefs, performance, monthlyTargets, cashByMonth, dailyWages, onSaveDailyWage, onRemoveDailyWage, onSaveCash, onDeleteCash, onGoStatistics, onSaveOvertimePreset, onSave, onApplyPattern, onDelete, onSaveTemplate, onDeleteTemplate, scheduleOnly=false }: {
   shifts: Shift[]; workspace: Workspace; demo: boolean; templates: ScheduleTemplate[]; initialPreset: TemplatePreset;
   overtimePreset:OvertimePreset; paySettings:PaySettings|null; salesByMonth:Record<string,number>; unitsByMonth:Record<string,number>;
   cashRecords:DailyCash[]; cashPrefs:CashPreferences; performance:PerformanceSettings; monthlyTargets:Record<string,number>;cashByMonth:Record<string,number>;dailyWages:Record<string,number>;onSaveDailyWage:(date:string,amount:number)=>Promise<void>;onRemoveDailyWage:(date:string)=>Promise<void>;
