@@ -33,6 +33,7 @@ import { sectors, suggestions, allSuggestions, createSelfPreset, type Sector, ty
 import { defaultPaySettings,defaultPaymentRules } from './lib/salary'
 import {defaultOvertimePreset,validateOvertimePreset,segmentHours,type OvertimePreset} from './lib/calendar'
 import {changeDayType, markWorkedForDailyPay, toggleWorkedDay, togglePresetOvertime} from './lib/dayActions'
+import {matchesDayButtonState} from './lib/dayButtonState'
 import { PayPageV5, RulesPageV5 } from './components/SalaryPages'
 import { type PaySettings, type MonthlySales, type MonthlyUnits, moneyUA } from './lib/salary'
 import { tr, readPresentation, savePresentation, formatDate, formatMonth, locale as presentationLocale, setAccountingCurrency, inputCurrencyLabel, type PresentationSettings, type Language, type DisplayCurrency } from './lib/presentation'
@@ -175,6 +176,10 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
   const [quickBusy, setQuickBusy] = useState(false)
   const quickLock = useRef(false)
   const [instantDay,setInstantDay] = useState<Shift|null>(null)
+  // Retain the tapped button state until the queued/offline Firestore overlay catches up.
+  // Removing it as soon as onSave returns causes a rapid on/off visual flash.
+  const pendingButtonDay=useRef<Shift|null>(null)
+  const previousSelectedDate=useRef(selected)
   const [status, setStatus] = useState('')
   const [preset, setPreset] = useState<string>(initialPreset)
   const [pattern, setPattern] = useState<PatternDay[]>(presetPattern(initialPreset))
@@ -229,10 +234,12 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
     quickLock.current=true
     setMoneyBusy(true);setQuickBusy(true);setMoneyNotice('')
     let shiftSaved=false
+    let savedShift:Shift|null=null
     try{
       const next=markWorkedForDailyPay({...draft,id:date,date,plannedMinutes:draft.plannedMinutes??0})
       await onSave(next)
       shiftSaved=true
+      savedShift=next
       if(performance.manualDailyPay){
         if(wage!==null)await onSaveDailyWage(date,wage)
         else if(dailyWages[date]!==undefined)await onRemoveDailyWage(date)
@@ -246,6 +253,7 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
       }
     }catch(error){
       if(selectedRef.current===date){
+        if(savedShift)setDraft(savedShift)
         setMoneyNotice(`${shiftSaved?'День відмічено, але не всі суми збережені. ':''}${friendlyError(error)}`)
       }
     }finally{
@@ -272,6 +280,7 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
     if (quickLock.current || busy) return
     quickLock.current=true
     setQuickBusy(true)
+    pendingButtonDay.current=next
     setInstantDay(next) // The calendar responds before the Firebase acknowledgement.
     setDraft(next)
     setStatus('')
@@ -279,6 +288,8 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
       validateDay(next)
       await onSave({...next,id:selected,date:selected})
     } catch (error) {
+      pendingButtonDay.current=null
+      setInstantDay(null)
       // The user may have selected a different date while Firebase was saving.
       // Never overwrite the new day's editor with a stale rollback.
       if(selectedRef.current===next.date){
@@ -287,7 +298,7 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
       }
     } finally {
       setQuickBusy(false)
-      setInstantDay(null)
+      // Don't clear the optimistic button before the offline/Firestore state arrives.
       quickLock.current=false
     }
   }
@@ -321,6 +332,20 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
       : selectedCalendarShift.status==='worked'||selectedCalendarShift.additionalShifts?.some(s=>s.status==='worked')
         ? 'Відпрацьовано':'Заплановано'
   useEffect(()=>{
+    const changedDate=previousSelectedDate.current!==selected
+    previousSelectedDate.current=selected
+    if(changedDate)pendingButtonDay.current=null
+    const optimistic=pendingButtonDay.current
+    if(!changedDate&&optimistic?.date===selected){
+      // Ignore older snapshots while the new button state is awaiting its
+      // local queue overlay. The indicator must not flash back to the old state.
+      if(!matchesDayButtonState(activeShift,optimistic))return
+      pendingButtonDay.current=null
+      setInstantDay(null)
+    }
+    // The save can update Firestore props before all inputs have been persisted.
+    // Keep the current editor stable until the user action completes.
+    if(!changedDate&&quickLock.current)return
     setInstantDay(null)
     setDraft(activeShift ? {...activeShift,additionalShifts:[...(activeShift.additionalShifts||[])]} : defaultShift(selected))
     setStatus('')
@@ -676,7 +701,7 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
             <strong className="day-action-label">{tr("Який це день?")}</strong>
             <div className="day-type-buttons" role="group" aria-label="Тип дня">
               {([['work','Робочий'],['off','Вихідний'],['vacation','Відпустка'],['sick','Лікарняний'],['unpaid','За свій рахунок']] as const).map(([type,label])=>
-                <button key={type} type="button" disabled={quickBusy||busy} onClick={()=>quickType(type)}
+                <button key={type} type="button" disabled={quickBusy||busy||moneyBusy} onClick={()=>quickType(type)}
                   className={`day-type-button ${(draft.dayType??'work')===type?'active':''}`} aria-pressed={(draft.dayType??'work')===type}>{label}</button>
               )}
             </div>
@@ -685,7 +710,7 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
             {!(performance.manualDailyPay||cashPrefs.enabled)&&<div className="day-action-section">
               <strong className="day-action-label">{tr("Відпрацював цю зміну?")}</strong>
               <button type="button" className={`day-worked-toggle ${draft.status==='worked'?'is-worked':''}`}
-                disabled={quickBusy||busy} aria-pressed={draft.status==='worked'} onClick={quickStatus}>
+                disabled={quickBusy||busy||moneyBusy} aria-pressed={draft.status==='worked'} onClick={quickStatus}>
                 {draft.status==='worked'?<CheckCircle2 size={22}/>:<Check size={22}/>}
                 <span><strong>{draft.status==='worked'?'Відпрацьовано':'Позначити як відпрацьовано'}</strong>
                   </span>
@@ -694,7 +719,7 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
             {visible.overtimeButton&&<div className="day-action-section">
               <strong className="day-action-label">{tr("Понаднормові")}</strong>
               <button type="button" className={`day-ot-toggle ${draft.overtimeExtra?'is-added':''}`}
-                disabled={quickBusy||busy} aria-pressed={!!draft.overtimeExtra} onClick={quickOvertime}>
+                disabled={quickBusy||busy||moneyBusy} aria-pressed={!!draft.overtimeExtra} onClick={quickOvertime}>
                 {draft.overtimeExtra?<CheckCircle2 size={21}/>:<Plus size={21}/>}
                 <span><strong>{draft.overtimeExtra?'Понаднормові додано':`Додати +${segmentHours(overtimePreset).toLocaleString('uk-UA',{maximumFractionDigits:2})} год`}</strong>
                   <small>{draft.overtimeExtra?
@@ -710,7 +735,6 @@ function CalendarPage({ shifts, workspace, templates, initialPreset, overtimePre
               {cashPrefs.enabled&&<label><span>{tr("Каса за день, ₴").replace('₴',inputCurrencyLabel())}</span><input inputMode="decimal" type="text" value={cashDraft} placeholder="0,00" onChange={e=>setCashDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
               {performance.manualDailyPay&&<label><span>{tr("Мій заробіток, ₴").replace('₴',inputCurrencyLabel())}</span><input inputMode="decimal" type="text" value={wageDraft} placeholder="0,00" onChange={e=>setWageDraft(e.target.value)} disabled={moneyBusy||quickBusy||busy}/></label>}
             </div>
-            {draft.status==='worked'&&<span className="day-money-worked"><CheckCircle2 size={17}/> {tr("Відпрацьовано")}</span>}
             <button type="submit" className="btn btn-primary day-money-submit" disabled={moneyBusy||quickBusy||busy}>
               {draft.status==='worked'?<Save size={19}/>:<CheckCircle2 size={19}/>}
               {moneyBusy?'Зберігаємо…':draft.status==='worked'?'Зберегти зміни':'Зберегти й відмітити'}
